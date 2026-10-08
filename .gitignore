@@ -1,0 +1,47 @@
+# ==========================
+# Root .gitignore
+# ==========================
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn.lock
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ==========================
+# Server (Backend)
+# ==========================
+server/logs/
+server/*.log
+server/public/uploads/
+
+# ==========================
+# Mobile App (React Native/Expo)
+# ==========================
+mobile-app/.expo/
+mobile-app/dist/
+mobile-app/web-build/
+mobile-app/**/*.map
