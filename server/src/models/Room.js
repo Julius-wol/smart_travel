@@ -11,6 +11,11 @@ const roomSchema = new mongoose.Schema({
   images: [{ type: String }],
   amenities: [{ type: String }],
   rating: { type: Number, default: 0, min: 0, max: 5 },
+  status: { type: String, enum: ['ACTIVE', 'HIDDEN'], default: 'ACTIVE' },
+  location: {
+    lat: { type: Number },
+    lng: { type: Number }
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Room', roomSchema);
