@@ -2,8 +2,39 @@
 
 Dự án Đặt phòng kết hợp Trợ lý AI Du lịch (Sử dụng Google Gemini).
 Dự án được tổ chức theo kiến trúc Monorepo bao gồm 2 phân hệ chính:
-- **`server/`**: Backend API & Web Admin Panel (Node.js, Express, MongoDB, EJS).
-- **`mobile-app/`**: Ứng dụng Mobile dành cho Khách (React Native, Expo).
+- **`server/`**: Backend REST API (Node.js, Express, MongoDB) & Web Admin Panel (EJS).
+- **`mobile-app/`**: Ứng dụng Mobile dành cho Khách hàng (React Native, Expo).
+
+---
+
+## 📂 Tổng quan cấu trúc thư mục
+
+```text
+smart_travel/
+├── package.json        # Cấu hình Monorepo (chứa các lệnh npm run dev:all, ...)
+├── server/             # 🛠 Backend (Node.js/Express)
+│   ├── src/            # Mã nguồn chính của Server
+│   │   ├── config/     # Các cấu hình hệ thống (Database, API Keys...)
+│   │   ├── controllers/# Logic xử lý cho từng API (nhận req, trả res)
+│   │   ├── middlewares/# Các hàm trung gian (Xác thực JWT, Upload file...)
+│   │   ├── models/     # Các Schema MongoDB định nghĩa cấu trúc dữ liệu
+│   │   ├── routes/     # Định nghĩa Endpoints (Routing)
+│   │   └── utils/      # Các hàm tiện ích dùng chung
+│   ├── views/          # Giao diện EJS (Server-Side Rendering) cho Web Admin
+│   └── server.js       # Điểm vào (Entry point) của Server
+└── mobile-app/         # 📱 Mobile App (React Native/Expo)
+    ├── src/            # Mã nguồn chính của Mobile App
+    │   ├── assets/     # Hình ảnh, fonts, icons...
+    │   ├── components/ # Các UI Components dùng lại nhiều lần
+    │   ├── database/   # Quản lý lưu trữ local (SQLite, AsyncStorage...)
+    │   ├── navigation/ # Cấu hình chuyển đổi giữa các màn hình (React Navigation)
+    │   ├── screens/    # Các màn hình chính (Home, Login, Booking, Profile...)
+    │   ├── services/   # Nơi cấu hình gọi API giao tiếp với Backend Server
+    │   ├── store/      # Quản lý State toàn cục (Redux Toolkit...)
+    │   └── utils/      # Các hàm tiện ích
+    ├── App.js          # Điểm khởi chạy giao diện của ứng dụng Mobile
+    └── package.json    # Quản lý thư viện riêng của Mobile
+```
 
 ---
 
@@ -39,19 +70,18 @@ cp .env.example .env
 
 ## 🏃 3. Hướng dẫn chạy dự án (Run dev)
 
-Bạn có thể chạy dự án từ thư mục gốc nhờ vào các scripts đã được định nghĩa trong `package.json`.
+Dự án được cấu trúc theo dạng Monorepo. Bạn có thể khởi chạy từ thư mục gốc nhờ vào các scripts đã được định nghĩa trong `package.json`.
 
-### Chạy Backend Server
-Mở Terminal ở thư mục gốc và chạy:
+### Chạy tất cả cùng lúc (Khuyên dùng)
+Mở **một** Terminal ở thư mục gốc và chạy lệnh sau để khởi động đồng thời Backend Server và Mobile App:
 ```bash
-npm run dev:server
+npm run dev:all
 ```
 
-### Chạy Mobile App
-Mở một Terminal khác (cũng ở thư mục gốc) và chạy:
-```bash
-npm run dev:mobile
-```
+### Chạy lẻ từng phần
+Nếu chỉ muốn chạy riêng rẽ, bạn mở Terminal ở thư mục gốc và chạy một trong các lệnh sau:
+- **Chạy Backend Server:** `npm run dev:server`
+- **Chạy Mobile App:** `npm run dev:mobile`
 
 ---
 
@@ -66,4 +96,4 @@ npm run dev:mobile
    - `git commit -m "feat: thêm tính năng xyz"`
 4. Push nhánh của bạn lên repo và tạo **Pull Request (PR)** để review code.
 
-Chúc team code vui và không bug! 🐛🚫
+
