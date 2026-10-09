@@ -23,26 +23,12 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_trave
     .then(() => console.log(' Kết nối MongoDB thành công!'))
     .catch((err) => console.error('Lỗi kết nối MongoDB:', err));
 
-// 4. Các Route mẫu (Routing)
+// 4. Khai báo Routes
+const apiRoutes = require('./src/routes/api');
+const adminRoutes = require('./src/routes/admin');
 
-// ---> API dành cho Mobile App (Trả về JSON)
-app.get('/api/v1', (req, res) => {
-    res.json({
-        status: 'success',
-        message: 'Chào mừng đến với Smart Travel API!',
-        version: '1.0'
-    });
-});
-
-// ---> View dành cho Web Admin 
-app.get('/admin', (req, res) => {
-    // Tạm thời trả về HTML thô. 
-    // Sau này chúng ta sẽ dùng res.render('admin/dashboard') để load file EJS
-    res.send(`
-    <h1>Smart Travel Admin Panel</h1>
-    <p>Hệ thống Admin Server-Side Rendering với EJS đã sẵn sàng hoạt động!</p>
-  `);
-});
+app.use('/api/v1', apiRoutes);
+app.use('/admin', adminRoutes);
 
 // 5. Khởi động Server
 app.listen(PORT, () => {
