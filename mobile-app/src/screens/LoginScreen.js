@@ -5,6 +5,7 @@ import {
   SafeAreaView, KeyboardAvoidingView, Platform, Alert, ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from '../utils/config';
 
 const LoginScreen = ({ navigation }) => {
   const [role, setRole] = useState('USER'); // 'USER' hoặc 'HOST'
@@ -29,8 +30,6 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      const API_URL = 'http://192.168.1.229:5000/api'; 
-      
       const loginRes = await fetch(`${API_URL}/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -58,6 +57,23 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
+        // Kiểm tra vai trò tài khoản so với vai trò đang chọn
+        const userRole = profileData.role || 'USER';
+        if (role === 'HOST' && userRole !== 'HOST') {
+          Alert.alert(
+            'Lưu ý vai trò',
+            'Tài khoản này được đăng ký là "Khách du lịch", không phải "Chủ phòng". Bạn có muốn tiếp tục đăng nhập với tư cách Khách du lịch không?',
+            [
+              { text: 'Hủy', style: 'cancel' },
+              { 
+                text: 'Tiếp tục', 
+                onPress: () => navigation.replace('Profile', { user: profileData, token: accessToken }) 
+              }
+            ]
+          );
+          return;
+        }
+
         // Chuyển sang màn hình Profile
         navigation.replace('Profile', { user: profileData, token: accessToken });
       } else {

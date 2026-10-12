@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { BASE_URL, API_URL } from '../utils/config';
 
 const ProfileScreen = ({ route, navigation }) => {
   // Nhận thông tin user và token truyền qua từ màn hình Login
@@ -15,8 +16,7 @@ const ProfileScreen = ({ route, navigation }) => {
   const [phone, setPhone] = useState(user.phone || '');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const API_URL = 'http://192.168.1.229:5000'; // Đưa API_URL ra ngoài
-  const [avatarUri, setAvatarUri] = useState(user.avatar ? `${API_URL}${user.avatar}` : null);
+  const [avatarUri, setAvatarUri] = useState(user.avatar ? `${BASE_URL}${user.avatar}` : null);
 
   const handleUpdate = async () => {
     try {
@@ -86,8 +86,15 @@ const ProfileScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleLogout = () => {
-    // Đăng xuất: Quay về trang Login
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/auth/signout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (e) {
+      // Bỏ qua lỗi mạng khi logout
+    }
     navigation.replace('Login');
   };
 
@@ -141,6 +148,16 @@ const ProfileScreen = ({ route, navigation }) => {
                 <Ionicons name="camera" size={16} color="#fff" />
               </View>
               <Text style={styles.usernameText}>@{user.username}</Text>
+              <View style={[styles.roleBadge, user.role === 'HOST' ? styles.roleBadgeHost : styles.roleBadgeUser]}>
+                <Ionicons 
+                  name={user.role === 'HOST' ? "home" : "compass"} 
+                  size={14} 
+                  color={user.role === 'HOST' ? "#C53030" : "#00796B"} 
+                />
+                <Text style={[styles.roleBadgeText, user.role === 'HOST' ? styles.roleBadgeTextHost : styles.roleBadgeTextUser]}>
+                  {user.role === 'HOST' ? 'Chủ phòng (Host)' : 'Khách du lịch (User)'}
+                </Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={24} color="#E53E3E" />
@@ -215,6 +232,35 @@ const styles = StyleSheet.create({
   avatarImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#00796B' },
   editIconBadge: { position: 'absolute', bottom: 35, right: '35%', backgroundColor: '#00796B', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
   usernameText: { fontSize: 18, fontWeight: 'bold', color: '#2D3748', marginTop: 10 },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginTop: 6,
+    gap: 6,
+  },
+  roleBadgeUser: {
+    backgroundColor: '#E6FFFA',
+    borderWidth: 1,
+    borderColor: '#B2F5EA',
+  },
+  roleBadgeHost: {
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  roleBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  roleBadgeTextUser: {
+    color: '#00796B',
+  },
+  roleBadgeTextHost: {
+    color: '#C53030',
+  },
   logoutBtn: { padding: 8, backgroundColor: '#FED7D7', borderRadius: 8 },
   formContainer: { backgroundColor: '#fff', padding: 20, borderRadius: 20, elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A202C', marginBottom: 20 },

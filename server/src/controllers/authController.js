@@ -10,7 +10,7 @@ const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
 export const signUp = async (req, res) =>{
     try {
-        const { username, password, email, phone, firstName, lastName } = req.body;
+        const { username, password, email, phone, firstName, lastName, role } = req.body;
         if (!username || !password || !email || !firstName || !lastName) {
             return res.status(400).json({ message: "Không thể thiếu username, password, email, firstName, lastName" });
         }
@@ -25,9 +25,6 @@ if (duplicate) {
     return res.status(400).json({ message: "Username hoac email da ton tai" });
 }
 
-
-
-
         //ma hoa pass
 
 const hashedPassword = await bcrypt.hash(password, 10); // số 10 là 2 mũ 10 số lần mã hóa, số càng lớn thì càng an toàn nhưng tốn tài nguyên cua hacker
@@ -40,7 +37,7 @@ await User.create({
     phone,
     firstName,
     lastName,
-
+    role: (role === 'HOST') ? 'HOST' : 'USER',
 });
 
         //return

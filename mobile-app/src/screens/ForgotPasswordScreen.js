@@ -5,6 +5,7 @@ import {
   ActivityIndicator 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from '../utils/config';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [step, setStep] = useState(1); // 1: Nhập email, 2: Nhập OTP & Mật khẩu mới
@@ -17,8 +18,6 @@ const ForgotPasswordScreen = ({ navigation }) => {
   const [loadingSend, setLoadingSend] = useState(false);
   const [loadingReset, setLoadingReset] = useState(false);
   const [countdown, setCountdown] = useState(0);
-
-  const API_URL = 'http://192.168.1.229:5000/api';
 
   // Quản lý đếm ngược 60 giây chống Spam
   useEffect(() => {
