@@ -1,0 +1,229 @@
+import React, { useState } from 'react';
+import { 
+  View, Text, TextInput, TouchableOpacity, StyleSheet, 
+  SafeAreaView, KeyboardAvoidingView, Platform, Alert, ScrollView, Image
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+
+const ProfileScreen = ({ route, navigation }) => {
+  // Nhận thông tin user và token truyền qua từ màn hình Login
+  const { user, token } = route.params;
+
+  const [firstName, setFirstName] = useState(user.firstName || '');
+  const [lastName, setLastName] = useState(user.lastName || '');
+  const [phone, setPhone] = useState(user.phone || '');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const API_URL = 'http://192.168.1.229:5000'; // Đưa API_URL ra ngoài
+  const [avatarUri, setAvatarUri] = useState(user.avatar ? `${API_URL}${user.avatar}` : null);
+
+  const handleUpdate = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/user/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ firstName, lastName, phone })
+      });
+      
+      const data = await res.json();
+
+      if (res.ok) {
+        Alert.alert('Thành công', 'Cập nhật hồ sơ thành công!');
+      } else {
+        Alert.alert('Lỗi', data.message || 'Cập nhật thất bại');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Lỗi', 'Không thể kết nối đến server');
+    }
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled) {
+      const selectedImage = result.assets[0].uri;
+      setAvatarUri(selectedImage);
+      uploadAvatar(selectedImage);
+    }
+  };
+
+  const uploadAvatar = async (uri) => {
+    try {
+      // Đọc file ảnh dưới dạng Blob để tương thích chuẩn mới
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      const formData = new FormData();
+      formData.append('avatar', blob, 'avatar.jpg');
+
+      const res = await fetch(`${API_URL}/api/user/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        Alert.alert('Thành công', 'Cập nhật ảnh đại diện thành công!');
+      } else {
+        Alert.alert('Lỗi', data.message || 'Upload thất bại');
+      }
+    } catch (error) {
+      console.error('Lỗi upload ảnh:', error);
+      Alert.alert('Lỗi', 'Không thể tải ảnh lên Server');
+    }
+  };
+
+  const handleLogout = () => {
+    // Đăng xuất: Quay về trang Login
+    navigation.replace('Login');
+  };
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword) {
+      Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu cũ và mật khẩu mới');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('Lỗi', 'Mật khẩu mới phải từ 6 ký tự');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/user/password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+      
+      const data = await res.json();
+
+      if (res.ok) {
+        Alert.alert('Thành công', 'Đổi mật khẩu thành công!');
+        setOldPassword('');
+        setNewPassword('');
+      } else {
+        Alert.alert('Lỗi', data.message || 'Đổi mật khẩu thất bại');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Lỗi', 'Không thể kết nối đến server');
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+              ) : (
+                <Ionicons name="person-circle-outline" size={100} color="#00796B" />
+              )}
+              <View style={styles.editIconBadge}>
+                <Ionicons name="camera" size={16} color="#fff" />
+              </View>
+              <Text style={styles.usernameText}>@{user.username}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={24} color="#E53E3E" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.formContainer}>
+            <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
+            
+            <View style={styles.rowGroup}>
+              <View style={styles.halfInput}>
+                <Text style={styles.inputLabel}>Tên (First Name)</Text>
+                <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} />
+              </View>
+              <View style={styles.halfInput}>
+                <Text style={styles.inputLabel}>Họ (Last Name)</Text>
+                <TextInput style={styles.input} value={lastName} onChangeText={setLastName} />
+              </View>
+            </View>
+
+            <Text style={styles.inputLabel}>Số điện thoại</Text>
+            <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="Nhập số điện thoại" />
+
+            <Text style={styles.inputLabel}>Email (Không thể đổi)</Text>
+            <TextInput style={[styles.input, { backgroundColor: '#EDF2F7', color: '#A0AEC0' }]} value={user.email} editable={false} />
+
+            <TouchableOpacity style={styles.updateBtn} onPress={handleUpdate}>
+              <Text style={styles.updateBtnText}>Lưu thay đổi</Text>
+              <Ionicons name="save-outline" size={20} color="#fff" style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Form đổi mật khẩu */}
+          <View style={[styles.formContainer, { marginTop: 20, marginBottom: 40 }]}>
+            <Text style={styles.sectionTitle}>Đổi mật khẩu</Text>
+            
+            <Text style={styles.inputLabel}>Mật khẩu cũ</Text>
+            <TextInput 
+              style={styles.input} 
+              value={oldPassword} 
+              onChangeText={setOldPassword} 
+              secureTextEntry 
+              placeholder="••••••••" 
+            />
+
+            <Text style={styles.inputLabel}>Mật khẩu mới</Text>
+            <TextInput 
+              style={styles.input} 
+              value={newPassword} 
+              onChangeText={setNewPassword} 
+              secureTextEntry 
+              placeholder="••••••••" 
+            />
+
+            <TouchableOpacity style={[styles.updateBtn, { backgroundColor: '#4A5568' }]} onPress={handleChangePassword}>
+              <Text style={styles.updateBtnText}>Đổi mật khẩu</Text>
+              <Ionicons name="key-outline" size={20} color="#fff" style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
+          </View>
+
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  scrollContent: { padding: 24, paddingTop: 40 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 },
+  avatarContainer: { flex: 1, alignItems: 'center', position: 'relative' },
+  avatarImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#00796B' },
+  editIconBadge: { position: 'absolute', bottom: 35, right: '35%', backgroundColor: '#00796B', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  usernameText: { fontSize: 18, fontWeight: 'bold', color: '#2D3748', marginTop: 10 },
+  logoutBtn: { padding: 8, backgroundColor: '#FED7D7', borderRadius: 8 },
+  formContainer: { backgroundColor: '#fff', padding: 20, borderRadius: 20, elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A202C', marginBottom: 20 },
+  inputLabel: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8 },
+  input: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 12, height: 48, fontSize: 15, color: '#2D3748', marginBottom: 16 },
+  rowGroup: { flexDirection: 'row', gap: 12 },
+  halfInput: { flex: 1 },
+  updateBtn: { flexDirection: 'row', backgroundColor: '#00796B', borderRadius: 12, paddingVertical: 16, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  updateBtnText: { fontSize: 16, fontWeight: 'bold', color: '#fff' }
+});
+
+export default ProfileScreen;
