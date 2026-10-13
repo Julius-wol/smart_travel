@@ -260,3 +260,87 @@ export const resetPassword = async (req, res) => {
         return res.status(500).json({ message: "Lỗi hệ thống" });
     }
 };
+
+// ==========================================
+// GOOGLE SIGN IN
+// ==========================================
+export const googleSignIn = async (req, res) => {
+    try {
+        const { accessToken } = req.body;
+        if (!accessToken) {
+            return res.status(400).json({ message: "Thiếu Google access token" });
+        }
+
+        // Xác minh token với Google & lấy thông tin user
+        const googleRes = await fetch(
+            `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
+        );
+
+        if (!googleRes.ok) {
+            return res.status(401).json({ message: "Google token không hợp lệ" });
+        }
+
+        const googleUser = await googleRes.json();
+        const { email, given_name, family_name, picture, sub: googleId } = googleUser;
+
+        if (!email) {
+            return res.status(400).json({ message: "Không lấy được email từ Google" });
+        }
+
+        // Tìm hoặc tạo user mới (auto-register nếu chưa có)
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Tạo username từ email (bỏ phần @...)
+            const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+            let username = baseUsername;
+            let counter = 1;
+            while (await User.findOne({ username })) {
+                username = `${baseUsername}${counter++}`;
+            }
+
+            user = await User.create({
+                username,
+                email,
+                firstName: given_name || 'User',
+                lastName: family_name || '',
+                password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10), // random pass
+                avatar: picture || '',
+                role: 'USER',
+            });
+
+            console.log(`✅ Tạo tài khoản Google mới: ${email}`);
+        }
+
+        // Tạo JWT access token
+        const jwtToken = jwt.sign(
+            { userId: user._id },
+            process.env.ACCES_TOKEN_SECRET || 'secret_key',
+            { expiresIn: ACCES_TOKEN_TTL }
+        );
+
+        // Tạo refresh token session
+        const refreshToken = crypto.randomBytes(64).toString('hex');
+        await Session.create({
+            userId: user._id,
+            refreshToken,
+            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+        });
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: REFRESH_TOKEN_TTL_MS,
+        });
+
+        return res.status(200).json({
+            message: "Đăng nhập Google thành công",
+            accessToken: jwtToken,
+        });
+
+    } catch (error) {
+        console.error("Lỗi googleSignIn:", error);
+        return res.status(500).json({ message: "Lỗi hệ thống" });
+    }
+};

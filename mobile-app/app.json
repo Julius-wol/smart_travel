@@ -2,6 +2,17 @@
   "expo": {
     "name": "Smart Travel",
     "slug": "smart-travel",
-    "version": "1.0.0"
+    "owner": "datdinh1006",
+    "version": "1.0.0",
+    "scheme": "smarttravel",
+    "android": {
+      "package": "com.smarttravel.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.smarttravel.app"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }

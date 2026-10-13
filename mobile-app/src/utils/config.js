@@ -1,13 +1,42 @@
 // ==========================================
-// Cấu hình tập trung IP & URL máy chủ Backend
+// Cấu hình tập trung URL máy chủ Backend
 // ==========================================
-// Mẹo: Khi bạn đổi mạng WiFi hoặc người khác trong nhóm chạy code, 
-// CHỈ CẦN đổi duy nhất địa chỉ IP ở biến SERVER_IP dưới đây!
+// KHÔNG CẦN SỬA FILE NÀY KHI ĐỔI MẠNG!
+// Expo tự động detect IP máy đang chạy Metro Bundler.
+// Chỉ cần đảm bảo điện thoại và máy tính cùng mạng WiFi.
 
-// Thay đổi IP này theo IPv4 máy tính chạy Backend của bạn (kiểm tra bằng lệnh ipconfig)
-export const SERVER_IP = '192.168.1.229'; 
+import Constants from 'expo-constants';
+
+/**
+ * Tự động lấy IP máy tính đang chạy Expo/Metro Bundler.
+ * - Trong môi trường dev: lấy từ hostUri của Expo (vd: "192.168.x.x:8081")
+ * - Trong môi trường production: trả về domain server thật
+ */
+const getServerIP = () => {
+  if (__DEV__) {
+    // hostUri có dạng "192.168.x.x:8081" hoặc "localhost:8081"
+    const hostUri =
+      Constants.expoConfig?.hostUri ||
+      Constants.manifest2?.extra?.expoGo?.debuggerHost ||
+      Constants.manifest?.debuggerHost ||
+      '';
+
+    const ip = hostUri.split(':')[0];
+
+    if (ip && ip !== 'localhost' && ip !== '') {
+      return ip;
+    }
+
+    // Fallback nếu chạy trên emulator Android (trỏ về máy host)
+    return '10.0.2.2';
+  }
+
+  // ✏️ Production: thay bằng domain server thật của bạn
+  return 'your-production-server.com';
+};
+
 export const SERVER_PORT = 5000;
-
+export const SERVER_IP = getServerIP();
 export const BASE_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 export const API_URL = `${BASE_URL}/api`;
 

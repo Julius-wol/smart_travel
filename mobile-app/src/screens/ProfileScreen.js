@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { BASE_URL, API_URL } from '../utils/config';
 
 const ProfileScreen = ({ route, navigation }) => {
@@ -16,11 +17,13 @@ const ProfileScreen = ({ route, navigation }) => {
   const [phone, setPhone] = useState(user.phone || '');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [avatarUri, setAvatarUri] = useState(user.avatar ? `${BASE_URL}${user.avatar}` : null);
 
   const handleUpdate = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/user/profile`, {
+      const res = await fetch(`${API_URL}/user/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -57,33 +60,43 @@ const ProfileScreen = ({ route, navigation }) => {
     }
   };
 
-  const uploadAvatar = async (uri) => {
-    try {
-      // Đọc file ảnh dưới dạng Blob để tương thích chuẩn mới
-      const response = await fetch(uri);
-      const blob = await response.blob();
+  const uploadAvatar = (uri) => {
+    return new Promise((resolve) => {
+      try {
+        // Dùng XMLHttpRequest — hỗ trợ multipart/form-data trên mọi phiên bản RN/Expo
+        const formData = new FormData();
+        formData.append('avatar', {
+          uri,
+          name: 'avatar.jpg',
+          type: 'image/jpeg',
+        });
 
-      const formData = new FormData();
-      formData.append('avatar', blob, 'avatar.jpg');
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_URL}/user/avatar`);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
-      const res = await fetch(`${API_URL}/api/user/avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+        xhr.onload = () => {
+          const data = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            Alert.alert('Thành công', 'Cập nhật ảnh đại diện thành công!');
+          } else {
+            Alert.alert('Lỗi', data.message || 'Upload thất bại');
+          }
+          resolve();
+        };
 
-      const data = await res.json();
-      if (res.ok) {
-        Alert.alert('Thành công', 'Cập nhật ảnh đại diện thành công!');
-      } else {
-        Alert.alert('Lỗi', data.message || 'Upload thất bại');
+        xhr.onerror = () => {
+          Alert.alert('Lỗi', 'Không thể tải ảnh lên Server');
+          resolve();
+        };
+
+        xhr.send(formData);
+      } catch (error) {
+        console.error('Lỗi upload ảnh:', error);
+        Alert.alert('Lỗi', 'Không thể tải ảnh lên Server');
+        resolve();
       }
-    } catch (error) {
-      console.error('Lỗi upload ảnh:', error);
-      Alert.alert('Lỗi', 'Không thể tải ảnh lên Server');
-    }
+    });
   };
 
   const handleLogout = async () => {
@@ -109,7 +122,7 @@ const ProfileScreen = ({ route, navigation }) => {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/user/password`, {
+      const res = await fetch(`${API_URL}/user/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -139,13 +152,15 @@ const ProfileScreen = ({ route, navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
-              {avatarUri ? (
-                <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
-              ) : (
-                <Ionicons name="person-circle-outline" size={100} color="#00796B" />
-              )}
-              <View style={styles.editIconBadge}>
-                <Ionicons name="camera" size={16} color="#fff" />
+              <View style={styles.avatarWrapper}>
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+                ) : (
+                  <Ionicons name="person-circle-outline" size={100} color="#00796B" />
+                )}
+                <View style={styles.editIconBadge}>
+                  <Ionicons name="camera" size={16} color="#fff" />
+                </View>
               </View>
               <Text style={styles.usernameText}>@{user.username}</Text>
               <View style={[styles.roleBadge, user.role === 'HOST' ? styles.roleBadgeHost : styles.roleBadgeUser]}>
@@ -195,22 +210,34 @@ const ProfileScreen = ({ route, navigation }) => {
             <Text style={styles.sectionTitle}>Đổi mật khẩu</Text>
             
             <Text style={styles.inputLabel}>Mật khẩu cũ</Text>
-            <TextInput 
-              style={styles.input} 
-              value={oldPassword} 
-              onChangeText={setOldPassword} 
-              secureTextEntry 
-              placeholder="••••••••" 
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput 
+                style={styles.inputInner} 
+                value={oldPassword} 
+                onChangeText={setOldPassword} 
+                secureTextEntry={!showOldPassword}
+                placeholder="••••••••" 
+                placeholderTextColor="#CBD5E0"
+              />
+              <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)} style={styles.eyeIcon}>
+                <Ionicons name={showOldPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#A0AEC0" />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.inputLabel}>Mật khẩu mới</Text>
-            <TextInput 
-              style={styles.input} 
-              value={newPassword} 
-              onChangeText={setNewPassword} 
-              secureTextEntry 
-              placeholder="••••••••" 
-            />
+            <View style={styles.inputWrapper}>
+              <TextInput 
+                style={styles.inputInner} 
+                value={newPassword} 
+                onChangeText={setNewPassword} 
+                secureTextEntry={!showNewPassword}
+                placeholder="••••••••" 
+                placeholderTextColor="#CBD5E0"
+              />
+              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeIcon}>
+                <Ionicons name={showNewPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#A0AEC0" />
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={[styles.updateBtn, { backgroundColor: '#4A5568' }]} onPress={handleChangePassword}>
               <Text style={styles.updateBtnText}>Đổi mật khẩu</Text>
@@ -228,9 +255,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   scrollContent: { padding: 24, paddingTop: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 },
-  avatarContainer: { flex: 1, alignItems: 'center', position: 'relative' },
+  avatarContainer: { flex: 1, alignItems: 'center' },
+  avatarWrapper: { width: 100, height: 100, position: 'relative' },
   avatarImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: '#00796B' },
-  editIconBadge: { position: 'absolute', bottom: 35, right: '35%', backgroundColor: '#00796B', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
+  editIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#00796B', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#fff' },
   usernameText: { fontSize: 18, fontWeight: 'bold', color: '#2D3748', marginTop: 10 },
   roleBadge: {
     flexDirection: 'row',
@@ -266,6 +294,19 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1A202C', marginBottom: 20 },
   inputLabel: { fontSize: 14, fontWeight: '600', color: '#4A5568', marginBottom: 8 },
   input: { backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 12, height: 48, fontSize: 15, color: '#2D3748', marginBottom: 16 },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F7FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    height: 52,
+  },
+  inputInner: { flex: 1, fontSize: 15, color: '#2D3748', height: '100%' },
+  eyeIcon: { padding: 6, marginLeft: 4 },
   rowGroup: { flexDirection: 'row', gap: 12 },
   halfInput: { flex: 1 },
   updateBtn: { flexDirection: 'row', backgroundColor: '#00796B', borderRadius: 12, paddingVertical: 16, justifyContent: 'center', alignItems: 'center', marginTop: 10 },

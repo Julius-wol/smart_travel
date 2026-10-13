@@ -16,10 +16,32 @@ const RegisterScreen = ({ navigation }) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+
+  // Validate email: đúng định dạng và domain hợp lệ (.com, .vn, .net, .org...)
+  const validateEmail = (value) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(value)) {
+      setEmailError('Email không hợp lệ (ví dụ: example@gmail.com)');
+      return false;
+    }
+    // Bắt các lỗi gõ nhầm phổ biến: .con, .cpm, .vom, .cim...
+    const commonTyPos = /\.(con|cpm|vom|cim|ocm|coml|comm)$/i;
+    if (commonTyPos.test(value)) {
+      setEmailError('⚠️ Email có vẻ sai (gõ nhầm đuôi). Ý bạn là .com?');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
 
   const handleRegister = async () => {
     if (!username || !firstName || !lastName || !email || !password) {
       Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin!');
+      return;
+    }
+    if (!validateEmail(email)) {
       return;
     }
     if (password.length < 6) {
@@ -109,10 +131,18 @@ const RegisterScreen = ({ navigation }) => {
             </View>
 
             <Text style={styles.inputLabel}>Email</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={20} color="#888" style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="email@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+            <View style={[styles.inputWrapper, emailError ? styles.inputWrapperError : null]}>
+              <Ionicons name="mail-outline" size={20} color={emailError ? '#E53E3E' : '#888'} style={styles.inputIcon} />
+              <TextInput 
+                style={styles.input} 
+                placeholder="email@example.com" 
+                value={email} 
+                onChangeText={(v) => { setEmail(v); validateEmail(v); }} 
+                keyboardType="email-address" 
+                autoCapitalize="none" 
+              />
             </View>
+            {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
             <Text style={styles.inputLabel}>Số điện thoại</Text>
             <View style={styles.inputWrapper}>
@@ -123,7 +153,16 @@ const RegisterScreen = ({ navigation }) => {
             <Text style={styles.inputLabel}>Mật khẩu</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="••••••••••" value={password} onChangeText={setPassword} secureTextEntry />
+              <TextInput 
+                style={styles.input} 
+                placeholder="••••••••••" 
+                value={password} 
+                onChangeText={setPassword} 
+                secureTextEntry={!showPassword} 
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#888" />
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity 
@@ -155,9 +194,12 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, color: '#718096', marginBottom: 24 },
   formContainer: { backgroundColor: '#fff', padding: 20, borderRadius: 20, elevation: 3, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
   inputLabel: { fontSize: 14, fontWeight: '600', color: '#2D3748', marginBottom: 8 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 12, marginBottom: 16 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, paddingHorizontal: 12, marginBottom: 4 },
+  inputWrapperError: { borderColor: '#E53E3E', backgroundColor: '#FFF5F5' },
   inputIcon: { marginRight: 8 },
   input: { flex: 1, height: 48, fontSize: 15, color: '#2D3748' },
+  eyeIcon: { padding: 4 },
+  errorText: { color: '#E53E3E', fontSize: 12, marginBottom: 12, marginTop: 2, marginLeft: 4 },
   roleSelector: {
     flexDirection: 'row',
     backgroundColor: '#EDF2F7',

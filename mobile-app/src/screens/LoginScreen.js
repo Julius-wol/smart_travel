@@ -1,18 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  SafeAreaView, KeyboardAvoidingView, Platform, Alert, ScrollView
+  SafeAreaView, KeyboardAvoidingView, Platform, Alert, ScrollView,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { API_URL } from '../utils/config';
 
+WebBrowser.maybeCompleteAuthSession();
+
 const LoginScreen = ({ navigation }) => {
-  const [role, setRole] = useState('USER'); // 'USER' hoặc 'HOST'
+  const [role, setRole] = useState('USER');
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // ====== GOOGLE AUTH SETUP ======
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: '539925498757-hurvt5soqoln2hd25scofvpk7uh1iug5.apps.googleusercontent.com',
+    webClientId: '539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com',
+    redirectUri: 'host.exp.Exponent:/oauthredirect',
+  });
+
+  useEffect(() => {
+    if (request?.url) {
+      console.log('=== GOOGLE AUTH URL ===', request.url);
+    }
+  }, [request]);
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const token = response.authentication?.accessToken || response.params?.access_token;
+      if (token) {
+        handleGoogleResponse(token);
+      } else {
+        Alert.alert('Lỗi', 'Không nhận được access token từ Google');
+      }
+    } else if (response?.type === 'error') {
+      console.error('Google Auth Error:', response.error);
+      Alert.alert('Lỗi đăng nhập Google', response.error?.message || 'Có lỗi xảy ra');
+    }
+  }, [response]);
 
   // Hàm Validate form và test API JWT
   const handleLogin = async () => {
@@ -83,6 +116,42 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       console.error(error);
       Alert.alert('Lỗi kết nối', 'Không thể kết nối đến Server Node.js!');
+    }
+  };
+
+  // ====== XỬ LÝ GOOGLE LOGIN ======
+  const handleGoogleResponse = async (accessToken) => {
+    setGoogleLoading(true);
+    try {
+      // Gửi token lên backend để xác thực và lấy JWT
+      const res = await fetch(`${API_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        Alert.alert('Lỗi', data.message || 'Đăng nhập Google thất bại');
+        return;
+      }
+
+      // Lấy thông tin profile
+      const profileRes = await fetch(`${API_URL}/user/me`, {
+        headers: { 'Authorization': `Bearer ${data.accessToken}` },
+      });
+      const profileData = await profileRes.json();
+
+      if (profileRes.ok) {
+        navigation.replace('Profile', { user: profileData, token: data.accessToken });
+      } else {
+        Alert.alert('Lỗi', 'Không lấy được thông tin tài khoản');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Lỗi kết nối', 'Không thể kết nối đến Server!');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -181,9 +250,19 @@ const LoginScreen = ({ navigation }) => {
               <View style={styles.dividerLine} />
             </View>
 
-            <TouchableOpacity style={styles.googleBtn}>
-              <Ionicons name="logo-google" size={20} color="#DB4437" />
-              <Text style={styles.googleBtnText}>Google</Text>
+            <TouchableOpacity 
+              style={[styles.googleBtn, (googleLoading || !request) && { opacity: 0.7 }]} 
+              onPress={() => promptAsync()}
+              disabled={googleLoading || !request}
+            >
+              {googleLoading ? (
+                <ActivityIndicator size="small" color="#DB4437" />
+              ) : (
+                <Ionicons name="logo-google" size={20} color="#DB4437" />
+              )}
+              <Text style={styles.googleBtnText}>
+                {googleLoading ? 'Đang đăng nhập...' : 'Tiếp tục với Google'}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.registerRow}>
