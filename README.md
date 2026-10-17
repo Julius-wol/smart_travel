@@ -101,4 +101,5 @@ Nếu chỉ muốn chạy riêng rẽ, bạn mở Terminal ở thư mục gốc 
 ## 📚 5. Tài liệu kỹ thuật & Kiến trúc (Documentation)
 
 - [Quy trình hoạt động Authentication (JWT & Google OAuth)](docs/JWT_AUTH_WORKFLOW.md)
+- [Đặc tả Giao diện Chi tiết Nơi lưu trú (Home Details Screen)](docs/HOME_DETAILS_SPEC.md)
 - [Đặc tả Cơ sở dữ liệu (Database Schema)](docs/database-schema.md)

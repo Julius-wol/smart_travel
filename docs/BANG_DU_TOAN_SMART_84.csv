@@ -1,0 +1,20 @@
+﻿STT,Phân hệ,Mã Task,Hạng mục công việc,Mức độ,Đơn giá (VNĐ)
+01,FrontEnd,FE_TopBar_A01,Top Bar & Notification Suite (Logo kính lúp avatar chuông thông báo real-time kèm badge đếm tin & Drawer),Medium Level,60000
+02,FrontEnd,FE_SearchVoice_A02,Thanh tìm kiếm địa điểm (Nhập từ khóa nút xóa nhanh mô phỏng tìm kiếm giọng nói Voice Search),Easy Level,40000
+03,FrontEnd,FE_CalendarModal_A03,Modal lịch chọn ngày lưu trú (Lưới 35 ngày chọn Check-in / Check-out tự động tính số đêm và phím tắt nhanh),Medium Level,80000
+04,FrontEnd,FE_GuestSheet_A04,Bottom Sheet chọn khách & phòng (Bộ nút tăng giảm Stepper Người lớn Trẻ em Em bé Số phòng),Medium Level,60000
+05,FrontEnd,FE_FilterModal_A05,Modal bộ lọc phụ nâng cao (Lọc mức giá <1tr 1-2tr >2tr số khách tối thiểu và đánh giá sao),Medium Level,70000
+06,FrontEnd,FE_QuickChips_A06,Quick Filter Chips & Result Summary (Chip Tất cả tự động nhảy số + dòng thông báo số lượng phòng),Easy Level,50000
+07,FrontEnd,FE_CardCarousel_A07,Homestay Card & Image Carousel (Vuốt ngang xem nhiều ảnh badge 1/8 tên phòng rating khoảng cách khối giá giảm),Medium Level,90000
+08,FrontEnd,FE_Wishlist_A08,Nút Tim yêu thích (Toggle trạng thái lưu cache Offline SQLite/Storage + đồng bộ Server Toast CR_BOOK_01/02),Medium Level,60000
+09,FrontEnd,FE_Navigation_A09,Điều hướng Xem phòng (Chuyển sang trang Chi tiết homestay đồng bộ chính xác ngày và số khách),Easy Level,40000
+10,FrontEnd,FE_ZeroResult_A10,Xử lý kết quả rỗng & Toast System (Giao diện không tìm thấy phòng nút đặt lại bộ lọc hệ thống Toast chuẩn),Easy Level,40000
+,,TỔNG TIỂU KHOẢN FRONTEND,,,590000
+11,BackEnd,BE_QueryRooms_B01,API danh sách Homestay (Truy vấn 10 homestay mới nhất kèm phân trang Pagination từ MongoDB Atlas),Easy Level,40000
+12,BackEnd,BE_SearchEngine_B02,Engine tìm kiếm & lọc đa tiêu chí (Xử lý truy vấn Regex địa điểm danh mục khoảng giá số khách điểm sao),Hard Level,80000
+13,BackEnd,BE_Availability_B03,Thuật toán kiểm tra lịch phòng trống (Tự động đối soát loại trừ phòng đã có lịch đặt CONFIRMED trùng ngày),Hard Level,90000
+14,BackEnd,BE_WishlistAPI_B04,API đồng bộ phòng yêu thích (Thêm/xóa homestay vào danh sách Wishlist theo tài khoản người dùng),Easy Level,40000
+15,BackEnd,BE_Notification_B05,API thông báo & đếm tin chưa đọc (Lấy danh sách lịch sử đặt phòng thực tế và tính số thông báo mới cho chuông),Easy Level,50000
+,,TỔNG TIỂU KHOẢN BACKEND,,,300000
+,,TỔNG TIỀN PHẢI TRẢ [SMART-84],,,890000
+,,Dự phòng phát sinh (10%),,,980000 - 1000000

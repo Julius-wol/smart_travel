@@ -7,12 +7,22 @@
 
 import Constants from 'expo-constants';
 
+import { Platform } from 'react-native';
+
 /**
  * Tự động lấy IP máy tính đang chạy Expo/Metro Bundler.
- * - Trong môi trường dev: lấy từ hostUri của Expo (vd: "192.168.x.x:8081")
- * - Trong môi trường production: trả về domain server thật
+ * - Trong môi trường web: lấy hostname trình duyệt (localhost hoặc LAN IP)
+ * - Trong môi trường mobile: lấy từ hostUri của Expo
+ * - Fallback: Android emulator dùng 10.0.2.2, iOS/Web dùng localhost
  */
 const getServerIP = () => {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.location?.hostname) {
+      return window.location.hostname;
+    }
+    return 'localhost';
+  }
+
   if (__DEV__) {
     // hostUri có dạng "192.168.x.x:8081" hoặc "localhost:8081"
     const hostUri =
@@ -28,7 +38,10 @@ const getServerIP = () => {
     }
 
     // Fallback nếu chạy trên emulator Android (trỏ về máy host)
-    return '10.0.2.2';
+    if (Platform.OS === 'android') {
+      return '10.0.2.2';
+    }
+    return 'localhost';
   }
 
   // ✏️ Production: thay bằng domain server thật của bạn

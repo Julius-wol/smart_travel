@@ -14,15 +14,16 @@ WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ navigation }) => {
   const [role, setRole] = useState('USER');
-  const [emailOrPhone, setEmailOrPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('datdinh999999');
+  const [password, setPassword] = useState('datdinh999999');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   // ====== GOOGLE AUTH SETUP ======
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '539925498757-hurvt5soqoln2hd25scofvpk7uh1iug5.apps.googleusercontent.com',
+    androidClientId: '539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com',
     webClientId: '539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com',
     redirectUri: 'host.exp.Exponent:/oauthredirect',
   });
@@ -100,15 +101,15 @@ const LoginScreen = ({ navigation }) => {
               { text: 'Hủy', style: 'cancel' },
               { 
                 text: 'Tiếp tục', 
-                onPress: () => navigation.replace('Profile', { user: profileData, token: accessToken }) 
+                onPress: () => navigation.replace('Home', { user: profileData, token: accessToken }) 
               }
             ]
           );
           return;
         }
 
-        // Chuyển sang màn hình Profile
-        navigation.replace('Profile', { user: profileData, token: accessToken });
+        // Chuyển sang màn hình Trang chủ (Booking Discovery)
+        navigation.replace('Home', { user: profileData, token: accessToken });
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin User');
       }
@@ -143,7 +144,7 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        navigation.replace('Profile', { user: profileData, token: data.accessToken });
+        navigation.replace('Home', { user: profileData, token: data.accessToken });
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin tài khoản');
       }

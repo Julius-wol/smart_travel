@@ -7,6 +7,9 @@ import cookieParser from 'cookie-parser';
 
 import authRoute from './src/routes/authRoute.js';
 import userRoute from './src/routes/userRoute.js';
+import roomRoute from './src/routes/roomRoute.js';
+import bookingRoute from './src/routes/bookingRoute.js';
+import reviewRoute from './src/routes/reviewRoute.js';
 
 dotenv.config();
 
@@ -26,8 +29,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 3. Routes
-app.use('/api/auth', authRoute);   // public
-app.use('/api/user', userRoute);   // private (JWT protected)
+app.use('/api/auth', authRoute);       // Auth & Google
+app.use('/api/user', userRoute);       // User Profile
+app.use('/api/rooms', roomRoute);      // Homestay / Room Discovery
+app.use('/api/bookings', bookingRoute);// Booking & Checkout
+app.use('/api/reviews', reviewRoute);  // Reviews & Rating
 
 // 4. Kết nối MongoDB
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_travel')
