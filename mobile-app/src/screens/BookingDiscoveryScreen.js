@@ -23,6 +23,7 @@ import { SearchFilterBox } from '../components/SearchFilterBox';
 import { QuickFilterChips } from '../components/QuickFilterChips';
 import { HomestayCard } from '../components/HomestayCard';
 import { FilterBottomSheet } from '../components/FilterBottomSheet';
+import { DatePickerModal } from '../components/DatePickerModal';
 import ZeroResultView from '../components/ZeroResultView';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 
@@ -51,6 +52,7 @@ const BookingDiscoveryScreen = ({ navigation }) => {
 
   // Local UI state
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [dateModalVisible, setDateModalVisible] = useState(false);
   const [selectedQuickChip, setSelectedQuickChip] = useState('ALL');
   const [toastMessage, setToastMessage] = useState(null);
   const [toastFade] = useState(new Animated.Value(0));
@@ -136,6 +138,21 @@ const BookingDiscoveryScreen = ({ navigation }) => {
     }
   };
 
+  const formatDateDisplay = (dateStr, fallback) => {
+    if (!dateStr) return fallback;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}`;
+    }
+    return dateStr;
+  };
+
+  const checkInDate = filters.checkIn || '2026-10-25';
+  const checkOutDate = filters.checkOut || '2026-10-28';
+  const nightsCount = filters.nights || 3;
+  const dateRangeDisplay = `${formatDateDisplay(checkInDate, '15/05')} – ${formatDateDisplay(checkOutDate, '18/05')}`;
+  const nightsDisplay = `${nightsCount} đêm (14:00 - 12:00)`;
+
   // Header của danh sách bao gồm TopBar, Search Box, Quick Chips và Result Summary
   const renderListHeader = () => (
     <View style={styles.headerSection}>
@@ -151,12 +168,12 @@ const BookingDiscoveryScreen = ({ navigation }) => {
         <SearchFilterBox
           city={filters.city}
           onCityChange={handleCityChange}
-          dateRangeText="15 Th05 – 18 Th05"
-          nightsText="3 đêm"
+          dateRangeText={dateRangeDisplay}
+          nightsText={nightsDisplay}
           guestRoomText={`${filters.guests} khách • ${filters.roomsCount || 1} phòng`}
           activeFilterCount={activeFilterCount}
           onFilterPress={() => setFilterModalVisible(true)}
-          onDatePress={() => {}}
+          onDatePress={() => setDateModalVisible(true)}
           onGuestPress={() => setFilterModalVisible(true)}
         />
       </View>
@@ -311,6 +328,17 @@ const BookingDiscoveryScreen = ({ navigation }) => {
         onClose={() => setFilterModalVisible(false)}
         initialFilters={filters}
         onApply={handleApplyFilter}
+      />
+
+      {/* Date Picker Modal */}
+      <DatePickerModal
+        visible={dateModalVisible}
+        onClose={() => setDateModalVisible(false)}
+        initialCheckIn={filters.checkIn || '2026-10-25'}
+        initialCheckOut={filters.checkOut || '2026-10-28'}
+        onApply={({ checkIn, checkOut, nights }) => {
+          dispatch(setFilters({ checkIn, checkOut, nights }));
+        }}
       />
 
       {/* Toast Notification (CR_BOOK_01 & CR_BOOK_02) */}

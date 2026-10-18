@@ -29,6 +29,9 @@ export const FilterBottomSheet = ({
   const [minRating, setMinRating] = useState(initialFilters.minRating || null);
   const [guests, setGuests] = useState(initialFilters.guests || 2);
   const [roomsCount, setRoomsCount] = useState(initialFilters.roomsCount || 1);
+  const [checkIn, setCheckIn] = useState(initialFilters.checkIn || '2026-10-25');
+  const [checkOut, setCheckOut] = useState(initialFilters.checkOut || '2026-10-28');
+  const [nights, setNights] = useState(initialFilters.nights || 3);
 
   // Đồng bộ khi mở modal với bộ lọc hiện tại
   useEffect(() => {
@@ -45,6 +48,9 @@ export const FilterBottomSheet = ({
       setMinRating(initialFilters.minRating || null);
       setGuests(initialFilters.guests || 2);
       setRoomsCount(initialFilters.roomsCount || 1);
+      setCheckIn(initialFilters.checkIn || '2026-10-25');
+      setCheckOut(initialFilters.checkOut || '2026-10-28');
+      setNights(initialFilters.nights || 3);
     }
   }, [visible, initialFilters]);
 
@@ -83,6 +89,9 @@ export const FilterBottomSheet = ({
       minRating,
       guests: Number(guests) || 1,
       roomsCount: Number(roomsCount) || 1,
+      checkIn,
+      checkOut,
+      nights: Number(nights) || 3,
     });
     onClose();
   };
@@ -92,12 +101,18 @@ export const FilterBottomSheet = ({
     setMinRating(null);
     setGuests(2);
     setRoomsCount(1);
+    setCheckIn('2026-10-25');
+    setCheckOut('2026-10-28');
+    setNights(3);
     onApply({
       minPrice: null,
       maxPrice: null,
       minRating: null,
       guests: 2,
       roomsCount: 1,
+      checkIn: '2026-10-25',
+      checkOut: '2026-10-28',
+      nights: 3,
     });
     onClose();
   };
@@ -242,6 +257,33 @@ export const FilterBottomSheet = ({
                 >
                   <Text style={styles.stepBtnText}>+</Text>
                 </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* 5. Thời gian lưu trú */}
+            <Text style={styles.sectionTitle}>Thời gian lưu trú (Nhận 14:00 • Trả 12:00)</Text>
+            <View style={styles.dateSectionContainer}>
+              <View style={styles.dateRow}>
+                <View style={styles.dateCol}>
+                  <Text style={styles.dateColLabel}>Nhận phòng (14:00):</Text>
+                  <TextInput
+                    style={styles.dateInput}
+                    value={checkIn}
+                    onChangeText={setCheckIn}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
+                <View style={styles.dateCol}>
+                  <Text style={styles.dateColLabel}>Trả phòng (12:00):</Text>
+                  <TextInput
+                    style={styles.dateInput}
+                    value={checkOut}
+                    onChangeText={setCheckOut}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
               </View>
             </View>
           </ScrollView>
@@ -396,6 +438,38 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  dateSectionContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 12,
+    marginBottom: 8,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  dateCol: {
+    flex: 1,
+  },
+  dateColLabel: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 4,
+  },
+  dateInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#0F172A',
   },
   footer: {
     flexDirection: 'row',

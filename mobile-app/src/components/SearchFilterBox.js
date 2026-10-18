@@ -84,12 +84,16 @@ export const SearchFilterBox = ({
           onPress={onDatePress}
           activeOpacity={0.7}
         >
-          <View style={styles.iconBox}>
-            <Ionicons name="calendar-outline" size={17} color="#00685F" />
+          <View style={styles.calendarIconBox}>
+            <Ionicons name="calendar-outline" size={16} color="#00685F" />
           </View>
           <View style={styles.dateTextGroup}>
-            <Text style={styles.dateText}>{dateRangeText}</Text>
-            <Text style={styles.nightsText}>{nightsText}</Text>
+            <Text style={styles.dateText} numberOfLines={1}>
+              {dateRangeText}
+            </Text>
+            <Text style={styles.nightsText} numberOfLines={1}>
+              {nightsText}
+            </Text>
           </View>
         </TouchableOpacity>
 
@@ -102,10 +106,12 @@ export const SearchFilterBox = ({
           onPress={onGuestPress}
           activeOpacity={0.7}
         >
-          <View style={styles.iconBox}>
-            <Ionicons name="people-outline" size={17} color="#4648D4" />
+          <View style={styles.guestIconBox}>
+            <Ionicons name="people-outline" size={16} color="#4648D4" />
           </View>
-          <Text style={styles.guestText}>{guestRoomText}</Text>
+          <Text style={styles.guestText} numberOfLines={1} ellipsizeMode="tail">
+            {guestRoomText}
+          </Text>
         </TouchableOpacity>
 
         {/* Filter Adjust Button */}
@@ -137,22 +143,24 @@ const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 10,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
     marginHorizontal: 14,
     marginVertical: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 3,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#EFF4FF',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 12,
-    height: 46,
+    height: 44,
     gap: 8,
   },
   searchIcon: {
@@ -170,7 +178,6 @@ const styles = StyleSheet.create({
     padding: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 2,
   },
   micButton: {
     padding: 4,
@@ -182,54 +189,71 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 10,
-    paddingHorizontal: 2,
+    paddingHorizontal: 0,
   },
   dateSelector: {
+    flex: 1.05,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flex: 1.15,
+    gap: 7,
+    minWidth: 0,
   },
-  iconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
-    backgroundColor: '#E5EEFF',
+  calendarIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#E6F4F2',
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   dateTextGroup: {
+    flex: 1,
     justifyContent: 'center',
+    minWidth: 0,
   },
   dateText: {
     fontFamily: TYPOGRAPHY.fontFamily,
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#0B1C30',
   },
   nightsText: {
     fontFamily: TYPOGRAPHY.fontFamily,
-    fontSize: 11.5,
-    color: '#3D4947',
+    fontSize: 11,
+    color: '#64748B',
     marginTop: 1,
   },
   verticalDivider: {
     width: 1,
     height: 24,
-    backgroundColor: '#D3E4FE',
-    marginHorizontal: 6,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 8,
+    flexShrink: 0,
   },
   guestSelector: {
+    flex: 1.15,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flex: 1.25,
+    gap: 7,
+    minWidth: 0,
+  },
+  guestIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#EFF4FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   guestText: {
+    flex: 1,
     fontFamily: TYPOGRAPHY.fontFamily,
     fontWeight: '700',
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#0B1C30',
+    minWidth: 0,
   },
   filterAdjustBtn: {
     width: 34,
@@ -239,7 +263,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    marginLeft: 4,
+    marginLeft: 8,
+    flexShrink: 0,
   },
   filterAdjustBtnActive: {
     backgroundColor: '#00685F',
@@ -248,17 +273,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -2,
     right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    width: 15,
+    height: 15,
+    borderRadius: 7.5,
     backgroundColor: '#BA1A1A',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
   filterBadgeText: {
-    color: '#FFF',
-    fontSize: 8,
+    color: '#FFFFFF',
+    fontSize: 8.5,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 
