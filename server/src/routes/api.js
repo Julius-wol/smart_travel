@@ -14,6 +14,10 @@ router.get('/', (req, res) => {
 // Phân hệ Rooms (Homestay discovery, search, filter)
 router.use('/rooms', roomRoutes);
 
+// Phân hệ Bookings (Checkout, Payment, Availability)
+const bookingRoutes = require('./bookingRoutes');
+router.use('/bookings', bookingRoutes);
+
 // Phân hệ Wishlist (Lưu/bỏ lưu phòng yêu thích)
 router.post('/wishlist/toggle', wishlistController.toggleWishlist);
 

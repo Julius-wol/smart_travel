@@ -33,6 +33,10 @@ export const COLORS = {
   wishlistInactive: '#0B1C30',// Viền xám đen khi chưa thích
   starGold: '#FFB800',        // Vàng sao đánh giá
   overlayDark: 'rgba(11, 28, 48, 0.65)', // Nền mờ chỉ số ảnh 1/8
+  errorBorder: '#BA1A1A',     // Viền đỏ báo lỗi input
+  errorBg: '#FEF2F2',         // Nền lỗi nhạt
+  policyBorder: '#00685F',    // Viền chính sách bảo đảm
+  policyBg: '#E6F4F2',        // Nền cam kết bồi thường 150%
 };
 
 export const TYPOGRAPHY = {

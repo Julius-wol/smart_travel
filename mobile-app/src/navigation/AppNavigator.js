@@ -6,6 +6,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import BookingDiscoveryScreen from '../screens/BookingDiscoveryScreen';
 import RoomDetailScreen from '../screens/RoomDetailScreen';
+import CheckoutPaymentScreen from '../screens/CheckoutPaymentScreen';
+import BookingResultScreen from '../screens/BookingResultScreen';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
 
 const Tab = createBottomTabNavigator();
@@ -107,6 +109,20 @@ export const AppNavigator = () => {
           component={RoomDetailScreen}
           options={{
             animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="CheckoutPayment"
+          component={CheckoutPaymentScreen}
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="BookingResult"
+          component={BookingResultScreen}
+          options={{
+            animation: 'fade',
           }}
         />
       </Stack.Navigator>

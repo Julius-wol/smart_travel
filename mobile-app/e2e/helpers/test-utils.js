@@ -8,8 +8,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import roomReducer from '../../src/store/slices/roomSlice';
 import wishlistReducer from '../../src/store/slices/wishlistSlice';
+import bookingReducer from '../../src/store/slices/bookingSlice';
 import BookingDiscoveryScreen from '../../src/screens/BookingDiscoveryScreen';
 import RoomDetailScreen from '../../src/screens/RoomDetailScreen';
+import CheckoutPaymentScreen from '../../src/screens/CheckoutPaymentScreen';
+import BookingResultScreen from '../../src/screens/BookingResultScreen';
 
 // Thiết lập môi trường act cho React 19 trong Jest
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -43,6 +46,7 @@ export const createTestStore = (preloadedState = {}) => {
     reducer: {
       room: roomReducer,
       wishlist: wishlistReducer,
+      booking: bookingReducer,
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>
@@ -57,12 +61,49 @@ const Stack = createNativeStackNavigator();
 /**
  * E2E App Flow Navigator kết nối trực tiếp các màn hình nghiệp vụ
  */
-export const E2EFlowNavigator = ({ initialRouteName = 'Discovery' }) => {
+export const E2EFlowNavigator = ({ initialRouteName = 'Discovery', initialParams = {} }) => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={initialRouteName} screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Discovery" component={BookingDiscoveryScreen} />
-        <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
+        {initialRouteName === 'CheckoutPayment' ? (
+          <>
+            <Stack.Screen
+              name="CheckoutPayment"
+              component={CheckoutPaymentScreen}
+              initialParams={initialParams}
+            />
+            <Stack.Screen
+              name="BookingResult"
+              component={BookingResultScreen}
+              initialParams={initialParams}
+            />
+            <Stack.Screen
+              name="RoomDetail"
+              component={RoomDetailScreen}
+              initialParams={initialParams}
+            />
+            <Stack.Screen name="Discovery" component={BookingDiscoveryScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Discovery" component={BookingDiscoveryScreen} />
+            <Stack.Screen
+              name="RoomDetail"
+              component={RoomDetailScreen}
+              initialParams={initialParams}
+            />
+            <Stack.Screen
+              name="CheckoutPayment"
+              component={CheckoutPaymentScreen}
+              initialParams={initialParams}
+            />
+            <Stack.Screen
+              name="BookingResult"
+              component={BookingResultScreen}
+              initialParams={initialParams}
+            />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -96,8 +137,7 @@ export const renderWithProviders = (
     );
   };
 
-  return {
-    store,
-    ...render(ui, { wrapper: Wrapper, ...renderOptions }),
-  };
+  const renderResult = render(ui, { wrapper: Wrapper, ...renderOptions });
+  renderResult.store = store;
+  return renderResult;
 };
