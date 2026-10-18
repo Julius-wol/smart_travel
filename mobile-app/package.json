@@ -6,8 +6,10 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web",
-    "test": "jest --watchAll=false"
+    "test": "jest --watchAll=false",
+    "test:unit": "jest __tests__ --watchAll=false",
+    "test:e2e": "jest e2e --watchAll=false --runInBand --forceExit",
+    "test:all": "jest --watchAll=false --forceExit"
   },
   "jest": {
     "preset": "jest-expo",
@@ -16,7 +18,8 @@
     ],
     "moduleNameMapper": {
       "^react-native/asset-registry$": "<rootDir>/../node_modules/@react-native/assets-registry/registry.js",
-      "^immer$": "<rootDir>/../node_modules/immer/dist/cjs/index.js"
+      "^immer$": "<rootDir>/../node_modules/immer/dist/cjs/index.js",
+      "^react-redux$": "<rootDir>/../node_modules/react-redux/dist/cjs/index.js"
     }
   },
   "dependencies": {

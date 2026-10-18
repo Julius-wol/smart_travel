@@ -81,6 +81,8 @@ export const HomestayCard = ({
 
         {/* Wishlist Heart Button (Top-right) */}
         <TouchableOpacity
+          testID={`wishlist-btn-${room._id}`}
+          accessibilityLabel={isSaved ? 'Xóa khỏi yêu thích' : 'Lưu vào yêu thích'}
           style={styles.wishlistButton}
           onPress={() => onToggleWishlist && onToggleWishlist(room)}
           activeOpacity={0.8}
