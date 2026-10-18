@@ -1,4 +1,5 @@
 const Room = require('../models/Room');
+const User = require('../models/User');
 
 /**
  * Lấy danh sách homestay hỗ trợ tìm kiếm và lọc đa tiêu chí
