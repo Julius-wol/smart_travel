@@ -96,4 +96,14 @@ Nếu chỉ muốn chạy riêng rẽ, bạn mở Terminal ở thư mục gốc 
    - `git commit -m "feat: thêm tính năng xyz"`
 4. Push nhánh của bạn lên repo và tạo **Pull Request (PR)** để review code.
 
+---
+
+## 📋 5. Quy trình phát triển Spec-Driven Development (Spec Kit)
+
+Dự án đã tích hợp công cụ **Spec Kit** (`github/spec-kit`) nhằm chuẩn hóa quy trình phát triển có sự hỗ trợ của AI Agent theo phương pháp **Spec-Driven Development (SDD)**:
+
+- 📜 **Hiến pháp dự án (Constitution)**: [.specify/memory/constitution.md](.specify/memory/constitution.md) - Quy định kiến trúc, tiêu chuẩn API, bảo mật và công nghệ bắt buộc.
+- 📖 **Hướng dẫn chi tiết quy trình SDD**: [docs/SPEC_KIT_SDD_GUIDE.md](docs/SPEC_KIT_SDD_GUIDE.md) - Hướng dẫn 7 bước từ tạo spec (`/speckit.specify`), lập kế hoạch (`/speckit.plan`), phân rã task (`/speckit.tasks`) đến khi sinh mã nguồn (`/speckit.implement`).
+
+
 

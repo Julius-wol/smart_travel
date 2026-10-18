@@ -27,10 +27,15 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_trave
 const apiRoutes = require('./src/routes/api');
 const adminRoutes = require('./src/routes/admin');
 
+app.use('/api', apiRoutes);
 app.use('/api/v1', apiRoutes);
 app.use('/admin', adminRoutes);
 
 // 5. Khởi động Server
-app.listen(PORT, () => {
-    console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;

@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Smart Travel",
+    "slug": "smart-travel",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.smarttravel.app"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
