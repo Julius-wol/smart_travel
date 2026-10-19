@@ -14,8 +14,8 @@ WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ navigation }) => {
   const [role, setRole] = useState('USER');
-  const [emailOrPhone, setEmailOrPhone] = useState('datdinh999999');
-  const [password, setPassword] = useState('datdinh999999');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -196,12 +196,12 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Input Form */}
           <View style={styles.formContainer}>
-            <Text style={styles.inputLabel}>Email / Số điện thoại</Text>
+            <Text style={styles.inputLabel}>Tên đăng nhập / Email / Số điện thoại</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="at-outline" size={20} color="#888" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input}
-                placeholder="wanderlust@smarttravel.vn"
+                placeholder="Nhập tên đăng nhập, email hoặc số điện thoại"
                 value={emailOrPhone}
                 onChangeText={setEmailOrPhone}
                 keyboardType="email-address"
@@ -214,7 +214,7 @@ const LoginScreen = ({ navigation }) => {
               <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input}
-                placeholder="••••••••••"
+                placeholder="Nhập mật khẩu"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
