@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 
 import authRoute from './src/routes/authRoute.js';
 import userRoute from './src/routes/userRoute.js';
@@ -20,6 +21,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // 1. Middlewares cơ bản
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 

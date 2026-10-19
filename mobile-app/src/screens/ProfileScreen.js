@@ -150,6 +150,15 @@ const ProfileScreen = ({ route, navigation }) => {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.popTo('Home', { user, token })}
+            accessibilityRole="button"
+            accessibilityLabel="Quay về trang chủ"
+          >
+            <Ionicons name="arrow-back" size={24} color="#00796B" />
+            <Text style={styles.backBtnText}>Về trang chủ</Text>
+          </TouchableOpacity>
           <View style={styles.header}>
             <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
               <View style={styles.avatarWrapper}>
@@ -185,11 +194,11 @@ const ProfileScreen = ({ route, navigation }) => {
             <View style={styles.rowGroup}>
               <View style={styles.halfInput}>
                 <Text style={styles.inputLabel}>Tên (First Name)</Text>
-                <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} />
+                <TextInput style={styles.input} placeholder="Nhập tên" value={firstName} onChangeText={setFirstName} />
               </View>
               <View style={styles.halfInput}>
                 <Text style={styles.inputLabel}>Họ (Last Name)</Text>
-                <TextInput style={styles.input} value={lastName} onChangeText={setLastName} />
+                <TextInput style={styles.input} placeholder="Nhập họ" value={lastName} onChangeText={setLastName} />
               </View>
             </View>
 
@@ -216,7 +225,7 @@ const ProfileScreen = ({ route, navigation }) => {
                 value={oldPassword} 
                 onChangeText={setOldPassword} 
                 secureTextEntry={!showOldPassword}
-                placeholder="••••••••" 
+                placeholder="Nhập mật khẩu cũ"
                 placeholderTextColor="#CBD5E0"
               />
               <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)} style={styles.eyeIcon}>
@@ -231,7 +240,7 @@ const ProfileScreen = ({ route, navigation }) => {
                 value={newPassword} 
                 onChangeText={setNewPassword} 
                 secureTextEntry={!showNewPassword}
-                placeholder="••••••••" 
+                placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
                 placeholderTextColor="#CBD5E0"
               />
               <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)} style={styles.eyeIcon}>
@@ -254,6 +263,8 @@ const ProfileScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   scrollContent: { padding: 24, paddingTop: 40 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8, minHeight: 44, marginBottom: 20 },
+  backBtnText: { fontSize: 16, fontWeight: '600', color: '#00796B' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 30 },
   avatarContainer: { flex: 1, alignItems: 'center' },
   avatarWrapper: { width: 100, height: 100, position: 'relative' },

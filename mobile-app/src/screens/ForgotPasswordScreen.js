@@ -127,7 +127,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
               <Ionicons name="mail-outline" size={20} color="#00796B" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input} 
-                placeholder="example@gmail.com" 
+                placeholder="Nhập email đã đăng ký"
                 value={email} 
                 onChangeText={setEmail} 
                 keyboardType="email-address" 
@@ -164,7 +164,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
               <Ionicons name="keypad-outline" size={20} color="#00796B" style={styles.inputIcon} />
               <TextInput 
                 style={[styles.input, { letterSpacing: 3, fontWeight: 'bold' }]} 
-                placeholder="123456" 
+                placeholder="Nhập mã OTP 6 chữ số"
                 value={otp} 
                 onChangeText={setOtp} 
                 keyboardType="number-pad" 

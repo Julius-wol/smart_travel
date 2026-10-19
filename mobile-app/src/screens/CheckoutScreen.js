@@ -69,12 +69,12 @@ const CheckoutScreen = ({ navigation, route }) => {
   const voucherDiscount = 500000;
   const totalAmount = Math.max(0, roomTotal + serviceFee - voucherDiscount);
 
-  // Form thông tin khách hàng
+  // Điền thông tin từ tài khoản đăng nhập; khách vẫn có thể chỉnh sửa liên hệ.
   const [fullName, setFullName] = useState(
-    user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Nguyễn Văn Nam'
+    [user?.lastName, user?.firstName].filter(Boolean).join(' ').trim()
   );
-  const [phoneNumber, setPhoneNumber] = useState('0912345678');
-  const [email, setEmail] = useState(user?.email || 'namnguyen@gmail.com');
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
+  const [email, setEmail] = useState(user?.email || '');
 
   // Phương thức thanh toán được chọn
   const [paymentMethod, setPaymentMethod] = useState('momo');
@@ -134,6 +134,12 @@ const CheckoutScreen = ({ navigation, route }) => {
       d.setHours(14, 0, 0, 0);
       setCheckInDate(d);
     }
+  };
+
+  const handleBackToHome = () => {
+    if (isProcessing) return;
+    setConflictModalVisible(false);
+    navigation.popTo('Home', { user, token });
   };
 
   // Xử lý xác nhận thanh toán (gọi API thực tế lưu vào MongoDB)
@@ -237,7 +243,13 @@ const CheckoutScreen = ({ navigation, route }) => {
 
       {/* Header Bar */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={handleBackToHome}
+          disabled={isProcessing}
+          accessibilityRole="button"
+          accessibilityLabel="Quay về trang chủ"
+        >
           <Ionicons name="arrow-back" size={22} color="#1A202C" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -445,7 +457,7 @@ const CheckoutScreen = ({ navigation, route }) => {
               style={styles.input}
               value={fullName}
               onChangeText={setFullName}
-              placeholder="Nguyễn Văn A"
+              placeholder="Nhập họ và tên khách"
             />
           </View>
 
@@ -456,7 +468,7 @@ const CheckoutScreen = ({ navigation, route }) => {
               value={phoneNumber}
               onChangeText={setPhoneNumber}
               keyboardType="phone-pad"
-              placeholder="0912345678"
+              placeholder="Nhập số điện thoại liên hệ"
             />
           </View>
 
@@ -468,7 +480,7 @@ const CheckoutScreen = ({ navigation, route }) => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              placeholder="email@example.com"
+              placeholder="Nhập email nhận hóa đơn và vé"
             />
           </View>
         </View>
@@ -559,6 +571,15 @@ const CheckoutScreen = ({ navigation, route }) => {
             <Text style={styles.totalVal}>{formatVND(totalAmount)}</Text>
           </View>
         </View>
+        <TouchableOpacity
+          style={[styles.homeBtn, isProcessing && { opacity: 0.5 }]}
+          onPress={handleBackToHome}
+          disabled={isProcessing}
+          accessibilityRole="button"
+        >
+          <Ionicons name="home-outline" size={20} color="#00796B" />
+          <Text style={styles.homeBtnText}>Về trang chủ</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* 6. Sticky Bottom Bar */}
@@ -614,10 +635,7 @@ const CheckoutScreen = ({ navigation, route }) => {
 
               <TouchableOpacity
                 style={styles.conflictBtnPrimary}
-                onPress={() => {
-                  setConflictModalVisible(false);
-                  navigation.navigate('Home', { user, token });
-                }}
+                onPress={handleBackToHome}
               >
                 <Text style={styles.conflictBtnPrimaryText}>Xem phòng khác</Text>
               </TouchableOpacity>
@@ -644,6 +662,8 @@ const CheckoutScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  homeBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, minHeight: 48, marginTop: 16 },
+  homeBtnText: { color: '#00796B', fontSize: 16, fontWeight: '600' },
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
