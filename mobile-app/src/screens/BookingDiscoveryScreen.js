@@ -151,7 +151,7 @@ const BookingDiscoveryScreen = ({ navigation }) => {
   const checkOutDate = filters.checkOut || '2026-10-28';
   const nightsCount = filters.nights || 3;
   const dateRangeDisplay = `${formatDateDisplay(checkInDate, '15/05')} – ${formatDateDisplay(checkOutDate, '18/05')}`;
-  const nightsDisplay = `${nightsCount} đêm (14:00 - 12:00)`;
+  const nightsDisplay = `${nightsCount} đêm`;
 
   // Header của danh sách bao gồm TopBar, Search Box, Quick Chips và Result Summary
   const renderListHeader = () => (

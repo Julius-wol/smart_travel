@@ -9,10 +9,45 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from '../constants/theme';
 
+export const formatCleanDateRange = (str) => {
+  if (!str) return '15/05 – 18/05';
+
+  // 1. Matches '15 Th05 – 18 Th05', '15 thg 5 – 18 thg 5', '15/05 – 18/05'
+  const matchTh = str.match(
+    /(\d{1,2})\s*(?:Th0?|Thg\s*0?|\/)\s*(\d{1,2})\s*[-–]\s*(\d{1,2})\s*(?:Th0?|Thg\s*0?|\/)\s*(\d{1,2})/i
+  );
+  if (matchTh) {
+    const d1 = matchTh[1].padStart(2, '0');
+    const m1 = matchTh[2].padStart(2, '0');
+    const d2 = matchTh[3].padStart(2, '0');
+    const m2 = matchTh[4].padStart(2, '0');
+    return `${d1}/${m1} – ${d2}/${m2}`;
+  }
+
+  // 2. Matches ISO YYYY-MM-DD – YYYY-MM-DD
+  const matchIso = str.match(
+    /(\d{4})-(\d{2})-(\d{2})\s*[-–]\s*(\d{4})-(\d{2})-(\d{2})/
+  );
+  if (matchIso) {
+    return `${matchIso[3]}/${matchIso[2]} – ${matchIso[6]}/${matchIso[5]}`;
+  }
+
+  return str;
+};
+
+export const formatCleanNights = (str) => {
+  if (!str) return '3 đêm';
+  const match = str.match(/(\d+\s*đêm)/i);
+  if (match) {
+    return match[1];
+  }
+  return str;
+};
+
 export const SearchFilterBox = ({
   city = 'Đà Nẵng, Sơn Trà',
   onCityChange,
-  dateRangeText = '15 Th05 – 18 Th05',
+  dateRangeText = '15/05 – 18/05',
   nightsText = '3 đêm',
   onDatePress,
   guestRoomText = '2 khách • 1 phòng',
@@ -21,6 +56,8 @@ export const SearchFilterBox = ({
   activeFilterCount = 0,
 }) => {
   const [localCity, setLocalCity] = useState(city);
+  const displayDateRange = formatCleanDateRange(dateRangeText);
+  const displayNights = formatCleanNights(nightsText);
 
   // Đồng bộ khi prop city bên ngoài thay đổi (Reset filter, đổi chip)
   useEffect(() => {
@@ -88,11 +125,11 @@ export const SearchFilterBox = ({
             <Ionicons name="calendar-outline" size={16} color="#00685F" />
           </View>
           <View style={styles.dateTextGroup}>
-            <Text style={styles.dateText} numberOfLines={1}>
-              {dateRangeText}
+            <Text style={styles.dateText} numberOfLines={1} ellipsizeMode="tail">
+              {displayDateRange}
             </Text>
-            <Text style={styles.nightsText} numberOfLines={1}>
-              {nightsText}
+            <Text style={styles.nightsText} numberOfLines={1} ellipsizeMode="tail">
+              {displayNights}
             </Text>
           </View>
         </TouchableOpacity>
@@ -195,7 +232,7 @@ const styles = StyleSheet.create({
     flex: 1.05,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
     minWidth: 0,
   },
   calendarIconBox: {
@@ -215,8 +252,9 @@ const styles = StyleSheet.create({
   dateText: {
     fontFamily: TYPOGRAPHY.fontFamily,
     fontWeight: '700',
-    fontSize: 12.5,
+    fontSize: 12,
     color: '#0B1C30',
+    letterSpacing: -0.2,
   },
   nightsText: {
     fontFamily: TYPOGRAPHY.fontFamily,
@@ -228,14 +266,14 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: '#E2E8F0',
-    marginHorizontal: 8,
+    marginHorizontal: 6,
     flexShrink: 0,
   },
   guestSelector: {
     flex: 1.15,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 6,
     minWidth: 0,
   },
   guestIconBox: {
@@ -251,8 +289,9 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: TYPOGRAPHY.fontFamily,
     fontWeight: '700',
-    fontSize: 12.5,
+    fontSize: 12,
     color: '#0B1C30',
+    letterSpacing: -0.2,
     minWidth: 0,
   },
   filterAdjustBtn: {
@@ -263,7 +302,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    marginLeft: 8,
+    marginLeft: 6,
     flexShrink: 0,
   },
   filterAdjustBtnActive: {
