@@ -242,7 +242,12 @@ const RoomDetailScreen = ({ route, navigation }) => {
               </View>
             </View>
 
-            <Text style={styles.propertyTitle}>
+            <Text
+              style={styles.propertyTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
+            >
               {room.title || room.name || 'An Nhiên Eco Retreat Đà Nẵng'}
             </Text>
 
@@ -797,11 +802,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   propertyTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontFamily: 'PlusJakartaSans_700Bold',
+    fontSize: 21,
+    fontWeight: '700',
     color: '#0B1C30',
-    lineHeight: 32,
-    letterSpacing: -0.3,
+    lineHeight: 28,
+    letterSpacing: -0.2,
   },
   ratingRow: {
     flexDirection: 'row',
