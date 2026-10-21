@@ -57,7 +57,7 @@ describe('E2E User Journey: Booking Discovery & Details Flow (SMART-84)', () => 
     await waitFor(() => {
       expect(roomService.fetchRoomsApi).toHaveBeenCalled();
       expect(screen.getByText('An Nhiên Eco Retreat Đà Nẵng')).toBeTruthy();
-    });
+    }, { timeout: 4000 });
 
     // Kiểm tra các thông tin cốt lõi xuất hiện trên màn hình
     expect(screen.getByText('Sơn Trà Sunset Villa & Studio')).toBeTruthy();

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const wishlistSchema = new mongoose.Schema({
   userId: {
@@ -18,4 +18,5 @@ const wishlistSchema = new mongoose.Schema({
 // Mỗi người dùng chỉ like một phòng một lần duy nhất
 wishlistSchema.index({ userId: 1, roomId: 1 }, { unique: true });
 
-module.exports = mongoose.model('Wishlist', wishlistSchema);
+const Wishlist = mongoose.model('Wishlist', wishlistSchema);
+export default Wishlist;

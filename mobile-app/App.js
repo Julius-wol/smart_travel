@@ -48,7 +48,7 @@ const AppContent = () => {
     <SafeAreaProvider>
       <PaperProvider>
         <StatusBar barStyle="dark-content" backgroundColor="#F8F9FF" />
-        <AppNavigator />
+        <AppNavigator initialRouteName="Login" />
       </PaperProvider>
     </SafeAreaProvider>
   );

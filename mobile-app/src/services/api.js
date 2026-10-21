@@ -1,24 +1,8 @@
 import axios from 'axios';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
-
-// Tự động nhận diện IP của máy tính khi chạy qua Expo Go trên điện thoại thật
-const getBaseUrl = () => {
-  const hostUri = Constants.expoConfig?.hostUri || Constants.manifest?.debuggerHost;
-  if (hostUri) {
-    const ip = hostUri.split(':')[0];
-    return `http://${ip}:5000/api`;
-  }
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:5000/api';
-  }
-  return 'http://localhost:5000/api';
-};
-
-const DEFAULT_HOST = getBaseUrl();
+import { API_URL } from '../utils/config';
 
 const api = axios.create({
-  baseURL: DEFAULT_HOST,
+  baseURL: API_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

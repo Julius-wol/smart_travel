@@ -1,10 +1,10 @@
-const Wishlist = require('../models/Wishlist');
+import Wishlist from '../models/Wishlist.js';
 
 /**
  * Toggle trạng thái yêu thích phòng
  * POST /api/wishlist/toggle
  */
-exports.toggleWishlist = async (req, res) => {
+export const toggleWishlist = async (req, res) => {
   try {
     const { roomId, userId } = req.body;
 
@@ -15,7 +15,7 @@ exports.toggleWishlist = async (req, res) => {
       });
     }
 
-    // Nếu người dùng chưa truyền userId hoặc chưa đăng nhập, trả về thành công giả lập
+    // Nếu người dùng chưa truyền userId hoặc chưa đăng nhập, sử dụng fallback ID
     const targetUserId = userId || req.user?.id || '664c1234567890abcdef1234';
 
     const existing = await Wishlist.findOne({ userId: targetUserId, roomId });
@@ -43,4 +43,8 @@ exports.toggleWishlist = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+export default {
+  toggleWishlist,
 };

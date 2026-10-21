@@ -4,22 +4,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
 import BookingDiscoveryScreen from '../screens/BookingDiscoveryScreen';
 import RoomDetailScreen from '../screens/RoomDetailScreen';
+import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import HomeScreen from '../screens/HomeScreen';
+import HomeDetailsScreen from '../screens/HomeDetailsScreen';
+import CheckoutScreen from '../screens/CheckoutScreen';
+import BookingSuccessScreen from '../screens/BookingSuccessScreen';
+import WriteReviewScreen from '../screens/WriteReviewScreen';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 // Placeholder screens for other tabs
-const DiscoveryPlaceholder = () => (
-  <View style={styles.centerScreen}>
-    <Text style={styles.placeholderEmoji}>🌍</Text>
-    <Text style={styles.placeholderTitle}>Khám phá điểm đến</Text>
-    <Text style={styles.placeholderSubtitle}>Tính năng đang được phát triển</Text>
-  </View>
-);
-
 const ItineraryPlaceholder = () => (
   <View style={styles.centerScreen}>
     <Text style={styles.placeholderEmoji}>🗺️</Text>
@@ -28,15 +30,7 @@ const ItineraryPlaceholder = () => (
   </View>
 );
 
-const AccountPlaceholder = () => (
-  <View style={styles.centerScreen}>
-    <Text style={styles.placeholderEmoji}>👤</Text>
-    <Text style={styles.placeholderTitle}>Tài khoản & Cài đặt</Text>
-    <Text style={styles.placeholderSubtitle}>Quản lý thông tin cá nhân và đơn đặt phòng</Text>
-  </View>
-);
-
-// Bottom Tab Navigator (4 tabs theo thiết kế Figma Node 29:1190)
+// Bottom Tab Navigator (4 tabs theo thiết kế Figma)
 const MainTabNavigator = () => {
   return (
     <Tab.Navigator
@@ -74,7 +68,7 @@ const MainTabNavigator = () => {
     >
       <Tab.Screen
         name="Discovery"
-        component={DiscoveryPlaceholder}
+        component={HomeScreen}
         options={{ tabBarLabel: 'Khám phá' }}
       />
       <Tab.Screen
@@ -89,7 +83,7 @@ const MainTabNavigator = () => {
       />
       <Tab.Screen
         name="Account"
-        component={AccountPlaceholder}
+        component={ProfileScreen}
         options={{ tabBarLabel: 'Tài khoản' }}
       />
     </Tab.Navigator>
@@ -97,11 +91,21 @@ const MainTabNavigator = () => {
 };
 
 // Root Stack Navigator
-export const AppNavigator = () => {
+export const AppNavigator = ({ initialRouteName = 'Login' }) => {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator initialRouteName={initialRouteName} screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="HomeDetails" component={HomeDetailsScreen} />
+        <Stack.Screen name="Checkout" component={CheckoutScreen} />
+        <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
+        <Stack.Screen name="WriteReview" component={WriteReviewScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+        <Stack.Screen name="BookingDiscovery" component={BookingDiscoveryScreen} />
         <Stack.Screen
           name="RoomDetail"
           component={RoomDetailScreen}

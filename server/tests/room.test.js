@@ -1,5 +1,7 @@
-const request = require('supertest');
-const app = require('../server');
+import { jest } from '@jest/globals';
+import request from 'supertest';
+import mongoose from 'mongoose';
+import app from '../server.js';
 
 describe('Room & Discovery API Tests (SMART-84)', () => {
   jest.setTimeout(15000);
@@ -56,5 +58,9 @@ describe('Room & Discovery API Tests (SMART-84)', () => {
       expect(res.body.success).toBe(true);
       expect(res.body.data).toHaveProperty('isSaved');
     });
+  });
+
+  afterAll(async () => {
+    await mongoose.connection.close();
   });
 });

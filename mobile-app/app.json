@@ -2,18 +2,24 @@
   "expo": {
     "name": "Smart Travel",
     "slug": "smart-travel",
+    "owner": "datdinh1006",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
+    "scheme": "smarttravel",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smarttravel.app"
     },
     "android": {
       "package": "com.smarttravel.app"
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }
