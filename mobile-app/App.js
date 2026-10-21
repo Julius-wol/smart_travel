@@ -26,9 +26,6 @@ const AppContent = () => {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
-    'PlusJakartaSans-Bold': PlusJakartaSans_700Bold,
-    'PlusJakartaSans-SemiBold': PlusJakartaSans_600SemiBold,
-    'PlusJakartaSans-ExtraBold': PlusJakartaSans_800ExtraBold,
   });
 
   useEffect(() => {
@@ -42,6 +39,10 @@ const AppContent = () => {
         console.warn('Lỗi khởi tạo SQLite:', err);
       });
   }, [dispatch]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
