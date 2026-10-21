@@ -38,7 +38,7 @@ const MainTabNavigator = () => {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#00685F', // Deep Teal
-        tabBarInactiveTintColor: '#64748B',
+        tabBarInactiveTintColor: '#475569',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E2E8F0',
@@ -57,12 +57,12 @@ const MainTabNavigator = () => {
           } else if (route.name === 'Booking') {
             iconName = focused ? 'bed' : 'bed-outline';
           } else if (route.name === 'Itinerary') {
-            iconName = focused ? 'map' : 'map-outline';
+            iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'Account') {
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = focused ? 'person-circle' : 'person-circle-outline';
           }
 
-          return <Ionicons name={iconName} size={22} color={color} />;
+          return <Ionicons name={iconName} size={23} color={color} />;
         },
       })}
     >
