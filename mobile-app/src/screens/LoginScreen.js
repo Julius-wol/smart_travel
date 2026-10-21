@@ -13,12 +13,23 @@ import { API_URL } from '../utils/config';
 WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ navigation }) => {
-  const [role, setRole] = useState('USER');
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  const completeLogin = (user, token) => {
+    if (user.role === 'HOST') {
+      Alert.alert(
+        'Không thể đăng nhập',
+        'Ứng dụng di động không hỗ trợ đăng nhập tài khoản Chủ phòng.'
+      );
+      return;
+    }
+
+    navigation.replace('Profile', { user, token });
+  };
 
   // ====== GOOGLE AUTH SETUP ======
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -90,25 +101,7 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        // Kiểm tra vai trò tài khoản so với vai trò đang chọn
-        const userRole = profileData.role || 'USER';
-        if (role === 'HOST' && userRole !== 'HOST') {
-          Alert.alert(
-            'Lưu ý vai trò',
-            'Tài khoản này được đăng ký là "Khách du lịch", không phải "Chủ phòng". Bạn có muốn tiếp tục đăng nhập với tư cách Khách du lịch không?',
-            [
-              { text: 'Hủy', style: 'cancel' },
-              { 
-                text: 'Tiếp tục', 
-                onPress: () => navigation.replace('Profile', { user: profileData, token: accessToken }) 
-              }
-            ]
-          );
-          return;
-        }
-
-        // Chuyển sang màn hình Profile
-        navigation.replace('Profile', { user: profileData, token: accessToken });
+        completeLogin(profileData, accessToken);
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin User');
       }
@@ -143,7 +136,7 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        navigation.replace('Profile', { user: profileData, token: data.accessToken });
+        completeLogin(profileData, data.accessToken);
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin tài khoản');
       }
@@ -170,27 +163,8 @@ const LoginScreen = ({ navigation }) => {
             </View>
             <Text style={styles.title}>Chào mừng trở lại!</Text>
             <Text style={styles.subtitle}>
-              Đăng nhập để tiếp tục tối ưu hóa hành trình khám phá hoặc quản lý lưu trú của bạn.
+              Đăng nhập để tiếp tục khám phá hành trình của bạn.
             </Text>
-          </View>
-
-          {/* Selector - Chọn Vai trò */}
-          <View style={styles.roleSelector}>
-            <TouchableOpacity 
-              style={[styles.roleButton, role === 'USER' && styles.roleButtonActive]}
-              onPress={() => setRole('USER')}
-            >
-              <Ionicons name="compass" size={20} color={role === 'USER' ? '#00796B' : '#666'} />
-              <Text style={[styles.roleText, role === 'USER' && styles.roleTextActive]}>Khách du lịch</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.roleButton, role === 'HOST' && styles.roleButtonActive]}
-              onPress={() => setRole('HOST')}
-            >
-              <Ionicons name="home" size={20} color={role === 'HOST' ? '#00796B' : '#666'} />
-              <Text style={[styles.roleText, role === 'HOST' && styles.roleTextActive]}>Chủ phòng</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Input Form */}
@@ -326,38 +300,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 10,
-  },
-  roleSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#EDF2F7',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 30,
-  },
-  roleButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  roleButtonActive: {
-    backgroundColor: '#fff',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  roleText: {
-    marginLeft: 8,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#718096',
-  },
-  roleTextActive: {
-    color: '#00796B',
   },
   formContainer: {
     backgroundColor: '#fff',
