@@ -96,9 +96,4 @@ Nếu chỉ muốn chạy riêng rẽ, bạn mở Terminal ở thư mục gốc 
    - `git commit -m "feat: thêm tính năng xyz"`
 4. Push nhánh của bạn lên repo và tạo **Pull Request (PR)** để review code.
 
----
 
-## 📚 5. Tài liệu kỹ thuật & Kiến trúc (Documentation)
-
-- [Quy trình hoạt động Authentication (JWT & Google OAuth)](docs/JWT_AUTH_WORKFLOW.md)
-- [Đặc tả Cơ sở dữ liệu (Database Schema)](docs/database-schema.md)
