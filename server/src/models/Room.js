@@ -35,11 +35,25 @@ const roomSchema = new mongoose.Schema({
   distanceInfo: {
     type: String
   },
+  code: {
+    type: String,
+    trim: true,
+    default: function() {
+      return '#P-VL' + Math.floor(100 + Math.random() * 900);
+    }
+  },
   pricePerNight: { 
     type: Number, 
     required: true, 
     min: 0, 
     index: true 
+  },
+  weekendPricePerNight: {
+    type: Number,
+    min: 0,
+    default: function() {
+      return Math.round((this.pricePerNight || 2500000) * 1.12);
+    }
   },
   originalPrice: {
     type: Number,

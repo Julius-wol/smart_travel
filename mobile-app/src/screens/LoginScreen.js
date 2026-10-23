@@ -108,8 +108,12 @@ const LoginScreen = ({ navigation }) => {
           return;
         }
 
-        // Chuyển sang màn hình Trang chủ (Booking Discovery)
-        navigation.replace('Home', { user: profileData, token: accessToken });
+        // Chuyển hướng theo đúng vai trò: HOST -> HostCalendar, USER -> Home (Khách du lịch)
+        if (userRole === 'HOST') {
+          navigation.replace('HostCalendar', { user: profileData, token: accessToken });
+        } else {
+          navigation.replace('Home', { user: profileData, token: accessToken });
+        }
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin User');
       }
@@ -144,7 +148,12 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        navigation.replace('Home', { user: profileData, token: data.accessToken });
+        const userRole = profileData.role || 'USER';
+        if (userRole === 'HOST') {
+          navigation.replace('HostCalendar', { user: profileData, token: data.accessToken });
+        } else {
+          navigation.replace('Home', { user: profileData, token: data.accessToken });
+        }
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin tài khoản');
       }

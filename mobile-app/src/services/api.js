@@ -29,6 +29,7 @@ api.interceptors.response.use(
   (error) => {
     const customError = {
       success: false,
+      code: error.response?.data?.code || null,
       message: error.response?.data?.message || 'Không thể kết nối máy chủ. Vui lòng kiểm tra lại đường truyền.',
       error: error.response?.data?.error || error.message,
       statusCode: error.response?.status || 500,

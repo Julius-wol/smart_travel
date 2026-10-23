@@ -254,6 +254,18 @@ const ProfileScreen = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
 
+          {/* Phân hệ Host Portal: Lịch phòng & Trạng thái trống (SMART-105) */}
+          <View style={[styles.formContainer, { marginBottom: 40 }]}>
+            <Text style={styles.sectionTitle}>Quản lý Đối tác cho thuê (Host)</Text>
+            <TouchableOpacity 
+              style={[styles.updateBtn, { backgroundColor: '#00685F', marginTop: 10 }]} 
+              onPress={() => navigation.navigate('HostCalendar')}
+            >
+              <Ionicons name="calendar-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.updateBtnText}>Lịch phòng & Trạng thái trống</Text>
+            </TouchableOpacity>
+          </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

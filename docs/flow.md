@@ -10,5 +10,9 @@ Output
 4. Sau khi duyệt plan, tiến hành speckit-tasks để phân rã checklist công việc cụ thể cho Mobile app & Backend.
 5. Implement BE và test api cho chính xác theo test cases sinh ra từ Speckit.
 6. Implement Mobile app dựa theo spec và API đã có.
-8. Fix lỗi mobile app nếu thấy chưa giống.
+7. Test E2E (End-to-End & Integration Test):
+- Kiểm thử trọn vẹn luồng thực tế: Mobile app -> Backend API -> Database -> Cập nhật UI.
+- Kiểm tra các kịch bản thành công (happy path) và edge cases (lỗi mạng, validate input, phân quyền/auth, loading/empty/error states).
+- Xác nhận dữ liệu hiển thị và thao tác đồng bộ đúng theo spec & test cases đã đề ra.
+8. Fix lỗi mobile app nếu thấy chưa giống hoặc lỗi phát sinh sau khi test E2E.
 - có thể chụp hình UI của mobile app để AI fix cho giống

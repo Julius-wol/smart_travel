@@ -16,6 +16,7 @@ import HomeDetailsScreen from '../screens/HomeDetailsScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 import BookingSuccessScreen from '../screens/BookingSuccessScreen';
 import WriteReviewScreen from '../screens/WriteReviewScreen';
+import HostCalendarScreen from '../screens/HostCalendarScreen';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
 
 const Tab = createBottomTabNavigator();
@@ -109,6 +110,13 @@ export const AppNavigator = ({ initialRouteName = 'Login' }) => {
         <Stack.Screen
           name="RoomDetail"
           component={RoomDetailScreen}
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="HostCalendar"
+          component={HostCalendarScreen}
           options={{
             animation: 'slide_from_right',
           }}

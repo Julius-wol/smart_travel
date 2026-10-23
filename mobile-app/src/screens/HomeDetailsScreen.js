@@ -18,6 +18,66 @@ import ToastNotification from '../components/ToastNotification';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const getAmenityIcon = (name = '') => {
+  const lower = String(name).toLowerCase();
+  if (lower.includes('wifi')) return 'wifi';
+  if (lower.includes('bếp') || lower.includes('nướng') || lower.includes('bbq')) return 'restaurant';
+  if (lower.includes('tắm') || lower.includes('nước') || lower.includes('bồn')) return 'water';
+  if (lower.includes('bể bơi') || lower.includes('hồ bơi')) return 'water';
+  if (lower.includes('chiếu') || lower.includes('tv')) return 'tv';
+  if (lower.includes('giặt') || lower.includes('sấy')) return 'shirt';
+  if (lower.includes('điều hòa') || lower.includes('lạnh')) return 'snow';
+  if (lower.includes('sưởi')) return 'flame';
+  if (lower.includes('ban công') || lower.includes('view') || lower.includes('biển')) return 'sunny';
+  if (lower.includes('xe') || lower.includes('đỗ')) return 'car';
+  if (lower.includes('gym')) return 'barbell';
+  return 'checkmark-circle-outline';
+};
+
+const normalizeAmenities = (amenitiesList) => {
+  if (!Array.isArray(amenitiesList) || amenitiesList.length === 0) {
+    return [
+      { id: '1', name: 'Wifi tốc độ cao', icon: 'wifi' },
+      { id: '2', name: 'Bếp riêng cao cấp', icon: 'restaurant' },
+      { id: '3', name: 'Bồn tắm gỗ pơ-mu', icon: 'water' },
+      { id: '4', name: 'Máy chiếu phim 4K', icon: 'videocam' },
+      { id: '5', name: 'Giặt & sấy khô', icon: 'shirt' },
+      { id: '6', name: 'Điều hòa 2 chiều', icon: 'snow' },
+      { id: '7', name: 'Ban công view biển', icon: 'sunny' },
+      { id: '8', name: 'Chỗ đỗ xe ô tô', icon: 'car' },
+    ];
+  }
+  return amenitiesList.map((am, idx) => {
+    if (typeof am === 'string') {
+      return {
+        id: `amenity-${idx}-${am}`,
+        name: am,
+        icon: getAmenityIcon(am),
+      };
+    }
+    return {
+      id: am.id || am._id || `amenity-${idx}-${am.name || ''}`,
+      name: am.name || am.title || String(am),
+      icon: am.icon || getAmenityIcon(am.name),
+    };
+  });
+};
+
+const formatReviewDate = (createdAt, fallbackDate) => {
+  if (!createdAt) return fallbackDate || 'Gần đây';
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Vừa xong';
+  if (mins < 60) return `${mins} phút trước`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Hôm qua';
+  if (days < 30) return `${days} ngày trước`;
+  const date = new Date(createdAt);
+  return `Tháng ${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+};
+
 /**
  * Màn hình [SMART-85] Home Details Screen (Chi tiết nơi lưu trú)
  * Đáp ứng đầy đủ 17 mục theo bảng đặc tả và Figma Screen 2
@@ -59,19 +119,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           bedroom: '2 PN • 2 Giường King',
           bathroom: '2 Phòng tắm riêng',
         },
-        amenities:
-          homestay.amenities && homestay.amenities.length > 0
-            ? homestay.amenities
-            : [
-                { id: '1', name: 'Wifi tốc độ cao', icon: 'wifi' },
-                { id: '2', name: 'Bếp riêng cao cấp', icon: 'restaurant' },
-                { id: '3', name: 'Bồn tắm gỗ pơ-mu', icon: 'water' },
-                { id: '4', name: 'Máy chiếu phim 4K', icon: 'videocam' },
-                { id: '5', name: 'Giặt & sấy khô', icon: 'shirt' },
-                { id: '6', name: 'Điều hòa 2 chiều', icon: 'snow' },
-                { id: '7', name: 'Ban công view biển', icon: 'sunny' },
-                { id: '8', name: 'Chỗ đỗ xe ô tô', icon: 'car' },
-              ],
+        amenities: normalizeAmenities(homestay.amenities),
         ratingBreakdown: homestay.ratingBreakdown || {
           overall: homestay.rating || 4.9,
           cleanliness: 5.0,
@@ -80,31 +128,45 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           amenities: 4.8,
           value: 4.9,
         },
-        reviews: [
-          {
-            id: 'rev-01',
-            author: 'Trần Hoàng Nam',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&q=80',
-            date: 'Lưu trú tháng 04/2026',
-            rating: 5.0,
-            comment:
-              'Phòng thực tế y hệt như ảnh! Ban công ngắm trọn bình minh biển Sơn Trà cực kỳ chill. Chủ nhà nhiệt tình hỗ trợ check-in sớm mà không phụ thu.',
-            images: [
-              'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300&q=80',
-              'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=300&q=80',
-            ],
-          },
-          {
-            id: 'rev-02',
-            author: 'Nguyễn Mai Anh',
-            avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80',
-            date: 'Lưu trú tháng 03/2026',
-            rating: 5.0,
-            comment:
-              'Tiện nghi rất đầy đủ, máy chiếu xem phim buổi tối cực thích. Không gian sạch sẽ, thơm mùi tinh dầu thiên nhiên.',
-            images: [],
-          },
-        ],
+        reviews:
+          Array.isArray(homestay.reviews) && homestay.reviews.length > 0
+            ? homestay.reviews.map((r, rIdx) => ({
+                ...r,
+                id: String(r._id || r.id || `rev-${rIdx}`),
+                author: r.author || r.fullName || 'Khách du lịch',
+                avatar:
+                  r.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(r.author || r.fullName || 'User')}&background=00796B&color=fff`,
+                date: r.date || (r.createdAt ? formatReviewDate(r.createdAt) : 'Lưu trú gần đây'),
+                rating: r.rating || 5.0,
+                comment: r.comment || '',
+                images: Array.isArray(r.images) ? r.images : [],
+              }))
+            : [
+                {
+                  id: 'rev-01',
+                  author: 'Trần Hoàng Nam',
+                  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&q=80',
+                  date: 'Lưu trú tháng 04/2026',
+                  rating: 5.0,
+                  comment:
+                    'Phòng thực tế y hệt như ảnh! Ban công ngắm trọn bình minh biển Sơn Trà cực kỳ chill. Chủ nhà nhiệt tình hỗ trợ check-in sớm mà không phụ thu.',
+                  images: [
+                    'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300&q=80',
+                    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=300&q=80',
+                  ],
+                },
+                {
+                  id: 'rev-02',
+                  author: 'Nguyễn Mai Anh',
+                  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80',
+                  date: 'Lưu trú tháng 03/2026',
+                  rating: 5.0,
+                  comment:
+                    'Tiện nghi rất đầy đủ, máy chiếu xem phim buổi tối cực thích. Không gian sạch sẽ, thơm mùi tinh dầu thiên nhiên.',
+                  images: [],
+                },
+              ],
         policy: homestay.policy || {
           checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
           checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
@@ -136,16 +198,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           bedroom: '2 PN • 2 Giường King',
           bathroom: '2 Phòng tắm riêng',
         },
-        amenities: [
-          { id: '1', name: 'Wifi tốc độ cao', icon: 'wifi' },
-          { id: '2', name: 'Bếp riêng cao cấp', icon: 'restaurant' },
-          { id: '3', name: 'Bồn tắm gỗ pơ-mu', icon: 'water' },
-          { id: '4', name: 'Máy chiếu phim 4K', icon: 'videocam' },
-          { id: '5', name: 'Giặt & sấy khô', icon: 'shirt' },
-          { id: '6', name: 'Điều hòa 2 chiều', icon: 'snow' },
-          { id: '7', name: 'Ban công view biển', icon: 'sunny' },
-          { id: '8', name: 'Chỗ đỗ xe ô tô', icon: 'car' },
-        ],
+        amenities: normalizeAmenities([]),
         ratingBreakdown: {
           overall: 4.9,
           cleanliness: 5.0,
@@ -190,22 +243,6 @@ const HomeDetailsScreen = ({ navigation, route }) => {
   const scrollViewRef = useRef(null);
   const reviewsPositionRef = useRef(0);
 
-  // Helper định dạng ngày đánh giá kiểu Google (thời gian thực)
-  const formatReviewDate = (createdAt, fallbackDate) => {
-    if (!createdAt) return fallbackDate || 'Gần đây';
-    const diff = Date.now() - new Date(createdAt).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Vừa xong';
-    if (mins < 60) return `${mins} phút trước`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} giờ trước`;
-    const days = Math.floor(hours / 24);
-    if (days === 1) return 'Hôm qua';
-    if (days < 30) return `${days} ngày trước`;
-    const date = new Date(createdAt);
-    return `Tháng ${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-  };
-
   // States
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
@@ -239,16 +276,16 @@ const HomeDetailsScreen = ({ navigation, route }) => {
       const sumJson = await sumRes.json();
 
       if (revRes.ok && revJson.success && Array.isArray(revJson.data) && revJson.data.length > 0) {
-        const mapped = revJson.data.map((r) => ({
-          id: r._id,
-          author: r.fullName,
+        const mapped = revJson.data.map((r, rIdx) => ({
+          id: String(r._id || r.id || `api-rev-${rIdx}`),
+          author: r.fullName || r.author || 'Khách du lịch',
           avatar:
             r.avatar ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(r.fullName)}&background=00796B&color=fff`,
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(r.fullName || 'Khách')}&background=00796B&color=fff`,
           date: formatReviewDate(r.createdAt),
-          rating: r.rating,
-          comment: r.comment,
-          images: [],
+          rating: r.rating || 5,
+          comment: r.comment || '',
+          images: Array.isArray(r.images) ? r.images : [],
           bookingCode: r.bookingCode,
           isReal: true,
         }));
@@ -438,7 +475,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             }}
           >
             {data.images.map((imgUri, index) => (
-              <Image key={index} source={{ uri: imgUri }} style={styles.heroImage} />
+              <Image key={`hero-img-${index}`} source={{ uri: imgUri }} style={styles.heroImage} />
             ))}
           </ScrollView>
 
@@ -453,7 +490,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           {/* 3 Thumbnails nhỏ bên dưới */}
           <View style={styles.thumbnailRow}>
             {data.images.slice(0, 3).map((imgUri, index) => (
-              <Image key={index} source={{ uri: imgUri }} style={styles.thumbnailImg} />
+              <Image key={`thumb-img-${index}`} source={{ uri: imgUri }} style={styles.thumbnailImg} />
             ))}
             <TouchableOpacity style={styles.moreImagesBtn} activeOpacity={0.8}>
               <Text style={styles.moreImagesText}>+{data.images.length - 3} ảnh</Text>
@@ -466,7 +503,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           {/* Section 5: Badges nhãn chứng nhận */}
           <View style={styles.badgesRow}>
             {data.tags.map((tag, idx) => (
-              <View key={idx} style={[styles.badgeChip, idx === 0 && styles.badgeChipHighlight]}>
+              <View key={`tag-${tag}-${idx}`} style={[styles.badgeChip, idx === 0 && styles.badgeChipHighlight]}>
                 <Text style={[styles.badgeChipText, idx === 0 && styles.badgeChipTextHighlight]}>
                   {tag}
                 </Text>
@@ -578,8 +615,11 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           </View>
 
           <View style={styles.amenitiesGrid}>
-            {data.amenities.map((amenity) => (
-              <View key={amenity.id} style={styles.amenityItem}>
+            {data.amenities.map((amenity, idx) => (
+              <View
+                key={amenity.id ? `amenity-${amenity.id}-${idx}` : `amenity-grid-${idx}`}
+                style={styles.amenityItem}
+              >
                 <Ionicons name={amenity.icon} size={18} color="#00796B" style={{ marginRight: 8 }} />
                 <Text style={styles.amenityText}>{amenity.name}</Text>
               </View>
@@ -618,7 +658,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((s) => (
                   <Ionicons
-                    key={s}
+                    key={`star-${s}`}
                     name={s <= Math.round(ratingSummary.rating || 5) ? 'star' : 'star-outline'}
                     size={14}
                     color="#ECC94B"
@@ -733,9 +773,9 @@ const HomeDetailsScreen = ({ navigation, route }) => {
 
           {/* Section 12: Review Filter Tags (Chips) */}
           <View style={styles.reviewChipsRow}>
-            {['Tất cả', '5 sao', '4 sao', 'Có hình ảnh'].map((filterName) => (
+            {['Tất cả', '5 sao', '4 sao', 'Có hình ảnh'].map((filterName, fIdx) => (
               <TouchableOpacity
-                key={filterName}
+                key={`filter-${filterName}-${fIdx}`}
                 style={[
                   styles.reviewFilterChip,
                   selectedReviewFilter === filterName && styles.reviewFilterChipActive,
@@ -761,8 +801,11 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               <Text style={styles.emptyReviewsText}>Chưa có đánh giá nào phù hợp bộ lọc.</Text>
             </View>
           ) : (
-            filteredReviews.map((rev) => (
-              <View key={rev.id} style={styles.reviewCard}>
+            filteredReviews.map((rev, revIdx) => (
+              <View
+                key={rev.id || rev._id ? `review-${rev.id || rev._id}-${revIdx}` : `review-idx-${revIdx}`}
+                style={styles.reviewCard}
+              >
                 <View style={styles.reviewAuthorRow}>
                   <Image source={{ uri: rev.avatar }} style={styles.reviewerAvatar} />
                   <View style={{ flex: 1, marginLeft: 10 }}>
@@ -787,7 +830,11 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                 {rev.images && rev.images.length > 0 && (
                   <View style={styles.reviewThumbnailsRow}>
                     {rev.images.map((img, i) => (
-                      <Image key={i} source={{ uri: img }} style={styles.reviewThumbImg} />
+                      <Image
+                        key={`rev-img-${rev.id || rev._id || revIdx}-${i}`}
+                        source={{ uri: img }}
+                        style={styles.reviewThumbImg}
+                      />
                     ))}
                   </View>
                 )}
@@ -859,8 +906,11 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 400 }}>
-              {data.amenities.map((am) => (
-                <View key={am.id} style={styles.modalAmenityRow}>
+              {data.amenities.map((am, idx) => (
+                <View
+                  key={am.id ? `modal-amenity-${am.id}-${idx}` : `modal-am-${idx}`}
+                  style={styles.modalAmenityRow}
+                >
                   <Ionicons name={am.icon} size={20} color="#00796B" style={{ marginRight: 12 }} />
                   <Text style={styles.modalAmenityText}>{am.name}</Text>
                 </View>

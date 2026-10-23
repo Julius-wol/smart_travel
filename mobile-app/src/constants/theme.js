@@ -33,6 +33,20 @@ export const COLORS = {
   wishlistInactive: '#0B1C30',// Viền xám đen khi chưa thích
   starGold: '#FFB800',        // Vàng sao đánh giá
   overlayDark: 'rgba(11, 28, 48, 0.65)', // Nền mờ chỉ số ảnh 1/8
+
+  // Calendar Availability Status Tokens (SMART-105 Figma Node 394:1125 / 398:5099)
+  calAvailableBg: '#E8FBF4',  // Nền xanh nhạt ngày trống
+  calAvailableText: '#00513B',// Chữ xanh đậm ngày trống
+  calAvailableDot: '#008378', // Chấm xanh lá
+  calBookedBg: '#E1E0FF',     // Nền tím nhạt ngày đã đặt
+  calBookedText: '#4648D4',   // Chữ tím ngày đã đặt
+  calPendingBg: '#FFF0D4',    // Nền vàng cam chờ duyệt SLA
+  calPendingText: '#D97706',  // Chữ vàng cam chờ duyệt SLA
+  calBlockedBg: '#FFECEC',    // Nền đỏ hồng ngày khóa/bảo trì
+  calBlockedText: '#BA1A1A',  // Chữ đỏ ngày khóa/bảo trì
+  calWeekendBg: '#EFF4FF',    // Nền cột cuối tuần (T7, CN)
+  calSundayText: '#EA580C',   // Tiêu đề Chủ Nhật đỏ cam
+  calPastDayText: '#BCC9C6',  // Chữ ngày quá khứ bị làm mờ
 };
 
 export const TYPOGRAPHY = {
