@@ -2,7 +2,6 @@
   "expo": {
     "name": "Smart Travel",
     "slug": "smart-travel",
-    "owner": "datdinh1006",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
