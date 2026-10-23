@@ -8,7 +8,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../utils/config';
 
 const RegisterScreen = ({ navigation }) => {
-  const [role, setRole] = useState('USER'); // 'USER' hoặc 'HOST'
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -90,25 +89,6 @@ const RegisterScreen = ({ navigation }) => {
 
           <Text style={styles.title}>Đăng ký tài khoản</Text>
           <Text style={styles.subtitle}>Điền thông tin bên dưới để tham gia SmartTravel</Text>
-
-          {/* Selector - Chọn Vai trò */}
-          <View style={styles.roleSelector}>
-            <TouchableOpacity 
-              style={[styles.roleButton, role === 'USER' && styles.roleButtonActive]}
-              onPress={() => setRole('USER')}
-            >
-              <Ionicons name="compass" size={20} color={role === 'USER' ? '#00796B' : '#666'} />
-              <Text style={[styles.roleText, role === 'USER' && styles.roleTextActive]}>Khách du lịch</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.roleButton, role === 'HOST' && styles.roleButtonActive]}
-              onPress={() => setRole('HOST')}
-            >
-              <Ionicons name="home" size={20} color={role === 'HOST' ? '#00796B' : '#666'} />
-              <Text style={[styles.roleText, role === 'HOST' && styles.roleTextActive]}>Chủ phòng</Text>
-            </TouchableOpacity>
-          </View>
 
           <View style={styles.formContainer}>
             <Text style={styles.inputLabel}>Tên đăng nhập (Username)</Text>

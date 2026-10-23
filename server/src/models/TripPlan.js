@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const tripPlanSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -7,7 +7,8 @@ const tripPlanSchema = new mongoose.Schema({
   days: { type: Number, required: true, min: 1 },
   destination: { type: String, required: true, trim: true },
   preferences: [{ type: String }],
-  schedule: { type: mongoose.Schema.Types.Mixed, required: true }, // Mixed để lưu JSON linh hoạt từ Gemini AI
+  schedule: { type: mongoose.Schema.Types.Mixed, required: true },
 }, { timestamps: true });
 
-module.exports = mongoose.model('TripPlan', tripPlanSchema);
+const TripPlan = mongoose.model('TripPlan', tripPlanSchema);
+export default TripPlan;
