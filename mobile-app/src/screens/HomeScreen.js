@@ -72,6 +72,9 @@ const HomeScreen = ({ navigation, route }) => {
     type: 'info',
   });
 
+  // State Tab đang chọn (Mặc định 'booking' - Đặt phòng theo Figma)
+  const [activeTab, setActiveTab] = useState('booking');
+
   // Format ngày kiểu VN
   const formatDateVN = (date) => {
     if (!date) return '';
@@ -386,7 +389,8 @@ const HomeScreen = ({ navigation, route }) => {
       const json = await res.json();
 
       if (json.success && json.data) {
-        setRooms(json.data);
+        const roomList = Array.isArray(json.data) ? json.data : (json.data?.rooms || []);
+        setRooms(roomList);
       } else {
         showToast('Không tải được danh sách phòng từ máy chủ', 'error');
       }
@@ -944,35 +948,75 @@ const HomeScreen = ({ navigation, route }) => {
         />
       )}
 
-      {/* 6. Bottom Navigation Bar */}
+      {/* 6. Bottom Navigation Bar (Chuẩn Figma Node 29:1190) */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="compass" size={24} color="#00796B" />
-          <Text style={[styles.navText, { color: '#00796B' }]}>Khám phá</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navItem}
-          onPress={() => showToast('Chức năng danh sách đặt chỗ đang kết nối', 'info')}
+          onPress={() => {
+            setActiveTab('discovery');
+            handleResetAllFilters();
+          }}
+          activeOpacity={0.7}
         >
-          <Ionicons name="bookmark-outline" size={24} color="#A0AEC0" />
-          <Text style={styles.navText}>Đặt chỗ</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => showToast('Chức năng tin nhắn đang kết nối', 'info')}
-        >
-          <Ionicons name="chatbubble-ellipses-outline" size={24} color="#A0AEC0" />
-          <Text style={styles.navText}>Tin nhắn</Text>
+          <Ionicons
+            name={activeTab === 'discovery' ? 'compass' : 'compass-outline'}
+            size={24}
+            color={activeTab === 'discovery' ? '#00685F' : '#334155'}
+          />
+          <Text style={[styles.navText, activeTab === 'discovery' && styles.navTextActive]}>
+            Khám phá
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => navigation.navigate('Profile', { user, token })}
+          onPress={() => setActiveTab('booking')}
+          activeOpacity={0.7}
         >
-          <Ionicons name="person-outline" size={24} color="#A0AEC0" />
-          <Text style={styles.navText}>Tài khoản</Text>
+          <Ionicons
+            name={activeTab === 'booking' ? 'bed' : 'bed-outline'}
+            size={24}
+            color={activeTab === 'booking' ? '#00685F' : '#334155'}
+          />
+          <Text style={[styles.navText, activeTab === 'booking' && styles.navTextActive]}>
+            Đặt phòng
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => {
+            setActiveTab('itinerary');
+            showToast('Tính năng Lịch trình du lịch AI đang được phát triển', 'info');
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={activeTab === 'itinerary' ? 'calendar' : 'calendar-outline'}
+            size={23}
+            color={activeTab === 'itinerary' ? '#00685F' : '#334155'}
+          />
+          <Text style={[styles.navText, activeTab === 'itinerary' && styles.navTextActive]}>
+            Lịch trình
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => {
+            setActiveTab('account');
+            navigation.navigate('Profile', { user, token });
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={activeTab === 'account' ? 'person-circle' : 'person-circle-outline'}
+            size={24}
+            color={activeTab === 'account' ? '#00685F' : '#334155'}
+          />
+          <Text style={[styles.navText, activeTab === 'account' && styles.navTextActive]}>
+            Tài khoản
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -1830,23 +1874,36 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 65,
+    height: 64,
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#EDF2F7',
+    borderTopColor: '#E2E8F0',
+    paddingBottom: 6,
+    paddingTop: 6,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 6,
   },
   navItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 2,
   },
   navText: {
-    fontSize: 10,
-    color: '#A0AEC0',
+    fontSize: 11,
+    color: '#475569',
     marginTop: 3,
     fontWeight: '600',
+  },
+  navTextActive: {
+    color: '#00685F',
+    fontWeight: '700',
   },
 
   // Reset Filter Button in Empty state

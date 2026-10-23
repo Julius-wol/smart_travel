@@ -45,3 +45,11 @@ mobile-app/.expo/
 mobile-app/dist/
 mobile-app/web-build/
 mobile-app/**/*.map
+
+# ==========================
+# Spec Kit & Local SDD Artifacts
+# ==========================
+specs/
+.specify/
+.agents/
+

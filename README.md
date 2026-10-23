@@ -97,8 +97,16 @@ Nếu chỉ muốn chạy riêng rẽ, bạn mở Terminal ở thư mục gốc 
 4. Push nhánh của bạn lên repo và tạo **Pull Request (PR)** để review code.
 
 ---
+## 📋 5. Quy trình phát triển Spec-Driven Development (Spec Kit)
 
-## 📚 5. Tài liệu kỹ thuật & Kiến trúc (Documentation)
+Dự án đã tích hợp công cụ **Spec Kit** (`github/spec-kit`) nhằm chuẩn hóa quy trình phát triển có sự hỗ trợ của AI Agent theo phương pháp **Spec-Driven Development (SDD)**:
+
+- 📜 **Hiến pháp dự án (Constitution)**: [.specify/memory/constitution.md](.specify/memory/constitution.md) - Quy định kiến trúc, tiêu chuẩn API, bảo mật và công nghệ bắt buộc.
+- 📖 **Hướng dẫn chi tiết quy trình SDD**: [docs/SPEC_KIT_SDD_GUIDE.md](docs/SPEC_KIT_SDD_GUIDE.md) - Hướng dẫn 7 bước từ tạo spec (`/speckit.specify`), lập kế hoạch (`/speckit.plan`), phân rã task (`/speckit.tasks`) đến khi sinh mã nguồn (`/speckit.implement`).
+
+---
+
+## 📚 6. Tài liệu kỹ thuật & Kiến trúc (Documentation)
 
 - [Quy trình hoạt động Authentication (JWT & Google OAuth)](docs/JWT_AUTH_WORKFLOW.md)
 - [Đặc tả Giao diện Chi tiết Nơi lưu trú (Home Details Screen)](docs/HOME_DETAILS_SPEC.md)
