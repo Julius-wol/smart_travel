@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   View, Text, TextInput, TouchableOpacity, StyleSheet, 
-  SafeAreaView, KeyboardAvoidingView, Platform, Alert, ScrollView,
+  SafeAreaView, KeyboardAvoidingView, Platform, ScrollView,
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,8 @@ const RegisterScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [registered, setRegistered] = useState(false);
 
   // Validate email: đúng định dạng và domain hợp lệ (.com, .vn, .net, .org...)
   const validateEmail = (value) => {
@@ -36,15 +38,21 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
-    if (!username || !firstName || !lastName || !email || !password) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin!');
+    if (loading || registered) return;
+    setFormError('');
+    const details = {
+      username: username.trim(), firstName: firstName.trim(), lastName: lastName.trim(),
+      email: email.trim().toLowerCase(), phone: phone.trim(), password, role,
+    };
+    if (!details.username || !details.firstName || !details.lastName || !details.email || !password) {
+      setFormError('Vui lòng nhập đầy đủ thông tin!');
       return;
     }
-    if (!validateEmail(email)) {
+    if (!validateEmail(details.email)) {
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Lỗi', 'Mật khẩu phải từ 6 ký tự!');
+      setFormError('Mật khẩu phải từ 6 ký tự!');
       return;
     }
 
@@ -53,25 +61,19 @@ const RegisterScreen = ({ navigation }) => {
       const res = await fetch(`${API_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, firstName, lastName, email, phone, password, role: 'USER' })
+        body: JSON.stringify(details)
       });
       
       const data = await res.json();
 
       if (res.ok) {
-        Alert.alert(
-          'Thành công', 
-          'Đăng ký tài khoản thành công!',
-          [
-            { text: 'Đăng nhập ngay', onPress: () => navigation.navigate('Login') }
-          ]
-        );
+        setRegistered(true);
       } else {
-        Alert.alert('Lỗi đăng ký', data.message || 'Có lỗi xảy ra');
+        setFormError(data.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Lỗi kết nối', 'Không thể kết nối Server');
+      setFormError('Không thể kết nối Server. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -92,20 +94,20 @@ const RegisterScreen = ({ navigation }) => {
             <Text style={styles.inputLabel}>Tên đăng nhập (Username)</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="wanderlust99" value={username} onChangeText={setUsername} autoCapitalize="none" />
+              <TextInput style={styles.input} placeholder="Nhập tên đăng nhập" value={username} onChangeText={setUsername} autoCapitalize="none" />
             </View>
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.inputLabel}>Tên (First Name)</Text>
                 <View style={styles.inputWrapper}>
-                  <TextInput style={styles.input} placeholder="Nguyễn" value={firstName} onChangeText={setFirstName} />
+                  <TextInput style={styles.input} placeholder="Nhập tên" value={firstName} onChangeText={setFirstName} />
                 </View>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.inputLabel}>Họ (Last Name)</Text>
                 <View style={styles.inputWrapper}>
-                  <TextInput style={styles.input} placeholder="Văn A" value={lastName} onChangeText={setLastName} />
+                  <TextInput style={styles.input} placeholder="Nhập họ" value={lastName} onChangeText={setLastName} />
                 </View>
               </View>
             </View>
@@ -115,7 +117,7 @@ const RegisterScreen = ({ navigation }) => {
               <Ionicons name="mail-outline" size={20} color={emailError ? '#E53E3E' : '#888'} style={styles.inputIcon} />
               <TextInput 
                 style={styles.input} 
-                placeholder="email@example.com" 
+                placeholder="Nhập email"
                 value={email} 
                 onChangeText={(v) => { setEmail(v); validateEmail(v); }} 
                 keyboardType="email-address" 
@@ -127,7 +129,7 @@ const RegisterScreen = ({ navigation }) => {
             <Text style={styles.inputLabel}>Số điện thoại</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="call-outline" size={20} color="#888" style={styles.inputIcon} />
-              <TextInput style={styles.input} placeholder="0912345678" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+              <TextInput style={styles.input} placeholder="Nhập số điện thoại" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
             </View>
 
             <Text style={styles.inputLabel}>Mật khẩu</Text>
@@ -135,7 +137,7 @@ const RegisterScreen = ({ navigation }) => {
               <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input} 
-                placeholder="••••••••••" 
+                placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
                 value={password} 
                 onChangeText={setPassword} 
                 secureTextEntry={!showPassword} 
@@ -145,9 +147,12 @@ const RegisterScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
 
+            {formError ? <Text accessibilityRole="alert" style={styles.errorText}>{formError}</Text> : null}
+            {registered ? <Text accessibilityRole="alert" style={styles.successText}>Đăng ký tài khoản thành công!</Text> : null}
+
             <TouchableOpacity 
               style={[styles.submitBtn, loading && { opacity: 0.7 }]} 
-              onPress={handleRegister}
+              onPress={registered ? () => navigation.navigate('Login') : handleRegister}
               disabled={loading}
             >
               {loading ? (
@@ -156,7 +161,7 @@ const RegisterScreen = ({ navigation }) => {
                   <Text style={styles.submitBtnText}>Đang tạo tài khoản...</Text>
                 </View>
               ) : (
-                <Text style={styles.submitBtnText}>Hoàn tất Đăng ký</Text>
+                <Text style={styles.submitBtnText}>{registered ? 'Đăng nhập ngay' : 'Hoàn tất Đăng ký'}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -180,6 +185,39 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 48, fontSize: 15, color: '#2D3748' },
   eyeIcon: { padding: 4 },
   errorText: { color: '#E53E3E', fontSize: 12, marginBottom: 12, marginTop: 2, marginLeft: 4 },
+  successText: { color: '#00796B', fontSize: 14, marginVertical: 12 },
+  roleSelector: {
+    flexDirection: 'row',
+    backgroundColor: '#EDF2F7',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  roleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  roleButtonActive: {
+    backgroundColor: '#fff',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  roleText: {
+    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#718096',
+  },
+  roleTextActive: {
+    color: '#00796B',
+  },
   submitBtn: { backgroundColor: '#00796B', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 10 },
   submitBtnText: { fontSize: 16, fontWeight: 'bold', color: '#fff' }
 });

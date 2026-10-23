@@ -1,17 +1,24 @@
 {
-    "expo": {
-        "name": "Smart Travel",
-        "slug": "smart-travel",
-        "version": "1.0.0",
-        "scheme": "smarttravel",
-        "android": {
-            "package": "com.smarttravel.app"
-        },
-        "ios": {
-            "bundleIdentifier": "com.smarttravel.app"
-        },
-        "plugins": [
-            "expo-web-browser"
-        ]
-    }
+  "expo": {
+    "name": "Smart Travel",
+    "slug": "smart-travel",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "scheme": "smarttravel",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smarttravel.app"
+    },
+    "android": {
+      "package": "com.smarttravel.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
+  }
 }

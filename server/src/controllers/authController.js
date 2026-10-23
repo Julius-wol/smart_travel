@@ -10,19 +10,30 @@ const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
 export const signUp = async (req, res) =>{
     try {
-        const { username, password, email, phone, firstName, lastName, role } = req.body;
+        const { password, role } = req.body;
+        const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+        const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+        const firstName = typeof req.body.firstName === 'string' ? req.body.firstName.trim() : '';
+        const lastName = typeof req.body.lastName === 'string' ? req.body.lastName.trim() : '';
+        const phone = typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
         if (!username || !password || !email || !firstName || !lastName) {
             return res.status(400).json({ message: "Không thể thiếu username, password, email, firstName, lastName" });
         }
 
-        if (password.length < 6) {
+        if (typeof password !== 'string' || password.length < 6) {
             return res.status(400).json({ message: "Mật khẩu phải có tối thiểu 6 ký tự" });
         }
     
         //kiem tra user ton tai chua
 const duplicate = await User.findOne({ $or: [{ username }, { email }] });
 if (duplicate) {
-    return res.status(400).json({ message: "Username hoac email da ton tai" });
+    const field = duplicate.username === username ? 'username' : 'email';
+    return res.status(400).json({
+        field,
+        message: field === 'username'
+            ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
+            : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.',
+    });
 }
 
         //ma hoa pass
@@ -44,6 +55,15 @@ await User.create({
 
     return res.status(201).json({ message: "Đăng ký thành công" });
     } catch (error) {
+        if (error.code === 11000) {
+            const field = error.keyPattern?.username ? 'username' : 'email';
+            return res.status(400).json({
+                field,
+                message: field === 'username'
+                    ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
+                    : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.',
+            });
+        }
         console.error("Lỗi khi gọi signUp", error)
         return res.status(500).json ({message:"Lỗi hệ thống"});
         

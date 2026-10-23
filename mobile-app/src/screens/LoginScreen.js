@@ -16,7 +16,7 @@ const LoginScreen = ({ navigation }) => {
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const completeLogin = (user, token) => {
@@ -34,6 +34,7 @@ const LoginScreen = ({ navigation }) => {
   // ====== GOOGLE AUTH SETUP ======
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '539925498757-hurvt5soqoln2hd25scofvpk7uh1iug5.apps.googleusercontent.com',
+    androidClientId: '539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com',
     webClientId: '539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com',
     redirectUri: 'host.exp.Exponent:/oauthredirect',
   });
@@ -101,7 +102,25 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        completeLogin(profileData, accessToken);
+        // Kiểm tra vai trò tài khoản so với vai trò đang chọn
+        const userRole = profileData.role || 'USER';
+        if (role === 'HOST' && userRole !== 'HOST') {
+          Alert.alert(
+            'Lưu ý vai trò',
+            'Tài khoản này được đăng ký là "Khách du lịch", không phải "Chủ phòng". Bạn có muốn tiếp tục đăng nhập với tư cách Khách du lịch không?',
+            [
+              { text: 'Hủy', style: 'cancel' },
+              { 
+                text: 'Tiếp tục', 
+                onPress: () => navigation.replace('Home', { user: profileData, token: accessToken }) 
+              }
+            ]
+          );
+          return;
+        }
+
+        // Chuyển sang màn hình Trang chủ (Booking Discovery)
+        navigation.replace('Home', { user: profileData, token: accessToken });
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin User');
       }
@@ -136,7 +155,7 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        completeLogin(profileData, data.accessToken);
+        navigation.replace('Home', { user: profileData, token: data.accessToken });
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin tài khoản');
       }
@@ -169,12 +188,12 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Input Form */}
           <View style={styles.formContainer}>
-            <Text style={styles.inputLabel}>Email / Số điện thoại</Text>
+            <Text style={styles.inputLabel}>Tên đăng nhập / Email / Số điện thoại</Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="at-outline" size={20} color="#888" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input}
-                placeholder="wanderlust@smarttravel.vn"
+                placeholder="Nhập tên đăng nhập, email hoặc số điện thoại"
                 value={emailOrPhone}
                 onChangeText={setEmailOrPhone}
                 keyboardType="email-address"
@@ -187,7 +206,7 @@ const LoginScreen = ({ navigation }) => {
               <Ionicons name="lock-closed-outline" size={20} color="#888" style={styles.inputIcon} />
               <TextInput 
                 style={styles.input}
-                placeholder="••••••••••"
+                placeholder="Nhập mật khẩu"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
