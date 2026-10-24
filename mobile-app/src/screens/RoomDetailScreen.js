@@ -575,7 +575,17 @@ const RoomDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.bookButton} activeOpacity={0.88}>
+        <TouchableOpacity
+          testID="book-room-now-btn"
+          style={styles.bookButton}
+          activeOpacity={0.88}
+          onPress={() => {
+            navigation.navigate('CheckoutPayment', {
+              roomId: room._id,
+              room,
+            });
+          }}
+        >
           <Text style={styles.bookButtonText}>Đặt phòng ngay</Text>
           <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
         </TouchableOpacity>

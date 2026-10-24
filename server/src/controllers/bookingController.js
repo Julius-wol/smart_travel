@@ -2,31 +2,144 @@ import mongoose from 'mongoose';
 import Booking from '../models/Booking.js';
 import Room from '../models/Room.js';
 
-// 1. Tạo đơn đặt phòng mới (Lưu vào MongoDB)
+const PHONE_REGEX = /^(0)(3|5|7|8|9)[0-9]{8}$/;
+const NAME_REGEX = /^[a-zA-ZÀ-ỹ\s]+$/u;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * 1. Kiểm tra tình trạng phòng trống trong khoảng thời gian đã chọn
+ * GET /api/bookings/check-availability
+ */
+export const checkAvailability = async (req, res) => {
+  try {
+    const { roomId, checkIn, checkOut } = req.query;
+
+    if (!roomId || !checkIn || !checkOut) {
+      return res.status(400).json({
+        success: false,
+        code: 'CR_BOOK_04',
+        message: 'Vui lòng cung cấp đầy đủ thông tin phòng và thời gian đặt.',
+      });
+    }
+
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime()) || checkInDate >= checkOutDate) {
+      return res.status(400).json({
+        success: false,
+        code: 'CR_BOOK_04',
+        message: 'Thời gian nhận phòng và trả phòng không hợp lệ.',
+      });
+    }
+
+    const conflictingBooking = await Booking.findOne({
+      roomId,
+      status: { $nin: ['REJECTED', 'CANCELLED'] },
+      checkIn: { $lt: checkOutDate },
+      checkOut: { $gt: checkInDate },
+    });
+
+    return res.status(200).json({
+      success: true,
+      available: !conflictingBooking,
+      data: {
+        isAvailable: !conflictingBooking,
+      },
+      conflictBooking: conflictingBooking
+        ? {
+            bookingCode: conflictingBooking.bookingCode,
+            checkIn: conflictingBooking.checkIn,
+            checkOut: conflictingBooking.checkOut,
+          }
+        : null,
+    });
+  } catch (error) {
+    console.error('Lỗi khi kiểm tra phòng trống:', error);
+    return res.status(500).json({
+      success: false,
+      code: 'CR_BOOK_03',
+      message: 'Không thể kết nối máy chủ. Vui lòng kiểm tra lại đường truyền.',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * 2. Tạo đơn đặt phòng mới và ghi nhận giao dịch thanh toán
+ * POST /api/bookings
+ */
 export const createBooking = async (req, res) => {
   try {
     const {
       roomId,
-      userId,
+      checkIn,
+      checkOut,
+      guests = 1,
+      guestInfo,
       fullName,
       phoneNumber,
       email,
-      checkIn,
-      checkOut,
-      guests,
-      paymentMethod,
+      specialNote = '',
+      notes = '',
+      paymentMethod = 'NAPAS_QR',
       totalPrice,
+      userId,
     } = req.body;
 
-    // Validate dữ liệu cơ bản từ khách hàng
-    if (!fullName || !fullName.trim() || !phoneNumber || !phoneNumber.trim() || !email || !email.trim()) {
+    const info = guestInfo || {
+      fullName: fullName || req.body.name,
+      phoneNumber: phoneNumber || req.body.phone,
+      email: email,
+    };
+
+    // 1. Kiểm tra tính hợp lệ cơ bản của dữ liệu khách hàng
+    if (!roomId || !checkIn || !checkOut || !info.fullName || !info.phoneNumber || !info.email) {
       return res.status(400).json({
         success: false,
+        code: 'CR_BOOK_04',
         message: 'Vui lòng điền đầy đủ và chính xác thông tin liên hệ.',
       });
     }
 
-    // Kiểm tra phòng có tồn tại không (hỗ trợ cả valid ObjectId và fallback phòng mẫu active)
+    const trimmedFullName = String(info.fullName).trim();
+    const trimmedPhoneNumber = String(info.phoneNumber).trim();
+    const trimmedEmail = String(info.email).trim().toLowerCase();
+
+    if (
+      trimmedFullName.length > 50 ||
+      !NAME_REGEX.test(trimmedFullName) ||
+      !PHONE_REGEX.test(trimmedPhoneNumber) ||
+      !EMAIL_REGEX.test(trimmedEmail)
+    ) {
+      return res.status(400).json({
+        success: false,
+        code: 'CR_BOOK_04',
+        message: 'Vui lòng điền đầy đủ và chính xác thông tin liên hệ.',
+      });
+    }
+
+    const noteText = (specialNote || notes || '').trim();
+    if (noteText && noteText.length > 200) {
+      return res.status(400).json({
+        success: false,
+        code: 'CR_BOOK_04',
+        message: 'Yêu cầu đặc biệt không được vượt quá 200 ký tự.',
+      });
+    }
+
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+
+    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime()) || checkInDate >= checkOutDate) {
+      return res.status(400).json({
+        success: false,
+        code: 'CR_BOOK_04',
+        message: 'Thời gian nhận phòng và trả phòng không hợp lệ.',
+      });
+    }
+
+    // 2. Tìm kiếm phòng
     let targetRoomId = roomId;
     let room = null;
     if (roomId && mongoose.isValidObjectId(roomId)) {
@@ -42,38 +155,36 @@ export const createBooking = async (req, res) => {
     if (!room) {
       return res.status(404).json({
         success: false,
-        message: 'Phòng không tồn tại hoặc đã ngừng hoạt động',
+        code: 'CR_BOOK_04',
+        message: 'Không tìm thấy phòng tương ứng.',
       });
     }
 
-    // Xử lý ngày nhận/trả phòng thời gian thực
-    const startDate = checkIn ? new Date(checkIn) : new Date();
-    const endDate = checkOut ? new Date(checkOut) : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-
-    // Tính số đêm thực tế
-    const diffTime = endDate.getTime() - startDate.getTime();
-    const actualNights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
-    // CR_BOOK_07: Kiểm tra xem phòng này trong khoảng thời gian đã có người đặt chưa
-    const existingConflict = await Booking.findOne({
+    // 3. Kiểm tra xung đột lịch đặt phòng (Overlap check)
+    const conflictingBooking = await Booking.findOne({
       roomId: targetRoomId,
-      status: 'CONFIRMED',
-      $and: [
-        { checkIn: { $lt: endDate } },
-        { checkOut: { $gt: startDate } }
-      ]
+      status: { $nin: ['REJECTED', 'CANCELLED'] },
+      checkIn: { $lt: checkOutDate },
+      checkOut: { $gt: checkInDate },
     });
 
-    if (existingConflict) {
+    if (conflictingBooking) {
       return res.status(409).json({
         success: false,
         conflict: true,
-        code: 'CR_BOOK_07',
-        message: 'Rất tiếc, phòng này vừa được khách khác đặt trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác hoặc phòng tương đương.',
+        code: 'CR_BOOK_09',
+        message: 'Hiện tại, phòng của bạn đã được đặt trong thời gian bạn chọn. Vui lòng chọn thời điểm khác',
       });
     }
 
-    // Tạo mã đặt phòng duy nhất dạng ST-XXXX (ví dụ: ST-5894)
+    // 4. Tính toán số đêm và giá phòng
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const nights = Math.max(1, Math.round((checkOutDate.getTime() - checkInDate.getTime()) / msPerDay));
+    const pricePerNight = room.pricePerNight || 0;
+    const subtotal = pricePerNight * nights;
+    const finalTotalPrice = totalPrice || subtotal;
+
+    // 5. Sinh mã đặt phòng duy nhất dạng ST-xxxx
     let bookingCode;
     let isUnique = false;
     while (!isUnique) {
@@ -83,89 +194,73 @@ export const createBooking = async (req, res) => {
       if (!existing) isUnique = true;
     }
 
-    // Sanitize userId: chỉ lưu nếu đúng định dạng ObjectId MongoDB
+    // 6. Gán userId
     const validUserId = (userId && typeof userId === 'string' && mongoose.isValidObjectId(userId))
       ? userId
-      : undefined;
+      : (req.user?.id && mongoose.isValidObjectId(req.user.id) ? req.user.id : new mongoose.Types.ObjectId());
 
-    // Tạo bản ghi đặt phòng mới với thời gian thực
+    // 7. Tạo bản ghi đặt phòng mới
     const newBooking = await Booking.create({
-      bookingCode,
-      roomId: targetRoomId,
       userId: validUserId,
-      fullName: fullName.trim(),
-      phoneNumber: phoneNumber.trim(),
-      email: email.trim(),
-      checkIn: startDate,
-      checkOut: endDate,
-      nights: actualNights,
-      guests: guests || 2,
-      paymentMethod: paymentMethod || 'momo',
-      totalPrice: totalPrice || 2550000,
+      roomId: targetRoomId,
+      bookingCode,
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      nights,
+      guests: Number(guests) || 1,
+      fullName: trimmedFullName,
+      phoneNumber: trimmedPhoneNumber,
+      email: trimmedEmail,
+      guestInfo: {
+        fullName: trimmedFullName,
+        phoneNumber: trimmedPhoneNumber,
+        email: trimmedEmail,
+      },
+      specialNote: noteText,
+      notes: noteText,
+      paymentMethod,
+      pricing: {
+        pricePerNight,
+        nights,
+        subtotal,
+        taxAndServiceFeePercentage: 8,
+        totalPrice: finalTotalPrice,
+      },
+      totalPrice: finalTotalPrice,
       status: 'CONFIRMED',
     });
-
-    console.log(`✅ Đã tạo đơn đặt phòng thành công: ${bookingCode} cho khách: ${fullName} (${actualNights} đêm)`);
 
     return res.status(201).json({
       success: true,
-      message: 'Đặt phòng và thanh toán thành công!',
-      bookingCode,
-      data: newBooking,
+      message: 'Đặt phòng và xác nhận thanh toán thành công!',
+      bookingCode: newBooking.bookingCode,
+      data: {
+        _id: newBooking._id,
+        bookingCode: newBooking.bookingCode,
+        roomId: newBooking.roomId,
+        checkIn: newBooking.checkIn,
+        checkOut: newBooking.checkOut,
+        nights,
+        totalPrice: finalTotalPrice,
+        status: newBooking.status,
+        booking: newBooking,
+        ...newBooking.toObject(),
+      },
     });
   } catch (error) {
-    console.error('❌ Lỗi khi tạo booking:', error);
+    console.error('Lỗi khi tạo đơn đặt phòng:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Lỗi hệ thống khi tạo đơn đặt phòng',
+      code: 'CR_BOOK_03',
+      message: error.message || 'Không thể kết nối máy chủ. Vui lòng kiểm tra lại đường truyền.',
     });
   }
 };
 
-// 2. Kiểm tra tình trạng phòng trống thời gian thực (Real-time Availability)
-export const checkAvailability = async (req, res) => {
-  try {
-    const { roomId, checkIn, checkOut } = req.query;
-    if (!roomId || !checkIn || !checkOut) {
-      return res.status(400).json({
-        success: false,
-        message: 'Vui lòng cung cấp roomId, checkIn và checkOut',
-      });
-    }
-
-    const startDate = new Date(checkIn);
-    const endDate = new Date(checkOut);
-
-    const conflictingBooking = await Booking.findOne({
-      roomId,
-      status: 'CONFIRMED',
-      $and: [
-        { checkIn: { $lt: endDate } },
-        { checkOut: { $gt: startDate } }
-      ]
-    });
-
-    return res.status(200).json({
-      success: true,
-      available: !conflictingBooking,
-      conflictBooking: conflictingBooking
-        ? {
-            bookingCode: conflictingBooking.bookingCode,
-            checkIn: conflictingBooking.checkIn,
-            checkOut: conflictingBooking.checkOut,
-          }
-        : null,
-    });
-  } catch (error) {
-    console.error('Lỗi checkAvailability:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi máy chủ khi kiểm tra phòng',
-    });
-  }
-};
-
-// 3. Lấy thông tin đơn đặt phòng theo mã bookingCode (Dùng cho màn hình vé e-Pass)
+/**
+ * 3. Lấy thông tin đơn đặt phòng theo mã bookingCode
+ * GET /api/bookings/:code
+ */
 export const getBookingByCode = async (req, res) => {
   try {
     const { code } = req.params;
@@ -191,7 +286,10 @@ export const getBookingByCode = async (req, res) => {
   }
 };
 
-// 4. Lấy danh sách lịch sử đặt phòng của người dùng
+/**
+ * 4. Lấy danh sách lịch sử đặt phòng của người dùng
+ * GET /api/bookings/my-bookings
+ */
 export const getMyBookings = async (req, res) => {
   try {
     const { email } = req.query;
@@ -211,3 +309,12 @@ export const getMyBookings = async (req, res) => {
     });
   }
 };
+
+const bookingController = {
+  checkAvailability,
+  createBooking,
+  getBookingByCode,
+  getMyBookings,
+};
+
+export default bookingController;

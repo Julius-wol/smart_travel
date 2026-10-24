@@ -72,3 +72,13 @@ export const mockRoomDetail = {
     isSuperHost: true,
   },
 };
+export const mockBookingSuccess = {
+  _id: 'booking_test_123',
+  bookingCode: 'ST-5894',
+  roomId: 'room_danang_01',
+  checkIn: '2026-10-25',
+  checkOut: '2026-10-27',
+  nights: 2,
+  totalPrice: 2500000,
+  status: 'PENDING',
+};

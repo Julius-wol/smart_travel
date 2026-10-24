@@ -1,24 +1,33 @@
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 
 /**
- * Component Loading Overlay toàn màn hình (CR_BOOK_05)
- * Dùng khi đang submit thanh toán hoặc xử lý đặt phòng
- * 
- * Props:
- * - visible: boolean
- * - message: string (mặc định: "Đang xử lý đặt phòng và xác nhận thanh toán an toàn...")
+ * LoadingOverlay Component (SMART-88 - CR_BOOK_05)
+ * Modal mô phỏng tiến trình xác thực thanh toán an toàn trong 1.5 giây
  */
-const LoadingOverlay = ({ 
-  visible = false, 
-  message = 'Đang xử lý đặt phòng và xác nhận thanh toán an toàn...' 
+export const LoadingOverlay = ({
+  visible = false,
+  message = 'Đang xử lý đặt phòng và xác nhận thanh toán an toàn...',
 }) => {
   return (
-    <Modal transparent visible={visible} animationType="fade">
+    <Modal
+      testID="loading-overlay-modal"
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+    >
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <ActivityIndicator size="large" color="#00796B" style={styles.spinner} />
-          <Text style={styles.messageText}>{message}</Text>
+          <ActivityIndicator size="large" color={COLORS.primary} style={styles.spinner} />
+          <Text testID="loading-overlay-text" style={styles.loadingTitle}>
+            {message}
+          </Text>
+          <View style={styles.securityRow}>
+            <Ionicons name="lock-closed" size={14} color={COLORS.primary} />
+            <Text style={styles.securityText}>Bảo mật giao dịch mã hóa SSL 256-bit</Text>
+          </View>
         </View>
       </View>
     </Modal>
@@ -28,34 +37,46 @@ const LoadingOverlay = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(11, 28, 48, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 30,
+    padding: 24,
   },
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    alignItems: 'center',
     width: '100%',
     maxWidth: 320,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
+    backgroundColor: '#FFFFFF',
+    borderRadius: BORDER_RADIUS.xl,
+    padding: 24,
+    alignItems: 'center',
+    ...SHADOWS.card,
   },
   spinner: {
     marginBottom: 16,
   },
-  messageText: {
-    fontSize: 15,
-    color: '#2D3748',
+  loadingTitle: {
+    fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: TYPOGRAPHY.sizes.bodyLarge,
+    fontWeight: TYPOGRAPHY.weights.bold,
+    color: COLORS.textHeading,
     textAlign: 'center',
-    fontWeight: '500',
     lineHeight: 22,
+    marginBottom: 14,
+  },
+  securityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primaryLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  securityText: {
+    fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: TYPOGRAPHY.sizes.caption,
+    color: COLORS.primary,
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
 });
 
