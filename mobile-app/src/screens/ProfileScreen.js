@@ -8,18 +8,29 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { BASE_URL, API_URL } from '../utils/config';
 
-const ProfileScreen = ({ route, navigation }) => {
-  // Nhận thông tin user và token truyền qua từ màn hình Login
-  const { user, token } = route.params;
+const DEFAULT_USER = {
+  username: 'host_smarttravel',
+  firstName: 'Robin',
+  lastName: 'Nguyen',
+  email: 'robinnguyen@gmail.com',
+  phone: '0912345678',
+  role: 'HOST',
+  avatar: null,
+};
 
-  const [firstName, setFirstName] = useState(user.firstName || '');
-  const [lastName, setLastName] = useState(user.lastName || '');
-  const [phone, setPhone] = useState(user.phone || '');
+const ProfileScreen = ({ route, navigation }) => {
+  // Nhận thông tin user và token truyền qua từ màn hình Login (kèm fallback an toàn)
+  const user = route?.params?.user || DEFAULT_USER;
+  const token = route?.params?.token || '';
+
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [avatarUri, setAvatarUri] = useState(user.avatar ? `${BASE_URL}${user.avatar}` : null);
+  const [avatarUri, setAvatarUri] = useState(user?.avatar ? `${BASE_URL}${user.avatar}` : null);
 
   const handleUpdate = async () => {
     try {
@@ -152,7 +163,13 @@ const ProfileScreen = ({ route, navigation }) => {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <TouchableOpacity
             style={styles.backBtn}
-            onPress={() => navigation.popTo('Home', { user, token })}
+            onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate('Home', { user, token });
+              }
+            }}
             accessibilityRole="button"
             accessibilityLabel="Quay về trang chủ"
           >
@@ -171,15 +188,15 @@ const ProfileScreen = ({ route, navigation }) => {
                   <Ionicons name="camera" size={16} color="#fff" />
                 </View>
               </View>
-              <Text style={styles.usernameText}>@{user.username}</Text>
-              <View style={[styles.roleBadge, user.role === 'HOST' ? styles.roleBadgeHost : styles.roleBadgeUser]}>
+              <Text style={styles.usernameText}>@{user?.username || 'user'}</Text>
+              <View style={[styles.roleBadge, user?.role === 'HOST' ? styles.roleBadgeHost : styles.roleBadgeUser]}>
                 <Ionicons 
-                  name={user.role === 'HOST' ? "home" : "compass"} 
+                  name={user?.role === 'HOST' ? "home" : "compass"} 
                   size={14} 
-                  color={user.role === 'HOST' ? "#C53030" : "#00796B"} 
+                  color={user?.role === 'HOST' ? "#C53030" : "#00796B"} 
                 />
-                <Text style={[styles.roleBadgeText, user.role === 'HOST' ? styles.roleBadgeTextHost : styles.roleBadgeTextUser]}>
-                  {user.role === 'HOST' ? 'Chủ phòng (Host)' : 'Khách du lịch (User)'}
+                <Text style={[styles.roleBadgeText, user?.role === 'HOST' ? styles.roleBadgeTextHost : styles.roleBadgeTextUser]}>
+                  {user?.role === 'HOST' ? 'Chủ phòng (Host)' : 'Khách du lịch (User)'}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -206,7 +223,7 @@ const ProfileScreen = ({ route, navigation }) => {
             <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="Nhập số điện thoại" />
 
             <Text style={styles.inputLabel}>Email (Không thể đổi)</Text>
-            <TextInput style={[styles.input, { backgroundColor: '#EDF2F7', color: '#A0AEC0' }]} value={user.email} editable={false} />
+            <TextInput style={[styles.input, { backgroundColor: '#EDF2F7', color: '#A0AEC0' }]} value={user?.email || ''} editable={false} />
 
             <TouchableOpacity style={styles.updateBtn} onPress={handleUpdate}>
               <Text style={styles.updateBtnText}>Lưu thay đổi</Text>
