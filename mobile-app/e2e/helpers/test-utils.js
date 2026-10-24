@@ -10,6 +10,7 @@ import roomReducer from '../../src/store/slices/roomSlice';
 import wishlistReducer from '../../src/store/slices/wishlistSlice';
 import hostCalendarReducer from '../../src/store/slices/hostCalendarSlice';
 import hostDashboardReducer from '../../src/store/slices/hostDashboardSlice';
+import hostRoomInventoryReducer from '../../src/store/slices/hostRoomInventorySlice';
 import BookingDiscoveryScreen from '../../src/screens/BookingDiscoveryScreen';
 import RoomDetailScreen from '../../src/screens/RoomDetailScreen';
 
@@ -59,6 +60,7 @@ export const createTestStore = (preloadedState = {}) => {
       wishlist: wishlistReducer,
       hostCalendar: hostCalendarReducer,
       hostDashboard: hostDashboardReducer,
+      hostRoomInventory: hostRoomInventoryReducer,
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>

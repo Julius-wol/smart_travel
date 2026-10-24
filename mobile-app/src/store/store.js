@@ -3,6 +3,7 @@ import roomReducer from './slices/roomSlice';
 import wishlistReducer from './slices/wishlistSlice';
 import hostCalendarReducer from './slices/hostCalendarSlice';
 import hostDashboardReducer from './slices/hostDashboardSlice';
+import hostRoomInventoryReducer from './slices/hostRoomInventorySlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     wishlist: wishlistReducer,
     hostCalendar: hostCalendarReducer,
     hostDashboard: hostDashboardReducer,
+    hostRoomInventory: hostRoomInventoryReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

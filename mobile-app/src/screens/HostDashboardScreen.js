@@ -87,7 +87,7 @@ const HostDashboardScreen = ({ navigation }) => {
     if (menuId === 'calendar') {
       navigation.navigate('HostCalendar');
     } else if (menuId === 'rooms') {
-      navigation.navigate('HostRoomEdit');
+      navigation.navigate('HostRoomInventory');
     }
   };
 

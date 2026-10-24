@@ -229,6 +229,8 @@ const HostCalendarScreen = ({ navigation, route }) => {
               onNavigate={(id) => {
                 if (id === 'overview') {
                   navigation.navigate('HostDashboard');
+                } else if (id === 'rooms') {
+                  navigation.navigate('HostRoomInventory');
                 } else if (id !== 'calendar') {
                   showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Quản lý Lịch phòng & Giá.', 'info');
                 }
@@ -359,6 +361,8 @@ const HostCalendarScreen = ({ navigation, route }) => {
                     setMobileDrawerVisible(false);
                     if (id === 'overview') {
                       navigation.navigate('HostDashboard');
+                    } else if (id === 'rooms') {
+                      navigation.navigate('HostRoomInventory');
                     } else if (id !== 'calendar') {
                       showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Lịch phòng & Giá.', 'info');
                     }

@@ -81,11 +81,20 @@ const roomSchema = new mongoose.Schema({
   tags: [{ 
     type: String 
   }],
+  roomType: {
+    type: String,
+    enum: ['Bungalow', 'Biệt thự / Villa', 'Khách sạn', 'Căn hộ Studio', 'Homestay'],
+    default: 'Homestay',
+    index: true
+  },
   specs: {
-    type: { type: String, default: 'Nhà nguyên căn' },
-    capacity: { type: String, default: 'Tối đa 4 khách' },
-    bedroom: { type: String, default: '2 PN • 2 Giường King' },
-    bathroom: { type: String, default: '2 Phòng tắm riêng' },
+    type: { type: String, default: 'Homestay' },
+    bedroomCount: { type: Number, default: 1 },
+    bedCount: { type: Number, default: 1 },
+    area: { type: Number, default: 45 },
+    capacity: { type: String, default: 'Tối đa 2 khách' },
+    bedroom: { type: String, default: '1 phòng ngủ • 1 giường' },
+    bathroom: { type: String, default: '1 phòng tắm riêng' },
   },
   amenities: [{
     type: mongoose.Schema.Types.Mixed
@@ -119,15 +128,33 @@ const roomSchema = new mongoose.Schema({
     type: String,
     default: 'Miễn phí hủy phòng trước 48h'
   },
+  cancellationPolicy48h: {
+    type: Boolean,
+    default: true
+  },
   status: { 
     type: String, 
-    enum: ['ACTIVE', 'HIDDEN'], 
-    default: 'ACTIVE',
+    enum: ['Published', 'Archived', 'Draft', 'ACTIVE', 'HIDDEN'], 
+    default: 'Published',
     index: true
   },
+  profileScore: {
+    type: Number,
+    default: 92,
+    min: 0,
+    max: 100
+  },
+  isSuperhostStandard: {
+    type: Boolean,
+    default: true
+  },
+  lastEditedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   location: {
-    lat: { type: Number, default: 16.0544 },
-    lng: { type: Number, default: 108.2022 }
+    lat: { type: Number, default: 11.8974 },
+    lng: { type: Number, default: 108.4312 }
   }
 }, { timestamps: true });
 
