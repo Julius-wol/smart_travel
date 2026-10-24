@@ -222,7 +222,19 @@ const HostCalendarScreen = ({ navigation, route }) => {
       {/* Bố cục Responsive: Web / Desktop vs Mobile */}
       {isDesktop ? (
         <View style={styles.desktopContainer}>
-          {/* 1. Main Area (Bên Trái) */}
+          {/* 1. Left Sidebar */}
+          <HostSidebar
+            activeId="calendar"
+            onNavigate={(id) => {
+              if (id === 'overview') {
+                navigation.navigate('HostDashboard');
+              } else if (id !== 'calendar') {
+                showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Quản lý Lịch phòng & Giá.', 'info');
+              }
+            }}
+          />
+
+          {/* 2. Right Main Area */}
           <View style={styles.desktopMainCol}>
             <HostTopNav
               user={route?.params?.user}
@@ -285,18 +297,6 @@ const HostCalendarScreen = ({ navigation, route }) => {
               )}
             </ScrollView>
           </View>
-
-          {/* 2. Sidebar cố định bên PHẢI */}
-          <HostSidebar
-            activeId="calendar"
-            onNavigate={(id) => {
-              if (id === 'overview') {
-                navigation.navigate('HostDashboard');
-              } else if (id !== 'calendar') {
-                showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Quản lý Lịch phòng & Giá.', 'info');
-              }
-            }}
-          />
         </View>
       ) : (
         <View style={styles.mobileContainer}>
@@ -401,7 +401,6 @@ const HostCalendarScreen = ({ navigation, route }) => {
             activeOpacity={1}
             onPress={() => setMobileDrawerVisible(false)}
           >
-            <View style={{ flex: 1 }} />
             <TouchableOpacity
               style={styles.mobileDrawerCard}
               activeOpacity={1}
@@ -430,6 +429,7 @@ const HostCalendarScreen = ({ navigation, route }) => {
                 />
               </ScrollView>
             </TouchableOpacity>
+            <View style={{ flex: 1 }} />
           </TouchableOpacity>
         </Modal>
       )}

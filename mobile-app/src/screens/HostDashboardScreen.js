@@ -96,6 +96,13 @@ const HostDashboardScreen = ({ navigation }) => {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <View style={styles.appLayout}>
+        {/* Sidebar cố định bên TRÁI trên màn hình Desktop (>= 960px) */}
+        {isDesktop && (
+          <View style={styles.desktopSidebarWrapper}>
+            <HostSidebar activeId="overview" onNavigate={handleSidebarNavigate} />
+          </View>
+        )}
+
         {/* Nội dung chính màn hình Dashboard */}
         <View style={styles.mainContentCol}>
           {/* Top Navigation Bar */}
@@ -190,16 +197,9 @@ const HostDashboardScreen = ({ navigation }) => {
             <View style={{ height: 40 }} />
           </ScrollView>
         </View>
-
-        {/* Sidebar cố định bên PHẢI trên màn hình Desktop (>= 960px) */}
-        {isDesktop && (
-          <View style={styles.desktopSidebarWrapper}>
-            <HostSidebar activeId="overview" onNavigate={handleSidebarNavigate} />
-          </View>
-        )}
       </View>
 
-      {/* Drawer Modal Sidebar bên PHẢI cho màn hình Mobile (< 960px) */}
+      {/* Drawer Modal Sidebar bên TRÁI cho màn hình Mobile (< 960px) */}
       {!isDesktop && (
         <Modal
           visible={mobileDrawerVisible}
@@ -208,11 +208,6 @@ const HostDashboardScreen = ({ navigation }) => {
           onRequestClose={() => setMobileDrawerVisible(false)}
         >
           <View style={styles.drawerOverlay}>
-            <TouchableOpacity
-              style={styles.drawerBackdrop}
-              activeOpacity={1}
-              onPress={() => setMobileDrawerVisible(false)}
-            />
             <View style={styles.drawerContent}>
               <View style={styles.drawerHeader}>
                 <Text style={styles.drawerHeaderText}>QUẢN TRỊ CƠ SỞ</Text>
@@ -228,6 +223,11 @@ const HostDashboardScreen = ({ navigation }) => {
                 <HostSidebar activeId="overview" onNavigate={handleSidebarNavigate} />
               </ScrollView>
             </View>
+            <TouchableOpacity
+              style={styles.drawerBackdrop}
+              activeOpacity={1}
+              onPress={() => setMobileDrawerVisible(false)}
+            />
           </View>
         </Modal>
       )}
@@ -248,8 +248,8 @@ const styles = StyleSheet.create({
   desktopSidebarWrapper: {
     width: 250,
     height: '100%',
-    borderLeftWidth: 1,
-    borderLeftColor: '#E2E8F0',
+    borderRightWidth: 1,
+    borderRightColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
   },
   mainContentCol: {
