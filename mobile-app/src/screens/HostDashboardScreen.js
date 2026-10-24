@@ -96,13 +96,6 @@ const HostDashboardScreen = ({ navigation }) => {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <View style={styles.appLayout}>
-        {/* Sidebar cố định trên màn hình Desktop (>= 960px) */}
-        {isDesktop && (
-          <View style={styles.desktopSidebarWrapper}>
-            <HostSidebar activeId="overview" onNavigate={handleSidebarNavigate} />
-          </View>
-        )}
-
         {/* Nội dung chính màn hình Dashboard */}
         <View style={styles.mainContentCol}>
           {/* Top Navigation Bar */}
@@ -197,9 +190,16 @@ const HostDashboardScreen = ({ navigation }) => {
             <View style={{ height: 40 }} />
           </ScrollView>
         </View>
+
+        {/* Sidebar cố định bên PHẢI trên màn hình Desktop (>= 960px) */}
+        {isDesktop && (
+          <View style={styles.desktopSidebarWrapper}>
+            <HostSidebar activeId="overview" onNavigate={handleSidebarNavigate} />
+          </View>
+        )}
       </View>
 
-      {/* Drawer Modal Sidebar cho màn hình Mobile (< 960px) */}
+      {/* Drawer Modal Sidebar bên PHẢI cho màn hình Mobile (< 960px) */}
       {!isDesktop && (
         <Modal
           visible={mobileDrawerVisible}
@@ -214,7 +214,19 @@ const HostDashboardScreen = ({ navigation }) => {
               onPress={() => setMobileDrawerVisible(false)}
             />
             <View style={styles.drawerContent}>
-              <HostSidebar activeId="overview" onNavigate={handleSidebarNavigate} />
+              <View style={styles.drawerHeader}>
+                <Text style={styles.drawerHeaderText}>QUẢN TRỊ CƠ SỞ</Text>
+                <TouchableOpacity
+                  onPress={() => setMobileDrawerVisible(false)}
+                  style={styles.drawerCloseBtn}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={22} color="#1E293B" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+                <HostSidebar activeId="overview" onNavigate={handleSidebarNavigate} />
+              </ScrollView>
             </View>
           </View>
         </Modal>
@@ -236,8 +248,8 @@ const styles = StyleSheet.create({
   desktopSidebarWrapper: {
     width: 250,
     height: '100%',
-    borderRightWidth: 1,
-    borderRightColor: '#E2E8F0',
+    borderLeftWidth: 1,
+    borderLeftColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
   },
   mainContentCol: {
@@ -305,6 +317,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+  },
+  drawerHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  drawerCloseBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
   },
 });
 

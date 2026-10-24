@@ -32,13 +32,8 @@ const HostTopNav = ({
 
   return (
     <View style={[styles.topNav, isMobile && styles.mobileTopNav]}>
-      {/* 1. Left Nav: Hamburger Menu (Mobile) + Breadcrumb */}
+      {/* 1. Left Nav: Breadcrumb */}
       <View style={styles.leftNavRow}>
-        {onMenuPress && (
-          <TouchableOpacity style={styles.menuDrawerBtn} onPress={onMenuPress} activeOpacity={0.7}>
-            <Ionicons name="menu" size={24} color="#00685F" />
-          </TouchableOpacity>
-        )}
         <TouchableOpacity style={styles.breadcrumbLink} onPress={onBack} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={17} color="#00685F" style={{ marginRight: 5 }} />
           <Text style={styles.breadcrumbText} numberOfLines={1}>
@@ -81,6 +76,13 @@ const HostTopNav = ({
             </View>
           )}
         </TouchableOpacity>
+
+        {/* Hamburger Menu on the RIGHT */}
+        {onMenuPress && (
+          <TouchableOpacity style={[styles.menuDrawerBtn, { marginLeft: 8 }]} onPress={onMenuPress} activeOpacity={0.7}>
+            <Ionicons name="menu" size={24} color="#00685F" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
