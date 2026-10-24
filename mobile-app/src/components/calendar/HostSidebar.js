@@ -76,7 +76,7 @@ const HostSidebar = ({ activeId = 'calendar', onNavigate }) => {
 const styles = StyleSheet.create({
   sidebar: {
     width: '100%',
-    backgroundColor: '#F0F4FA',
+    backgroundColor: '#FFFFFF',
     borderRightWidth: 1,
     borderRightColor: '#E2E8F0',
     paddingVertical: 20,
@@ -140,8 +140,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   menuItemActive: {
-    backgroundColor: '#FFFFFF',
-    ...SHADOWS.chip,
+    backgroundColor: '#E6F4F2',
   },
   menuIcon: {
     marginRight: 12,
@@ -150,7 +149,7 @@ const styles = StyleSheet.create({
     fontFamily: TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '500',
-    color: '#334155',
+    color: '#475569',
     flex: 1,
   },
   menuTextActive: {

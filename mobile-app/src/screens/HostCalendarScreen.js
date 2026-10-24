@@ -219,117 +219,54 @@ const HostCalendarScreen = ({ navigation, route }) => {
         </View>
       )}
 
-      {/* Bố cục Responsive: Web / Desktop vs Mobile */}
-      {isDesktop ? (
-        <View style={styles.desktopContainer}>
-          {/* 1. Left Sidebar */}
-          <HostSidebar
-            activeId="calendar"
-            onNavigate={(id) => {
-              if (id === 'overview') {
-                navigation.navigate('HostDashboard');
-              } else if (id !== 'calendar') {
-                showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Quản lý Lịch phòng & Giá.', 'info');
-              }
-            }}
-          />
-
-          {/* 2. Right Main Area */}
-          <View style={styles.desktopMainCol}>
-            <HostTopNav
-              user={route?.params?.user}
-              onBack={handleBack}
-              onProfile={() => navigation?.navigate && navigation.navigate('Profile', { user: route?.params?.user, token: route?.params?.token })}
+      {/* Bố cục Responsive chuẩn View Dashboard: Cột Sidebar 250px bên TRÁI trên Desktop */}
+      <View style={styles.appLayout}>
+        {/* Sidebar cố định bên TRÁI trên màn hình Desktop (>= 960px) */}
+        {isDesktop && (
+          <View style={styles.desktopSidebarWrapper}>
+            <HostSidebar
+              activeId="calendar"
+              onNavigate={(id) => {
+                if (id === 'overview') {
+                  navigation.navigate('HostDashboard');
+                } else if (id !== 'calendar') {
+                  showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Quản lý Lịch phòng & Giá.', 'info');
+                }
+              }}
             />
-
-            <ScrollView
-              style={styles.scrollContainer}
-              contentContainerStyle={styles.desktopScrollContent}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#00796B']} />
-              }
-            >
-              {/* Tiêu đề & 4 thẻ KPI nằm ngang theo Figma */}
-              <View style={styles.desktopTitleKpiRow}>
-                <View style={styles.titleTextCol}>
-                  <Text style={styles.pageTitle}>Lịch phòng & Trạng thái trống</Text>
-                  <Text style={styles.pageSubtitle}>
-                    Quản lý tình trạng sẵn có, linh hoạt điều chỉnh biểu giá theo ngày và khóa lịch đón khách tức thì.
-                  </Text>
-                </View>
-
-                <CalendarKpiCards kpi={kpi} />
-              </View>
-
-              {/* Thanh điều khiển chọn phòng & tháng */}
-              <CalendarHeader
-                rooms={rooms}
-                selectedRoom={selectedRoom}
-                onSelectRoom={(room) => dispatch(setSelectedRoom(room))}
-                currentMonth={currentMonth}
-                currentYear={currentYear}
-                onPrevMonth={() => dispatch(changeMonth(-1))}
-                onNextMonth={() => dispatch(changeMonth(1))}
-                onToday={() => dispatch(resetToCurrentMonth())}
-              />
-
-              {/* Chú giải trạng thái */}
-              <CalendarLegend />
-
-              {/* Lưới lịch ma trận 7 cột */}
-              {loading && !refreshing && calendarDays.length === 0 ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#00796B" />
-                  <Text style={styles.loadingText}>Đang tải dữ liệu lịch phòng...</Text>
-                </View>
-              ) : (
-                <CalendarGridMatrix
-                  days={calendarDays}
-                  currentMonth={currentMonth}
-                  currentYear={currentYear}
-                  selectedRange={selectedRange}
-                  onDateClick={handleDateClick}
-                  onPastDateClick={handlePastDateClick}
-                  onOpenQuickBooking={(booking) => dispatch(setActivePopoverBooking(booking))}
-                  onOpenUnblock={(date) => dispatch(openUnblockModal(date))}
-                />
-              )}
-            </ScrollView>
           </View>
-        </View>
-      ) : (
-        <View style={styles.mobileContainer}>
-          {/* Mobile Top Nav */}
+        )}
+
+        {/* Cột Nội Dung Chính */}
+        <View style={styles.mainContentCol}>
           <HostTopNav
+            breadcrumb="Lịch phòng & Trạng thái trống • Smart Travel Host Portal"
             user={route?.params?.user}
-            onMenuPress={() => setMobileDrawerVisible(true)}
             onBack={handleBack}
+            onMenuPress={() => setMobileDrawerVisible(true)}
             onProfile={() => navigation?.navigate && navigation.navigate('Profile', { user: route?.params?.user, token: route?.params?.token })}
           />
 
           <ScrollView
-            style={styles.scrollContainer}
-            contentContainerStyle={styles.mobileScrollContent}
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#00796B']} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#00796B']} tintColor="#00796B" />
             }
           >
-            {/* Tiêu đề trang */}
-            <View style={styles.mobileTitleBlock}>
+            {/* 1. Tiêu đề trang & Mô tả */}
+            <View style={styles.pageHeaderBlock}>
               <Text style={styles.pageTitle}>Lịch phòng & Trạng thái trống</Text>
               <Text style={styles.pageSubtitle}>
                 Quản lý tình trạng sẵn có, linh hoạt điều chỉnh biểu giá theo ngày và khóa lịch đón khách tức thì.
               </Text>
             </View>
 
-            {/* 4 Thẻ KPI */}
-            <View style={styles.mobileKpiWrap}>
-              <CalendarKpiCards kpi={kpi} />
-            </View>
+            {/* 2. Hàng 4 thẻ KPI trải dài full-width (chuẩn View Dashboard) */}
+            <CalendarKpiCards kpi={kpi} />
 
-            {/* Thanh điều khiển chọn phòng & tháng */}
+            {/* 3. Thanh điều khiển chọn phòng & Tháng */}
             <CalendarHeader
               rooms={rooms}
               selectedRoom={selectedRoom}
@@ -341,10 +278,10 @@ const HostCalendarScreen = ({ navigation, route }) => {
               onToday={() => dispatch(resetToCurrentMonth())}
             />
 
-            {/* Chú giải trạng thái */}
+            {/* 4. Chú giải trạng thái */}
             <CalendarLegend />
 
-            {/* Lưới lịch ma trận 7 cột */}
+            {/* 5. Lưới lịch ma trận 7 cột */}
             {loading && !refreshing && calendarDays.length === 0 ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#00796B" />
@@ -362,9 +299,11 @@ const HostCalendarScreen = ({ navigation, route }) => {
                 onOpenUnblock={(date) => dispatch(openUnblockModal(date))}
               />
             )}
+
+            <View style={{ height: 40 }} />
           </ScrollView>
         </View>
-      )}
+      </View>
 
       {/* Modal Khóa lịch đón khách */}
       <BlockDateModal
@@ -393,24 +332,22 @@ const HostCalendarScreen = ({ navigation, route }) => {
         loading={loading}
       />
 
-      {/* Drawer Modal hiển thị HostSidebar trên thiết bị di động */}
-      {mobileDrawerVisible && (
-        <Modal visible={mobileDrawerVisible} transparent animationType="fade">
-          <TouchableOpacity
-            style={styles.mobileDrawerOverlay}
-            activeOpacity={1}
-            onPress={() => setMobileDrawerVisible(false)}
-          >
-            <TouchableOpacity
-              style={styles.mobileDrawerCard}
-              activeOpacity={1}
-              onPress={(e) => e.stopPropagation()}
-            >
-              <View style={styles.mobileDrawerHeader}>
-                <Text style={styles.mobileDrawerHeaderText}>QUẢN TRỊ HOST PORTAL</Text>
+      {/* Drawer Modal Sidebar bên TRÁI cho màn hình Mobile (< 960px) */}
+      {!isDesktop && (
+        <Modal
+          visible={mobileDrawerVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMobileDrawerVisible(false)}
+        >
+          <View style={styles.drawerOverlay}>
+            <View style={styles.drawerContent}>
+              <View style={styles.drawerHeader}>
+                <Text style={styles.drawerHeaderText}>QUẢN TRỊ CƠ SỞ</Text>
                 <TouchableOpacity
                   onPress={() => setMobileDrawerVisible(false)}
-                  style={styles.mobileDrawerCloseBtn}
+                  style={styles.drawerCloseBtn}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Ionicons name="close" size={22} color="#1E293B" />
                 </TouchableOpacity>
@@ -428,9 +365,13 @@ const HostCalendarScreen = ({ navigation, route }) => {
                   }}
                 />
               </ScrollView>
-            </TouchableOpacity>
-            <View style={{ flex: 1 }} />
-          </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.drawerBackdrop}
+              activeOpacity={1}
+              onPress={() => setMobileDrawerVisible(false)}
+            />
+          </View>
         </Modal>
       )}
     </SafeAreaView>
@@ -442,97 +383,88 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  mobileDrawerOverlay: {
+  appLayout: {
     flex: 1,
-    backgroundColor: 'rgba(11, 28, 48, 0.45)',
     flexDirection: 'row',
+    backgroundColor: '#F8FAFC',
   },
-  mobileDrawerCard: {
-    width: 270,
-    backgroundColor: '#F0F4FA',
+  desktopSidebarWrapper: {
+    width: 250,
     height: '100%',
+    borderRightWidth: 1,
+    borderRightColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+  mainContentCol: {
+    flex: 1,
+    height: '100%',
+    backgroundColor: '#F8FAFC',
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+  },
+  pageHeaderBlock: {
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.4,
+  },
+  pageSubtitle: {
+    fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 4,
+    lineHeight: 19,
+  },
+  drawerOverlay: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+  },
+  drawerBackdrop: {
+    flex: 1,
+  },
+  drawerContent: {
+    width: 270,
+    height: '100%',
+    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  mobileDrawerHeader: {
+  drawerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-    backgroundColor: '#F0F4FA',
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
-  mobileDrawerHeaderText: {
+  drawerHeaderText: {
     fontFamily: TYPOGRAPHY.fontFamily,
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#64748B',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
-  mobileDrawerCloseBtn: {
-    padding: 4,
-  },
-  desktopContainer: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  desktopMainCol: {
-    flex: 1,
-    backgroundColor: COLORS.screenBg,
-  },
-  mobileContainer: {
-    flex: 1,
-    backgroundColor: COLORS.screenBg,
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  desktopScrollContent: {
-    paddingHorizontal: 28,
-    paddingTop: 24,
-    paddingBottom: 40,
-  },
-  mobileScrollContent: {
-    paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 60,
-  },
-  desktopTitleKpiRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    gap: 20,
-  },
-  titleTextCol: {
-    flex: 1,
-    maxWidth: 520,
-  },
-  mobileTitleBlock: {
-    marginBottom: 10,
-  },
-  pageTitle: {
-    fontFamily: TYPOGRAPHY.fontFamily,
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.textHeading,
-    letterSpacing: -0.4,
-  },
-  pageSubtitle: {
-    fontFamily: TYPOGRAPHY.fontFamily,
-    fontSize: 13,
-    color: COLORS.textBody,
-    marginTop: 4,
-    lineHeight: 19,
-  },
-  mobileKpiWrap: {
-    marginVertical: 4,
+  drawerCloseBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F1F5F9',
   },
   loadingContainer: {
     paddingVertical: 50,

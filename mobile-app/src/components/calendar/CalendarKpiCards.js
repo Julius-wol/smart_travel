@@ -30,21 +30,24 @@ const CalendarKpiCards = ({ kpi = {} }) => {
       <View style={[styles.kpiCard, isDesktop ? styles.desktopCard : styles.mobileCard]}>
         <View style={styles.cardHeaderRow}>
           <Text style={styles.kpiLabel}>TỶ LỆ LẤP ĐẦY</Text>
-          <View style={[styles.iconCircle, { backgroundColor: '#E6F4F2' }]}>
-            <MaterialCommunityIcons name="chart-arc" size={14} color="#00685F" />
+          <View style={[styles.iconCircle, { backgroundColor: '#E8FBF4' }]}>
+            <MaterialCommunityIcons name="chart-arc" size={17} color="#00685F" />
           </View>
         </View>
         <Text style={[styles.kpiValue, { color: '#00685F' }]}>
           {occupancyRate}%
         </Text>
+        <View style={styles.subBadgeWrap}>
+          <Text style={styles.subBadgeText}>Dựa trên số đêm khả dụng</Text>
+        </View>
       </View>
 
       {/* 2. ĐÃ BÁN */}
       <View style={[styles.kpiCard, isDesktop ? styles.desktopCard : styles.mobileCard]}>
         <View style={styles.cardHeaderRow}>
           <Text style={styles.kpiLabel}>ĐÃ BÁN</Text>
-          <View style={[styles.iconCircle, { backgroundColor: '#E5EEFF' }]}>
-            <MaterialCommunityIcons name="bed-outline" size={14} color="#4648D4" />
+          <View style={[styles.iconCircle, { backgroundColor: '#EFF4FF' }]}>
+            <MaterialCommunityIcons name="bed-outline" size={17} color="#4648D4" />
           </View>
         </View>
         <View style={styles.valueRow}>
@@ -53,14 +56,17 @@ const CalendarKpiCards = ({ kpi = {} }) => {
           </Text>
           <Text style={styles.unitText}>đêm</Text>
         </View>
+        <View style={styles.subBadgeWrap}>
+          <Text style={styles.subBadgeText}>Đã xác nhận & thanh toán</Text>
+        </View>
       </View>
 
       {/* 3. NGÀY TRỐNG */}
       <View style={[styles.kpiCard, isDesktop ? styles.desktopCard : styles.mobileCard]}>
         <View style={styles.cardHeaderRow}>
           <Text style={styles.kpiLabel}>NGÀY TRỐNG</Text>
-          <View style={[styles.iconCircle, { backgroundColor: '#E8FBF4' }]}>
-            <MaterialCommunityIcons name="calendar-check-outline" size={14} color="#008378" />
+          <View style={[styles.iconCircle, { backgroundColor: '#E6F4F2' }]}>
+            <MaterialCommunityIcons name="calendar-check-outline" size={17} color="#008378" />
           </View>
         </View>
         <View style={styles.valueRow}>
@@ -69,19 +75,25 @@ const CalendarKpiCards = ({ kpi = {} }) => {
           </Text>
           <Text style={styles.unitText}>đêm</Text>
         </View>
+        <View style={styles.subBadgeWrap}>
+          <Text style={styles.subBadgeText}>Sẵn sàng đón khách tức thì</Text>
+        </View>
       </View>
 
       {/* 4. DOANH THU DỰ TÍNH */}
       <View style={[styles.kpiCard, isDesktop ? styles.desktopCard : styles.mobileCard]}>
         <View style={styles.cardHeaderRow}>
           <Text style={styles.kpiLabel}>DOANH THU DỰ TÍNH</Text>
-          <View style={[styles.iconCircle, { backgroundColor: '#EFF4FF' }]}>
-            <MaterialCommunityIcons name="cash-multiple" size={14} color="#0B1C30" />
+          <View style={[styles.iconCircle, { backgroundColor: '#FFFBEB' }]}>
+            <MaterialCommunityIcons name="cash-multiple" size={17} color="#D97706" />
           </View>
         </View>
         <Text style={[styles.kpiValue, { color: COLORS.textHeading }]}>
           {formatRevenue(estimatedRevenue)}
         </Text>
+        <View style={styles.subBadgeWrap}>
+          <Text style={styles.subBadgeText}>Ước tính tháng hiện tại</Text>
+        </View>
       </View>
     </View>
   );
@@ -89,11 +101,12 @@ const CalendarKpiCards = ({ kpi = {} }) => {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'stretch',
+    marginVertical: 14,
   },
   desktopContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 14,
+    flexWrap: 'nowrap',
   },
   mobileContainer: {
     flexDirection: 'row',
@@ -103,21 +116,20 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    padding: 16,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E6EFFD',
+    borderColor: '#E2E8F0',
     justifyContent: 'space-between',
-    ...SHADOWS.chip,
+    ...SHADOWS.card,
   },
   desktopCard: {
     flex: 1,
-    minWidth: 130,
+    minWidth: 160,
   },
   mobileCard: {
     width: '48.5%',
-    minHeight: 74,
+    minHeight: 90,
   },
   cardHeaderRow: {
     flexDirection: 'row',
@@ -126,17 +138,17 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   iconCircle: {
-    width: 24,
-    height: 24,
+    width: 32,
+    height: 32,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   kpiLabel: {
     fontFamily: TYPOGRAPHY.fontFamily,
-    fontSize: 9.5,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
     color: '#64748B',
     textTransform: 'uppercase',
   },
@@ -146,17 +158,32 @@ const styles = StyleSheet.create({
   },
   kpiValue: {
     fontFamily: TYPOGRAPHY.fontFamily,
-    fontSize: 19,
+    fontSize: 22,
     fontWeight: '800',
     color: COLORS.textHeading,
     letterSpacing: -0.4,
+    marginTop: 4,
   },
   unitText: {
     fontFamily: TYPOGRAPHY.fontFamily,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#64748B',
-    marginLeft: 3,
+    marginLeft: 4,
+  },
+  subBadgeWrap: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  subBadgeText: {
+    fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
   },
 });
 

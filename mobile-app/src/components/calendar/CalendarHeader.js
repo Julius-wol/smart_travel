@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from '../../constants/theme';
 
@@ -13,6 +13,8 @@ const CalendarHeader = ({
   onNextMonth,
   onToday,
 }) => {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 960;
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const roomTitle = selectedRoom?.title || 'Villa Mộng Mơ View Hồ & Rừng Thông';
@@ -20,10 +22,10 @@ const CalendarHeader = ({
   const roomSpecs = selectedRoom?.specs?.bedroom || '4 phòng ngủ';
 
   return (
-    <View style={styles.cardContainer}>
+    <View style={[styles.cardContainer, !isDesktop && styles.mobileCardContainer]}>
       {/* 1. Bên Trái: Dropdown chọn phòng */}
       <TouchableOpacity
-        style={styles.roomSelector}
+        style={[styles.roomSelector, isDesktop && styles.desktopRoomSelector]}
         onPress={() => setDropdownVisible(true)}
         activeOpacity={0.8}
       >
@@ -44,7 +46,7 @@ const CalendarHeader = ({
       </TouchableOpacity>
 
       {/* 2. Bên Phải: Bộ điều khiển tháng & View mode */}
-      <View style={styles.controlsRight}>
+      <View style={[styles.controlsRight, !isDesktop && styles.mobileControlsRight]}>
         {/* Month Stepper */}
         <View style={styles.monthStepper}>
           <TouchableOpacity style={styles.stepperArrowBtn} onPress={onPrevMonth} activeOpacity={0.7}>
@@ -133,13 +135,17 @@ const CalendarHeader = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    paddingVertical: 4,
+    paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    flexWrap: 'wrap',
+    gap: 14,
+    marginVertical: 12,
+  },
+  mobileCardContainer: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
     gap: 10,
-    marginVertical: 10,
   },
   roomSelector: {
     flexDirection: 'row',
@@ -147,12 +153,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E6EFFD',
+    borderColor: '#E2E8F0',
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     flex: 1,
-    minWidth: 260,
-    ...SHADOWS.chip,
+    ...SHADOWS.card,
+  },
+  desktopRoomSelector: {
+    maxWidth: 440,
   },
   roomIconWrapper: {
     width: 38,
@@ -161,7 +169,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#00685F',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 12,
   },
   roomInfoCol: {
     flex: 1,
@@ -186,8 +194,11 @@ const styles = StyleSheet.create({
   controlsRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
+  },
+  mobileControlsRight: {
     width: '100%',
+    justifyContent: 'space-between',
   },
   actionsRightRow: {
     flexDirection: 'row',
@@ -200,10 +211,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: BORDER_RADIUS.full,
     borderWidth: 1,
-    borderColor: '#E6EFFD',
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-    ...SHADOWS.chip,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+    ...SHADOWS.card,
   },
   stepperArrowBtn: {
     padding: 6,
