@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import roomReducer from '../../src/store/slices/roomSlice';
 import wishlistReducer from '../../src/store/slices/wishlistSlice';
 import hostCalendarReducer from '../../src/store/slices/hostCalendarSlice';
+import hostDashboardReducer from '../../src/store/slices/hostDashboardSlice';
 import BookingDiscoveryScreen from '../../src/screens/BookingDiscoveryScreen';
 import RoomDetailScreen from '../../src/screens/RoomDetailScreen';
 
@@ -57,6 +58,7 @@ export const createTestStore = (preloadedState = {}) => {
       room: roomReducer,
       wishlist: wishlistReducer,
       hostCalendar: hostCalendarReducer,
+      hostDashboard: hostDashboardReducer,
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>
