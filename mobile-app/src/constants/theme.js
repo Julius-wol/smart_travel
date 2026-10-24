@@ -49,8 +49,27 @@ export const COLORS = {
   calPastDayText: '#BCC9C6',  // Chữ ngày quá khứ bị làm mờ
 };
 
+// Hỗ trợ cả TYPOGRAPHY.fontFamily dạng chuỗi và các thuộc tính con (regular, medium, semiBold, bold, extraBold)
+// Tránh việc JS fallback về String.prototype.bold (là một Function) gây lỗi trên React Native Web
+const createFontFamilyToken = () => {
+  const token = new String('PlusJakartaSans_400Regular');
+  token.regular = 'PlusJakartaSans_400Regular';
+  token.medium = 'PlusJakartaSans_500Medium';
+  token.semiBold = 'PlusJakartaSans_600SemiBold';
+  token.bold = 'PlusJakartaSans_700Bold';
+  token.extraBold = 'PlusJakartaSans_800ExtraBold';
+  return token;
+};
+
 export const TYPOGRAPHY = {
-  fontFamily: 'System', // Mặc định System / Plus Jakarta Sans nếu load font
+  fontFamily: createFontFamilyToken(),
+  fonts: {
+    regular: 'PlusJakartaSans_400Regular',
+    medium: 'PlusJakartaSans_500Medium',
+    semiBold: 'PlusJakartaSans_600SemiBold',
+    bold: 'PlusJakartaSans_700Bold',
+    extraBold: 'PlusJakartaSans_800ExtraBold',
+  },
   weights: {
     regular: '400',
     medium: '500',
