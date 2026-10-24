@@ -19,7 +19,9 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font",
+      "expo-sqlite"
     ]
   }
 }
