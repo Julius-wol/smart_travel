@@ -14,6 +14,7 @@ import reviewRoute from './src/routes/reviewRoute.js';
 import adminRoute from './src/routes/admin.js';
 import wishlistRoute from './src/routes/wishlistRoute.js';
 import hostCalendarRoutes from './src/routes/hostCalendarRoutes.js';
+import hostDashboardRoutes from './src/routes/hostDashboardRoutes.js';
 import { toggleWishlist } from './src/controllers/wishlistController.js';
 
 dotenv.config();
@@ -50,6 +51,7 @@ app.use('/api/rooms', roomRoute);        // Homestay / Room Discovery
 app.use('/api/bookings', bookingRoute);  // Booking & Checkout
 app.use('/api/reviews', reviewRoute);    // Reviews & Rating
 app.use('/api/wishlist', wishlistRoute); // Wishlist
+app.use('/api/host/dashboard', hostDashboardRoutes); // Host View Dashboard (SMART-110)
 app.use('/api/host', hostCalendarRoutes); // Host Calendar & Availability (SMART-105)
 app.post('/api/wishlist/toggle', toggleWishlist); // Direct endpoint alias
 
@@ -60,6 +62,7 @@ app.use('/api/v1/rooms', roomRoute);
 app.use('/api/v1/bookings', bookingRoute);
 app.use('/api/v1/reviews', reviewRoute);
 app.use('/api/v1/wishlist', wishlistRoute);
+app.use('/api/v1/host/dashboard', hostDashboardRoutes);
 app.use('/api/v1/host', hostCalendarRoutes);
 
 // Web Admin

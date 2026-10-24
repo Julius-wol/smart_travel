@@ -17,6 +17,7 @@ import CheckoutScreen from '../screens/CheckoutScreen';
 import BookingSuccessScreen from '../screens/BookingSuccessScreen';
 import WriteReviewScreen from '../screens/WriteReviewScreen';
 import HostCalendarScreen from '../screens/HostCalendarScreen';
+import HostDashboardScreen from '../screens/HostDashboardScreen';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
 
 const Tab = createBottomTabNavigator();
@@ -117,6 +118,13 @@ export const AppNavigator = ({ initialRouteName = 'Login' }) => {
         <Stack.Screen
           name="HostCalendar"
           component={HostCalendarScreen}
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="HostDashboard"
+          component={HostDashboardScreen}
           options={{
             animation: 'slide_from_right',
           }}

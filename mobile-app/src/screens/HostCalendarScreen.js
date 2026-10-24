@@ -226,7 +226,9 @@ const HostCalendarScreen = ({ navigation, route }) => {
           <HostSidebar
             activeId="calendar"
             onNavigate={(id) => {
-              if (id !== 'calendar') {
+              if (id === 'overview') {
+                navigation.navigate('HostDashboard');
+              } else if (id !== 'calendar') {
                 showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Quản lý Lịch phòng & Giá.', 'info');
               }
             }}
@@ -418,7 +420,9 @@ const HostCalendarScreen = ({ navigation, route }) => {
                   activeId="calendar"
                   onNavigate={(id) => {
                     setMobileDrawerVisible(false);
-                    if (id !== 'calendar') {
+                    if (id === 'overview') {
+                      navigation.navigate('HostDashboard');
+                    } else if (id !== 'calendar') {
                       showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Lịch phòng & Giá.', 'info');
                     }
                   }}

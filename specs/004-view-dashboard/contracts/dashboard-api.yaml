@@ -1,0 +1,105 @@
+openapi: 3.0.3
+info:
+  title: Host Dashboard API (SMART-110)
+  version: 1.0.0
+  description: API phục vụ màn hình tổng quan Host View Dashboard cho đối tác cho thuê phòng Smart Travel.
+servers:
+  - url: http://localhost:5000/api
+    description: Local Development Server
+
+paths:
+  /host/dashboard:
+    get:
+      summary: Lấy dữ liệu tổng quan kinh doanh của Host
+      operationId: getHostDashboard
+      tags:
+        - Host Dashboard
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [TODAY, 7_DAYS, 30_DAYS, THIS_MONTH, LAST_MONTH]
+            default: 30_DAYS
+          description: Mốc thời gian lọc dữ liệu
+        - name: roomId
+          in: query
+          required: false
+          schema:
+            type: string
+            default: ALL
+          description: Lọc dữ liệu theo ID phòng cụ thể hoặc ALL
+      responses:
+        '200':
+          description: Lấy dữ liệu Dashboard thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Lấy dữ liệu tổng quan thành công
+                  data:
+                    type: object
+                    properties:
+                      host:
+                        type: object
+                      period:
+                        type: string
+                      periodLabel:
+                        type: string
+                      slaAlert:
+                        type: object
+                      kpis:
+                        type: object
+                      chart:
+                        type: object
+                      schedule:
+                        type: object
+                      recentReviews:
+                        type: object
+        '401':
+          description: Chưa xác thực (Chưa đăng nhập)
+        '403':
+          description: Không có quyền truy cập cơ sở lưu trú này (AUTH-403)
+        '500':
+          description: Lỗi máy chủ nội bộ
+
+  /host/dashboard/export:
+    get:
+      summary: Xuất báo cáo kinh doanh ra file Excel / PDF
+      operationId: exportDashboardReport
+      tags:
+        - Host Dashboard
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            default: 30_DAYS
+      responses:
+        '200':
+          description: Xuất báo cáo thành công (DASH-EXPORT-SUCCESS)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  code:
+                    type: string
+                    example: DASH-EXPORT-SUCCESS
+                  message:
+                    type: string
+                    example: Đang kết xuất báo cáo kinh doanh ra file Excel, quá trình tải xuống sẽ bắt đầu ngay.
+                  downloadUrl:
+                    type: string
+                    example: /exports/report-2026-10-24.xlsx
