@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'react-native';
-import { registerRootComponent } from 'expo';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { Provider as ReduxProvider, useDispatch } from 'react-redux';
@@ -61,5 +60,3 @@ export default function App() {
     </ReduxProvider>
   );
 }
-
-registerRootComponent(App);

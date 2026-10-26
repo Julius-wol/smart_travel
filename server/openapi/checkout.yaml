@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  title: SMART-88 simulated checkout
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+paths:
+  /bookings/check-availability:
+    get:
+      summary: Check the selected room and dates immediately before checkout
+      parameters:
+        - { name: roomId, in: query, required: true, schema: { type: string } }
+        - { name: checkIn, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: checkOut, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        '200':
+          description: Availability snapshot; creation checks again before writing
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, available]
+                properties:
+                  success: { type: boolean }
+                  available: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      isAvailable: { type: boolean }
+        '400': { description: Invalid room identifier or date range }
+        '404': { description: Requested room does not exist; no substitute room }
+        '500': { description: Availability unknown due to database failure }
+  /bookings:
+    post:
+      summary: Save a confirmed booking with simulated payment, without a QR payment step
+      description: >-
+        Contact values may be supplied at the root or in guestInfo. Valid contact
+        data is required even though Checkout displays it read-only. The server
+        calculates nights and the inclusive total from the selected room's rate;
+        client totalPrice is not authoritative. Availability is rechecked at write
+        time. This endpoint does not call a real payment provider.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roomId, checkIn, checkOut]
+              anyOf:
+                - required: [fullName, phoneNumber, email]
+                - required: [guestInfo]
+              properties:
+                roomId: { type: string, pattern: '^[a-fA-F0-9]{24}$' }
+                userId: { type: string }
+                checkIn: { type: string, format: date-time }
+                checkOut: { type: string, format: date-time }
+                fullName: { type: string, maxLength: 50 }
+                phoneNumber: { type: string, pattern: '^0(3[2-9]|5[2689]|7[06-9]|8[1-9]|9[0-9])[0-9]{7}$' }
+                email: { type: string, format: email }
+                guestInfo:
+                  type: object
+                  required: [fullName, phoneNumber, email]
+                  properties:
+                    fullName: { type: string, maxLength: 50 }
+                    phoneNumber: { type: string }
+                    email: { type: string, format: email }
+                guests: { type: integer, minimum: 1 }
+                specialNote: { type: string, maxLength: 200, default: '' }
+                paymentMethod: { type: string, default: NAPAS_QR, enum: [NAPAS_QR, EWALLET, APPLE_GOOGLE_PAY] }
+      responses:
+        '201':
+          description: New booking code and saved booking, including authoritative nights and totalPrice
+        '400':
+          description: 'CR_BOOK_04: Vui lòng điền đầy đủ và chính xác thông tin liên hệ. (or note/date validation)'
+        '404': { description: Requested room does not exist }
+        '409':
+          description: 'CR_BOOK_09: Hiện tại, phòng của bạn đã được đặt trong thời gian bạn chọn. Vui lòng chọn thời điểm khác'
+        '500': { description: Booking was not confirmed; database or server failure }
