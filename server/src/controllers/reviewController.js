@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Review from '../models/Review.js';
-import Room   from '../models/Room.js';
+import Room from '../models/Room.js';
+import Booking from '../models/Booking.js';
 
 // ─── Helper: tính lại avgRating & reviewCount cho phòng ──────────────────────
 const recalcRoomRating = async (roomId) => {
@@ -15,6 +16,7 @@ const recalcRoomRating = async (roomId) => {
         avgCleanliness: { $avg: '$categories.cleanliness' },
         avgLocation:    { $avg: '$categories.location' },
         avgService:     { $avg: '$categories.service' },
+        avgAmenities:   { $avg: '$categories.amenities' },
         avgValue:       { $avg: '$categories.value' },
       },
     },
@@ -25,20 +27,22 @@ const recalcRoomRating = async (roomId) => {
     const avg = (v) => (v ? Math.round(v * 10) / 10 : undefined);
     await Room.findByIdAndUpdate(roomId, {
       rating:      avg(s.avgRating),
+      numReviews:  s.reviewCount,
       reviewCount: s.reviewCount,
       'ratingBreakdown.overall':     avg(s.avgRating),
       'ratingBreakdown.cleanliness': avg(s.avgCleanliness),
       'ratingBreakdown.location':    avg(s.avgLocation),
       'ratingBreakdown.service':     avg(s.avgService),
+      'ratingBreakdown.amenities':   avg(s.avgAmenities),
       'ratingBreakdown.value':       avg(s.avgValue),
     });
   }
 };
 
-// ─── 1. Tạo đánh giá mới ─────────────────────────────────────────────────────
+// ─── 1. Tạo đánh giá mới (Ràng buộc 1-1 với Booking) ──────────────────────────
 export const createReview = async (req, res) => {
   try {
-    const { roomId, fullName, rating, comment, categories, bookingCode } = req.body;
+    const { roomId, fullName, rating, comment, categories, bookingCode, bookingId, images } = req.body;
 
     if (!roomId || !fullName || !rating || !comment) {
       return res.status(400).json({
@@ -48,7 +52,7 @@ export const createReview = async (req, res) => {
     }
 
     if (rating < 1 || rating > 5) {
-      return res.status(400).json({ success: false, message: 'Rating phải từ 1 đến 5.' });
+      return res.status(400).json({ success: false, message: 'Rating phải từ 1 đến 5 sao.' });
     }
 
     // Kiểm tra phòng tồn tại
@@ -57,13 +61,33 @@ export const createReview = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Phòng không tồn tại.' });
     }
 
+    // Xác thực bookingId nếu có hoặc tìm theo bookingCode
+    let validBookingId = bookingId;
+    if (!validBookingId && bookingCode) {
+      const b = await Booking.findOne({ bookingCode: bookingCode.toUpperCase() });
+      if (b) validBookingId = b._id;
+    }
+
+    // Ràng buộc duy nhất 1-1: Mỗi booking chỉ được review đúng 1 lần
+    if (validBookingId && mongoose.isValidObjectId(validBookingId)) {
+      const existingReview = await Review.findOne({ bookingId: validBookingId });
+      if (existingReview) {
+        return res.status(400).json({
+          success: false,
+          message: 'Đơn đặt phòng này đã được gửi đánh giá trước đó.',
+        });
+      }
+    }
+
     const review = await Review.create({
+      bookingId: validBookingId || undefined,
       roomId,
       userId:      req.user?._id || undefined,
       fullName:    fullName.trim(),
       avatar:      req.body.avatar || '',
       rating:      Number(rating),
       comment:     comment.trim(),
+      images:      Array.isArray(images) ? images : [],
       categories:  categories || {},
       bookingCode: bookingCode || '',
     });
@@ -79,6 +103,12 @@ export const createReview = async (req, res) => {
       data: review,
     });
   } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mỗi đơn đặt phòng chỉ được phép đánh giá một lần duy nhất.',
+      });
+    }
     console.error('Lỗi createReview:', error);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ khi gửi đánh giá.' });
   }
@@ -118,7 +148,7 @@ export const getReviewsByRoom = async (req, res) => {
 export const getRoomRatingSummary = async (req, res) => {
   try {
     const { roomId } = req.params;
-    const room = await Room.findById(roomId).select('rating reviewCount ratingBreakdown title');
+    const room = await Room.findById(roomId).select('rating numReviews reviewCount ratingBreakdown title');
     if (!room) {
       return res.status(404).json({ success: false, message: 'Phòng không tồn tại.' });
     }
@@ -139,7 +169,7 @@ export const getRoomRatingSummary = async (req, res) => {
       success: true,
       data: {
         rating:          room.rating,
-        reviewCount:     room.reviewCount,
+        reviewCount:     room.numReviews || room.reviewCount,
         ratingBreakdown: room.ratingBreakdown,
         distribution,
       },
@@ -148,4 +178,10 @@ export const getRoomRatingSummary = async (req, res) => {
     console.error('Lỗi getRoomRatingSummary:', error);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
+};
+
+export default {
+  createReview,
+  getReviewsByRoom,
+  getRoomRatingSummary,
 };

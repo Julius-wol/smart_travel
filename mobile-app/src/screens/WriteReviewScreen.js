@@ -21,6 +21,7 @@ const WriteReviewScreen = ({ navigation, route }) => {
     cleanliness: 0,
     location: 0,
     service: 0,
+    amenities: 0,
     value: 0,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,6 +36,7 @@ const WriteReviewScreen = ({ navigation, route }) => {
     cleanliness: 'Vệ sinh',
     location:    'Vị trí',
     service:     'Dịch vụ',
+    amenities:   'Tiện nghi',
     value:       'Giá trị',
   };
 
@@ -83,6 +85,7 @@ const WriteReviewScreen = ({ navigation, route }) => {
             cleanliness: categories.cleanliness || undefined,
             location:    categories.location    || undefined,
             service:     categories.service     || undefined,
+            amenities:   categories.amenities   || undefined,
             value:       categories.value       || undefined,
           },
           bookingCode: bookingCode || '',

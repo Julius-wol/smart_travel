@@ -16,7 +16,8 @@
     "test:mobile": "npm run test --workspace=mobile-app",
     "test:mobile:e2e": "npm --prefix mobile-app run test:e2e",
     "test:e2e": "npm run test:mobile:e2e",
-    "test": "npm run test:server && npm run test:mobile"
+    "test": "npm run test:server && npm run test:mobile",
+    "seed": "npm run seed --workspace=server"
   },
   "devDependencies": {
     "concurrently": "^10.0.6"

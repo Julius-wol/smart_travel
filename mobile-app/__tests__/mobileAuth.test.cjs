@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const { test } = require('node:test');
+const test = typeof global.test === 'function' ? global.test : require('node:test').test;
 const babel = require('@babel/core');
 
 // Exercise the screen handlers with local React Native and network substitutes.

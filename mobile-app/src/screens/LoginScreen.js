@@ -13,12 +13,13 @@ import { API_URL } from '../utils/config';
 WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = ({ navigation }) => {
-  const [role, setRole] = useState('USER');
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const completeLogin = (user, token) => {
     if (user.role === 'HOST') {
@@ -62,19 +63,27 @@ const LoginScreen = ({ navigation }) => {
 
   // Hàm Validate form và test API JWT
   const handleLogin = async () => {
+    setFormError('');
     if (!emailOrPhone.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập Email hoặc Số điện thoại!');
+      const msg = 'Vui lòng nhập Email hoặc Số điện thoại!';
+      setFormError(msg);
+      Alert.alert('Lỗi', msg);
       return;
     }
     if (!password.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu!');
+      const msg = 'Vui lòng nhập mật khẩu!';
+      setFormError(msg);
+      Alert.alert('Lỗi', msg);
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Lỗi', 'Mật khẩu phải có ít nhất 6 ký tự!');
+      const msg = 'Mật khẩu phải có ít nhất 6 ký tự!';
+      setFormError(msg);
+      Alert.alert('Lỗi', msg);
       return;
     }
 
+    setLoading(true);
     try {
       const loginRes = await fetch(`${API_URL}/auth/signin`, {
         method: 'POST',
@@ -85,7 +94,9 @@ const LoginScreen = ({ navigation }) => {
       const loginData = await loginRes.json();
 
       if (!loginRes.ok) {
-        Alert.alert('Đăng nhập thất bại', loginData.message || 'Sai thông tin');
+        const msg = loginData.message || 'Tài khoản hoặc mật khẩu không chính xác';
+        setFormError(msg);
+        Alert.alert('Đăng nhập thất bại', msg);
         return;
       }
 
@@ -103,32 +114,20 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        // Kiểm tra vai trò tài khoản so với vai trò đang chọn
-        const userRole = profileData.role || 'USER';
-        if (role === 'HOST' && userRole !== 'HOST') {
-          Alert.alert(
-            'Lưu ý vai trò',
-            'Tài khoản này được đăng ký là "Khách du lịch", không phải "Chủ phòng". Bạn có muốn tiếp tục đăng nhập với tư cách Khách du lịch không?',
-            [
-              { text: 'Hủy', style: 'cancel' },
-              { 
-                text: 'Tiếp tục', 
-                onPress: () => navigation.replace('Home', { user: profileData, token: accessToken }) 
-              }
-            ]
-          );
-          return;
-        }
-
-        // Chuyển sang màn hình Trang chủ (Booking Discovery)
-        navigation.replace('Home', { user: profileData, token: accessToken });
+        completeLogin(profileData, accessToken);
       } else {
-        Alert.alert('Lỗi', 'Không lấy được thông tin User');
+        const msg = 'Không lấy được thông tin User';
+        setFormError(msg);
+        Alert.alert('Lỗi', msg);
       }
 
     } catch (error) {
       console.error(error);
+      const msg = 'Không thể kết nối đến máy chủ!';
+      setFormError(msg);
       Alert.alert('Lỗi kết nối', 'Không thể kết nối đến Server Node.js!');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,7 +155,7 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        navigation.replace('Home', { user: profileData, token: data.accessToken });
+        completeLogin(profileData, data.accessToken);
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin tài khoản');
       }
@@ -196,7 +195,10 @@ const LoginScreen = ({ navigation }) => {
                 style={styles.input}
                 placeholder="Nhập tên đăng nhập, email hoặc số điện thoại"
                 value={emailOrPhone}
-                onChangeText={setEmailOrPhone}
+                onChangeText={(text) => {
+                  setEmailOrPhone(text);
+                  setFormError('');
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -209,7 +211,10 @@ const LoginScreen = ({ navigation }) => {
                 style={styles.input}
                 placeholder="Nhập mật khẩu"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setFormError('');
+                }}
                 secureTextEntry={!showPassword}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
@@ -229,10 +234,28 @@ const LoginScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
 
+            {/* Thông báo lỗi nếu có */}
+            {formError ? (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color="#E53E3E" style={{ marginRight: 6 }} />
+                <Text style={styles.errorText}>{formError}</Text>
+              </View>
+            ) : null}
+
             {/* Nút Đăng nhập */}
-            <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-              <Text style={styles.loginBtnText}>Đăng nhập ngay</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+            <TouchableOpacity 
+              style={[styles.loginBtn, loading && { opacity: 0.7 }]} 
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Text style={styles.loginBtnText}>Đăng nhập ngay</Text>
+                  <Ionicons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -378,6 +401,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#00796B',
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#E53E3E',
+    fontSize: 13,
+    fontWeight: '500',
+    flex: 1,
   },
   loginBtn: {
     flexDirection: 'row',

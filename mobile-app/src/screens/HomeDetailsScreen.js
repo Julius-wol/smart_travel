@@ -578,12 +578,17 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           </View>
 
           <View style={styles.amenitiesGrid}>
-            {data.amenities.map((amenity) => (
-              <View key={amenity.id} style={styles.amenityItem}>
-                <Ionicons name={amenity.icon} size={18} color="#00796B" style={{ marginRight: 8 }} />
-                <Text style={styles.amenityText}>{amenity.name}</Text>
-              </View>
-            ))}
+            {data.amenities.map((amenity, index) => {
+              const name = typeof amenity === 'string' ? amenity : (amenity?.name || 'Tiện nghi');
+              const icon = (typeof amenity === 'object' && amenity?.icon) ? amenity.icon : 'checkmark-circle-outline';
+              const itemKey = (typeof amenity === 'object' && amenity?.id) ? amenity.id : `amenity-${index}`;
+              return (
+                <View key={itemKey} style={styles.amenityItem}>
+                  <Ionicons name={icon} size={18} color="#00796B" style={{ marginRight: 8 }} />
+                  <Text style={styles.amenityText}>{name}</Text>
+                </View>
+              );
+            })}
           </View>
 
           {/* Section 11: Review Summary (Score & 5 bars) */}
@@ -761,38 +766,41 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               <Text style={styles.emptyReviewsText}>Chưa có đánh giá nào phù hợp bộ lọc.</Text>
             </View>
           ) : (
-            filteredReviews.map((rev) => (
-              <View key={rev.id} style={styles.reviewCard}>
-                <View style={styles.reviewAuthorRow}>
-                  <Image source={{ uri: rev.avatar }} style={styles.reviewerAvatar} />
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={styles.reviewerName}>{rev.author}</Text>
-                      {rev.bookingCode ? (
-                        <View style={styles.verifiedBookingBadge}>
-                          <Ionicons name="checkmark-circle" size={12} color="#00796B" />
-                          <Text style={styles.verifiedBookingText}>Đã ở</Text>
-                        </View>
-                      ) : null}
+            filteredReviews.map((rev, index) => {
+              const revKey = rev.id || rev._id || `review-${index}`;
+              return (
+                <View key={revKey} style={styles.reviewCard}>
+                  <View style={styles.reviewAuthorRow}>
+                    <Image source={{ uri: rev.avatar }} style={styles.reviewerAvatar} />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.reviewerName}>{rev.author}</Text>
+                        {rev.bookingCode ? (
+                          <View style={styles.verifiedBookingBadge}>
+                            <Ionicons name="checkmark-circle" size={12} color="#00796B" />
+                            <Text style={styles.verifiedBookingText}>Đã ở</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={styles.reviewerDate}>{rev.date}</Text>
                     </View>
-                    <Text style={styles.reviewerDate}>{rev.date}</Text>
+                    <View style={styles.ratingBadge}>
+                      <Ionicons name="star" size={12} color="#ECC94B" />
+                      <Text style={styles.ratingBadgeText}>{rev.rating}</Text>
+                    </View>
                   </View>
-                  <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={12} color="#ECC94B" />
-                    <Text style={styles.ratingBadgeText}>{rev.rating}</Text>
-                  </View>
-                </View>
-                <Text style={styles.reviewComment}>{rev.comment}</Text>
+                  <Text style={styles.reviewComment}>{rev.comment}</Text>
 
-                {rev.images && rev.images.length > 0 && (
-                  <View style={styles.reviewThumbnailsRow}>
-                    {rev.images.map((img, i) => (
-                      <Image key={i} source={{ uri: img }} style={styles.reviewThumbImg} />
-                    ))}
-                  </View>
-                )}
-              </View>
-            ))
+                  {rev.images && rev.images.length > 0 && (
+                    <View style={styles.reviewThumbnailsRow}>
+                      {rev.images.map((img, i) => (
+                        <Image key={i} source={{ uri: img }} style={styles.reviewThumbImg} />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })
           )}
 
           {/* Section 14 & 15: Booking Policy */}
@@ -859,12 +867,17 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 400 }}>
-              {data.amenities.map((am) => (
-                <View key={am.id} style={styles.modalAmenityRow}>
-                  <Ionicons name={am.icon} size={20} color="#00796B" style={{ marginRight: 12 }} />
-                  <Text style={styles.modalAmenityText}>{am.name}</Text>
-                </View>
-              ))}
+              {data.amenities.map((am, index) => {
+                const name = typeof am === 'string' ? am : (am?.name || 'Tiện nghi');
+                const icon = (typeof am === 'object' && am?.icon) ? am.icon : 'checkmark-circle-outline';
+                const itemKey = (typeof am === 'object' && am?.id) ? am.id : `modal-am-${index}`;
+                return (
+                  <View key={itemKey} style={styles.modalAmenityRow}>
+                    <Ionicons name={icon} size={20} color="#00796B" style={{ marginRight: 12 }} />
+                    <Text style={styles.modalAmenityText}>{name}</Text>
+                  </View>
+                );
+              })}
             </ScrollView>
           </View>
         </View>

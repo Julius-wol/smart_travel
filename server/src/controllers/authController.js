@@ -46,9 +46,12 @@ await User.create({
     password: hashedPassword,
     email,
     phone,
+    fullName: (req.body.fullName || `${firstName} ${lastName}`).trim(),
     firstName,
     lastName,
     role: (role === 'HOST') ? 'HOST' : 'USER',
+    status: 'ACTIVE',
+    wishlist: [],
 });
 
         //return
@@ -180,6 +183,9 @@ export const forgotPassword = async (req, res) => {
 
         // Tạo mã OTP 6 số
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        if (!user.fullName) {
+            user.fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User';
+        }
         user.resetPasswordToken = otp;
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 phút
         await user.save();
@@ -269,6 +275,9 @@ export const resetPassword = async (req, res) => {
 
         if (!user) return res.status(400).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
 
+        if (!user.fullName) {
+            user.fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User';
+        }
         user.password = await bcrypt.hash(newPassword, 10);
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
@@ -319,8 +328,10 @@ export const googleSignIn = async (req, res) => {
                 username = `${baseUsername}${counter++}`;
             }
 
+            const fullName = `${given_name || ''} ${family_name || ''}`.trim() || username;
             user = await User.create({
                 username,
+                fullName,
                 email,
                 firstName: given_name || 'User',
                 lastName: family_name || '',

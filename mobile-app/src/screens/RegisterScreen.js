@@ -42,7 +42,7 @@ const RegisterScreen = ({ navigation }) => {
     setFormError('');
     const details = {
       username: username.trim(), firstName: firstName.trim(), lastName: lastName.trim(),
-      email: email.trim().toLowerCase(), phone: phone.trim(), password, role,
+      email: email.trim().toLowerCase(), phone: phone.trim(), password, role: 'USER',
     };
     if (!details.username || !details.firstName || !details.lastName || !details.email || !password) {
       setFormError('Vui lòng nhập đầy đủ thông tin!');
