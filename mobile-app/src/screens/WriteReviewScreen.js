@@ -13,7 +13,7 @@ import LoadingOverlay from '../components/LoadingOverlay';
  * Props route: { homestay, bookingCode, user, token }
  */
 const WriteReviewScreen = ({ navigation, route }) => {
-  const { homestay, bookingCode, user, token } = route.params || {};
+  const { homestay, bookingCode, bookingId, user, token } = route.params || {};
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -67,7 +67,7 @@ const WriteReviewScreen = ({ navigation, route }) => {
       const roomId = homestay?._id || homestay?.id;
       const fullName = user
         ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
-        : 'Khách ẩn danh';
+        : 'Khách du lịch';
 
       const res = await fetch(`${API_URL}/reviews`, {
         method: 'POST',
@@ -77,6 +77,8 @@ const WriteReviewScreen = ({ navigation, route }) => {
         },
         body: JSON.stringify({
           roomId,
+          bookingId: bookingId || undefined,
+          bookingCode: bookingCode || undefined,
           fullName,
           avatar: user?.avatar || '',
           rating,
@@ -88,7 +90,6 @@ const WriteReviewScreen = ({ navigation, route }) => {
             amenities:   categories.amenities   || undefined,
             value:       categories.value       || undefined,
           },
-          bookingCode: bookingCode || '',
         }),
       });
 
@@ -96,10 +97,10 @@ const WriteReviewScreen = ({ navigation, route }) => {
       setIsSubmitting(false);
 
       if (res.ok && data.success) {
-        showToast('Cảm ơn bạn đã đánh giá! ⭐', 'success');
+        showToast('Cảm ơn bạn đã đánh giá kỳ nghỉ! ⭐', 'success');
         setTimeout(() => navigation.goBack(), 1800);
       } else {
-        showToast(data.message || 'Không thể gửi đánh giá. Thử lại nhé.', 'error');
+        showToast(data.message || 'Không thể gửi đánh giá. Vui lòng thử lại.', 'error');
       }
     } catch (err) {
       setIsSubmitting(false);
@@ -125,12 +126,24 @@ const WriteReviewScreen = ({ navigation, route }) => {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Tên phòng */}
+        {/* Tên phòng & Mã booking xác thực */}
         <View style={styles.roomNameCard}>
-          <Ionicons name="home-outline" size={18} color="#00796B" />
-          <Text style={styles.roomNameText} numberOfLines={1}>
-            {homestay?.title || homestay?.name || 'An Nhiên Eco Retreat'}
-          </Text>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="home-outline" size={18} color="#00796B" />
+              <Text style={styles.roomNameText} numberOfLines={1}>
+                {homestay?.title || homestay?.name || 'An Nhiên Eco Retreat'}
+              </Text>
+            </View>
+            {bookingCode ? (
+              <View style={styles.verifiedBookingRow}>
+                <Ionicons name="checkmark-seal" size={14} color="#00796B" />
+                <Text style={styles.verifiedBookingText}>
+                  Đơn đặt phòng xác thực: #{bookingCode}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         {/* Rating tổng thể */}
@@ -275,6 +288,18 @@ const styles = StyleSheet.create({
   disclaimer: {
     fontSize: 11, color: '#A0AEC0',
     textAlign: 'center', lineHeight: 16,
+  },
+  verifiedBookingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginLeft: 26,
+  },
+  verifiedBookingText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#00796B',
+    marginLeft: 4,
   },
 });
 

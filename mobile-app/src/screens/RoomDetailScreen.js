@@ -529,7 +529,7 @@ const RoomDetailScreen = ({ route, navigation }) => {
                   <Text style={styles.checkCardTag}>GIỜ NHẬN PHÒNG</Text>
                 </View>
                 <Text style={styles.checkCardTime}>14:00</Text>
-                <Text style={styles.checkCardDesc}>Tự nhận phòng bằng mã SmartLock</Text>
+                <Text style={styles.checkCardDesc}>Gặp nhân viên lễ tân nhận phòng</Text>
               </View>
 
               <View style={styles.checkCard}>

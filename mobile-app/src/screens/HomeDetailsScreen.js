@@ -106,7 +106,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           },
         ],
         policy: homestay.policy || {
-          checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
+          checkIn: '14:00 (Nhận phòng trực tiếp với nhân viên lễ tân)',
           checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
           cancellation:
             'Miễn phí hủy phòng trước 48h trước giờ nhận phòng. Hoàn tiền 100% nếu hủy kịp thời. Sau thời gian này áp dụng chính sách hoàn trả của chủ nhà.',
@@ -180,7 +180,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           },
         ],
         policy: {
-          checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
+          checkIn: '14:00 (Nhận phòng trực tiếp với nhân viên lễ tân)',
           checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
           cancellation:
             'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00 ngày 10 Th05. Sau thời gian này áp dụng chính sách hoàn trả của chủ nhà.',
@@ -372,15 +372,58 @@ const HomeDetailsScreen = ({ navigation, route }) => {
         homestay: data,
         user,
         token,
-        checkIn: checkInDate.toISOString(),
-        checkOut: checkOutDate.toISOString(),
-        nights: nightsCount,
+        hasCustomDates,
+        checkIn: hasCustomDates ? checkInDate.toISOString() : null,
+        checkOut: hasCustomDates ? checkOutDate.toISOString() : null,
+        nights: hasCustomDates ? nightsCount : 0,
         guests: totalGuests,
         roomCount: roomsCount,
       });
     } catch (err) {
       console.error('Lỗi khi chuyển tới Checkout:', err);
       showToast('Có lỗi xảy ra khi mở trang đặt phòng. Vui lòng thử lại!', 'error');
+    }
+  };
+
+  // Ràng buộc chỉ khi đã ở (qua thời gian check-out) mới được viết đánh giá
+  const handleWriteReviewPress = async () => {
+    if (!user) {
+      showToast('Vui lòng đăng nhập để thực hiện đánh giá phòng.', 'info');
+      return;
+    }
+
+    try {
+      const userId = user._id || user.id;
+      const res = await fetch(`${API_URL}/bookings/my-bookings?userId=${userId}`);
+      const json = await res.json();
+
+      if (json.success && Array.isArray(json.data)) {
+        const roomId = data._id || data.id;
+        const now = new Date();
+        const completedBooking = json.data.find((b) => {
+          const bRoomId = b.roomId?._id || b.roomId;
+          const checkOutDate = b.checkOut ? new Date(b.checkOut) : null;
+          return String(bRoomId) === String(roomId) && checkOutDate && now > checkOutDate;
+        });
+
+        if (completedBooking) {
+          navigation.navigate('WriteReview', {
+            homestay: data,
+            bookingCode: completedBooking.bookingCode,
+            bookingId: completedBooking._id,
+            user,
+            token,
+          });
+          return;
+        }
+      }
+
+      showToast(
+        'Bạn chỉ có thể đánh giá phòng sau khi đã hoàn tất kỳ nghỉ (qua thời gian trả phòng)!',
+        'error'
+      );
+    } catch (err) {
+      showToast('Bạn chỉ có thể đánh giá phòng sau khi đã hoàn tất kỳ nghỉ!', 'error');
     }
   };
 
@@ -605,9 +648,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             </View>
             <TouchableOpacity
               style={styles.writeReviewHeaderBtn}
-              onPress={() =>
-                navigation.navigate('WriteReview', { homestay: data, user, token })
-              }
+              onPress={handleWriteReviewPress}
               activeOpacity={0.8}
             >
               <Ionicons name="create-outline" size={15} color="#00796B" style={{ marginRight: 4 }} />
@@ -813,7 +854,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               <Ionicons name="log-in-outline" size={20} color="#00796B" />
               <Text style={styles.checkLabel}>Nhận phòng</Text>
               <Text style={styles.checkTime}>14:00</Text>
-              <Text style={styles.checkNote}>Khóa thông minh Smart Lock</Text>
+              <Text style={styles.checkNote}>Gặp nhân viên lễ tân</Text>
             </View>
             <View style={styles.checkDividerVertical} />
             <View style={styles.checkCol}>

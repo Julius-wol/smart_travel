@@ -132,47 +132,60 @@ const HomeScreen = ({ navigation, route }) => {
       const json = await res.json();
 
       if (json.success && json.data && json.data.length > 0) {
-        const bookingNotifs = json.data.slice(0, 5).map((b, idx) => {
+        const now = new Date();
+        const bookingNotifs = [];
+
+        json.data.slice(0, 5).forEach((b, idx) => {
           const roomObj = b.roomId || {};
           const roomName = roomObj.title || roomObj.name || 'Villa Sơn Trà Đà Nẵng';
-          const roomNum = roomObj.roomNumber || '402';
+          const checkOutDate = b.checkOut ? new Date(b.checkOut) : null;
+          const isPastCheckOut = checkOutDate && now > checkOutDate;
 
-          const lockCode = b.bookingCode ? b.bookingCode.replace('ST-', '82') : '829411';
+          // 1. Thông báo đặt phòng thành công
+          bookingNotifs.push({
+            id: `booking-${b._id || b.bookingCode}`,
+            type: 'booking',
+            title: `Đặt phòng thành công #${b.bookingCode}`,
+            message: `Chuyến nghỉ dưỡng tại ${roomName} đã được xác nhận (${b.nights || b.totalNights || 2} đêm). Quý khách xuất trình mã đặt phòng tại quầy lễ tân để nhận phòng!`,
+            time: idx === 0 ? 'Vừa xong' : `${idx + 1} ngày trước`,
+            read: idx !== 0,
+            badgeText: 'ĐẶT PHÒNG',
+            badgeColor: '#E6FFFA',
+            badgeTextColor: '#00796B',
+            icon: 'checkmark-circle',
+            iconColor: '#00796B',
+            actionType: 'view_booking',
+            bookingCode: b.bookingCode,
+            rawBooking: b,
+          });
 
-          return [
-            {
-              id: `booking-${b._id || b.bookingCode}`,
-              type: 'booking',
-              title: `Đặt phòng thành công #${b.bookingCode}`,
-              message: `Chuyến nghỉ dưỡng tại ${roomName} đã được xác nhận (${b.nights || 2} đêm). Bấm để xem vé e-Pass!`,
-              time: idx === 0 ? 'Vừa xong' : `${idx + 1} ngày trước`,
-              read: idx !== 0, // Đơn mới nhất luôn là CHƯA ĐỌC để chuông hiện chấm đỏ
-              badgeText: 'ĐẶT PHÒNG',
-              badgeColor: '#E6FFFA',
-              badgeTextColor: '#00796B',
-              icon: 'checkmark-circle',
-              iconColor: '#00796B',
-              actionType: 'view_booking',
-              bookingCode: b.bookingCode,
-              rawBooking: b,
-            },
-            {
-              id: `lock-${b._id || b.bookingCode}`,
-              type: 'smart_lock',
-              title: `Mã mở khóa phòng Smart Lock #${roomNum}`,
-              message: `Mã số tự động cho đơn ${b.bookingCode} là ${lockCode} (Có hiệu lực từ 14:00 ngày nhận phòng).`,
-              time: idx === 0 ? 'Vừa xong' : `${idx + 1} ngày trước`,
-              read: idx !== 0,
-              badgeText: 'MÃ KHÓA',
+          // 2. CHỈ KHI ĐÃ QUA THỜI GIAN CHECK-OUT (ĐÃ Ở RỒI) THÌ MỚI GỬI THÔNG BÁO ĐÁNH GIÁ PHÒNG
+          if (isPastCheckOut) {
+            const d = checkOutDate.getDate();
+            const m = checkOutDate.getMonth() + 1;
+            const y = checkOutDate.getFullYear();
+            const checkOutStr = `${d < 10 ? '0' + d : d}/${m < 10 ? '0' + m : m}/${y}`;
+
+            bookingNotifs.push({
+              id: `review-invite-${b._id || b.bookingCode}`,
+              type: 'review_invite',
+              title: `⭐ Đánh giá kỳ nghỉ tại ${roomName}`,
+              message: `Bạn đã hoàn tất kỳ nghỉ vào ngày ${checkOutStr}. Hãy chia sẻ trải nghiệm để giúp cộng đồng du lịch nhé!`,
+              time: 'Gần đây',
+              read: false,
+              badgeText: 'ĐÁNH GIÁ',
               badgeColor: '#FEF3C7',
               badgeTextColor: '#D97706',
-              icon: 'key',
+              icon: 'star',
               iconColor: '#D97706',
-              actionType: 'copy_lock',
-              lockCode: lockCode,
-            },
-          ];
-        }).flat();
+              actionType: 'write_review',
+              bookingCode: b.bookingCode,
+              bookingId: b._id,
+              homestay: roomObj,
+              rawBooking: b,
+            });
+          }
+        });
 
         const defaultPromos = [
           {
@@ -224,13 +237,12 @@ const HomeScreen = ({ navigation, route }) => {
       const rb = route.params.recentBooking;
       const bCode = rb.bookingCode || 'ST-5894';
       const rName = rb.homestay?.title || rb.homestay?.name || 'Villa Sơn Trà Đà Nẵng';
-      const lockCode = bCode.replace('ST-', '82');
 
       const newBookingNotif = {
         id: `recent-book-${bCode}`,
         type: 'booking',
         title: `Đặt phòng thành công #${bCode}`,
-        message: `Chuyến nghỉ dưỡng tại ${rName} đã được xác nhận. Bấm để xem vé e-Pass ngay!`,
+        message: `Chuyến nghỉ dưỡng tại ${rName} đã được xác nhận. Quý khách vui lòng xuất trình mã đơn tại quầy lễ tân khi nhận phòng. Bấm để xem vé e-Pass!`,
         time: 'Vừa xong',
         read: false,
         badgeText: 'ĐẶT PHÒNG',
@@ -256,27 +268,11 @@ const HomeScreen = ({ navigation, route }) => {
         },
       };
 
-      const newLockNotif = {
-        id: `recent-lock-${bCode}`,
-        type: 'smart_lock',
-        title: `Mã mở khóa phòng Smart Lock #${rb.homestay?.roomNumber || '402'}`,
-        message: `Mã số vào cửa tự động cho đơn ${bCode} là ${lockCode} (Có hiệu lực từ 14:00).`,
-        time: 'Vừa xong',
-        read: false,
-        badgeText: 'MÃ KHÓA',
-        badgeColor: '#FEF3C7',
-        badgeTextColor: '#D97706',
-        icon: 'key',
-        iconColor: '#D97706',
-        actionType: 'copy_lock',
-        lockCode: lockCode,
-      };
-
       setNotifications((prev) => {
         const filtered = prev.filter(
-          (item) => item.bookingCode !== bCode && item.id !== `recent-book-${bCode}`
+          (item) => item.bookingCode !== bCode && item.id !== `recent-book-${bCode}` && !item.id.includes('lock')
         );
-        return [newBookingNotif, newLockNotif, ...filtered];
+        return [newBookingNotif, ...filtered];
       });
 
       showToast(`Đã nhận thông báo mới cho đơn đặt phòng #${bCode}!`, 'success');
@@ -291,9 +287,7 @@ const HomeScreen = ({ navigation, route }) => {
       prev.map((item) => (item.id === notif.id ? { ...item, read: true } : item))
     );
 
-    if (notif.actionType === 'copy_lock') {
-      showToast(`Mã Smart Lock ${notif.lockCode} đã sẵn sàng sử dụng`, 'success');
-    } else if (notif.actionType === 'copy_voucher') {
+    if (notif.actionType === 'copy_voucher') {
       showToast(`Đã lưu mã ưu đãi ${notif.voucherCode} (Giảm 500.000đ)!`, 'success');
     } else if (notif.actionType === 'view_booking') {
       setShowNotificationModal(false);
@@ -334,6 +328,20 @@ const HomeScreen = ({ navigation, route }) => {
           dates: b.dates || `${checkInStr} - ${checkOutStr} (${b.nights || 2} đêm)`,
           bookingTime: b.bookingTime || (b.createdAt ? formatDateVN(b.createdAt) : 'Hôm nay'),
         },
+      });
+    } else if (notif.actionType === 'write_review') {
+      setShowNotificationModal(false);
+      const targetHomestay = notif.homestay || notif.rawBooking?.roomId || rooms[0] || {
+        _id: '6ace59ef30cddf9c0815f9bc',
+        title: 'An Nhiên Eco Retreat Đà Nẵng',
+        name: 'An Nhiên Eco Retreat Đà Nẵng',
+      };
+      navigation.navigate('WriteReview', {
+        homestay: targetHomestay,
+        bookingCode: notif.bookingCode,
+        bookingId: notif.bookingId,
+        user,
+        token,
       });
     } else if (notif.actionType === 'ai_trip') {
       showToast('Lịch trình du lịch AI đã được đồng bộ với chuyến đi!', 'info');

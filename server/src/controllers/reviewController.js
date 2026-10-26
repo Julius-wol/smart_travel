@@ -61,28 +61,55 @@ export const createReview = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Phòng không tồn tại.' });
     }
 
-    // Xác thực bookingId nếu có hoặc tìm theo bookingCode
-    let validBookingId = bookingId;
-    if (!validBookingId && bookingCode) {
-      const b = await Booking.findOne({ bookingCode: bookingCode.toUpperCase() });
-      if (b) validBookingId = b._id;
+    // Xác thực đơn đặt phòng (Bắt buộc phải có booking để được đánh giá)
+    let booking = null;
+    if (bookingId && mongoose.isValidObjectId(bookingId)) {
+      booking = await Booking.findById(bookingId);
+    }
+    if (!booking && bookingCode) {
+      booking = await Booking.findOne({ bookingCode: bookingCode.trim().toUpperCase() });
     }
 
-    // Ràng buộc duy nhất 1-1: Mỗi booking chỉ được review đúng 1 lần
-    if (validBookingId && mongoose.isValidObjectId(validBookingId)) {
-      const existingReview = await Review.findOne({ bookingId: validBookingId });
-      if (existingReview) {
-        return res.status(400).json({
-          success: false,
-          message: 'Đơn đặt phòng này đã được gửi đánh giá trước đó.',
-        });
-      }
+    if (!booking) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bạn cần có mã đơn đặt phòng hợp lệ để viết đánh giá. Vui lòng kiểm tra lại!',
+      });
+    }
+
+    // RÀNG BUỘC 1: Chỉ khi ĐÃ Ở RỒI (qua thời gian check-out đã đặt) mới được đánh giá
+    const now = new Date();
+    const checkOutTime = new Date(booking.checkOut);
+    if (now < checkOutTime) {
+      const day = String(checkOutTime.getDate()).padStart(2, '0');
+      const month = String(checkOutTime.getMonth() + 1).padStart(2, '0');
+      const year = checkOutTime.getFullYear();
+      return res.status(400).json({
+        success: false,
+        message: `Bạn chỉ có thể đánh giá phòng sau khi đã hoàn tất kỳ nghỉ (sau 12:00 ngày ${day}/${month}/${year}).`,
+      });
+    }
+
+    // RÀNG BUỘC 2: Mỗi tài khoản chỉ được đánh giá 1 lần cho 1 booking
+    const existingReview = await Review.findOne({
+      $or: [
+        { bookingId: booking._id },
+        { bookingCode: booking.bookingCode },
+      ],
+    });
+
+    if (existingReview) {
+      return res.status(400).json({
+        success: false,
+        message: 'Đơn đặt phòng này đã được gửi đánh giá trước đó. Mỗi đơn đặt phòng chỉ được đánh giá 1 lần duy nhất.',
+      });
     }
 
     const review = await Review.create({
-      bookingId: validBookingId || undefined,
+      bookingId:   booking._id,
+      bookingCode: booking.bookingCode,
       roomId,
-      userId:      req.user?._id || undefined,
+      userId:      req.user?._id || booking.userId || undefined,
       fullName:    fullName.trim(),
       avatar:      req.body.avatar || '',
       rating:      Number(rating),

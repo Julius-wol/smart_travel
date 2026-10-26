@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const test = typeof global.test === 'function' ? global.test : require('node:test').test;
+globalThis.test = test;
 const babel = require('@babel/core');
 
 // Exercise the screen handlers with local React Native and network substitutes.
@@ -27,7 +28,7 @@ function renderScreen(name, values, responses, googleResponse = null) {
   };
   const native = Object.fromEntries([
     'View', 'Text', 'TextInput', 'TouchableOpacity', 'SafeAreaView',
-    'KeyboardAvoidingView', 'ScrollView', 'ActivityIndicator',
+    'KeyboardAvoidingView', 'ScrollView', 'ActivityIndicator', 'Modal',
   ].map((name) => [name, name]));
   native.StyleSheet = { create: (styles) => styles };
   native.Platform = { OS: 'android' };
@@ -47,6 +48,8 @@ function renderScreen(name, values, responses, googleResponse = null) {
     exports,
     require: (id) => Object.hasOwn(mocks, id) ? mocks[id] : require(id),
     console,
+    global: globalThis,
+    globalThis,
     fetch: async (url, options) => {
       requests.push({ url, options });
       assert.ok(responses.length, `Unexpected request: ${url}`);
@@ -70,7 +73,7 @@ function renderScreen(name, values, responses, googleResponse = null) {
 for (const provider of ['password', 'google']) {
   for (const role of ['HOST', 'USER']) {
     test(`${provider}: ${role === 'HOST' ? 'rejects HOST' : 'allows USER'}`, async () => {
-      const screen = renderScreen('LoginScreen', ['traveler', 'secret123'], [
+      const screen = renderScreen('LoginScreen', ['traveler@gmail.com', 'secret123'], [
         { ok: true, data: { accessToken: 'jwt' } },
         { ok: true, data: { role, username: 'traveler' } },
       ], provider === 'google' ? {
@@ -90,7 +93,7 @@ for (const provider of ['password', 'google']) {
       assert.equal(screen.navigations.length, role === 'HOST' ? 0 : 1);
       assert.equal(screen.alerts.length, role === 'HOST' ? 1 : 0);
       if (role === 'HOST') assert.match(screen.alerts[0][1], /Chủ phòng/);
-      else assert.equal(screen.navigations[0][0], 'Profile');
+      else assert.equal(screen.navigations[0][0], 'Home');
     });
   }
 }

@@ -211,16 +211,6 @@ const BookingSuccessScreen = ({ navigation, route }) => {
           <Text style={styles.aiPlannerBtnText}>Tạo Lịch Trình Chuyến Đi</Text>
         </TouchableOpacity>
 
-        {/* Nút viết đánh giá */}
-        <TouchableOpacity
-          style={styles.reviewBtn}
-          onPress={() => navigation.navigate('WriteReview', { homestay, bookingCode, user, token })}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="star-outline" size={18} color="#00796B" style={{ marginRight: 8 }} />
-          <Text style={styles.reviewBtnText}>Viết đánh giá về chỗ ở</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.homeBtn}
           onPress={handleBackToHome}

@@ -131,6 +131,7 @@ erDiagram
 ## 2. Chi tiết các Mongoose Model
 
 ### 2.1. `User` Model
+
 Quản lý thông tin tài khoản cho cả 3 vai trò (`USER`, `HOST`, `ADMIN`).
 
 ```javascript
@@ -194,6 +195,7 @@ export default mongoose.model('User', UserSchema);
 ---
 
 ### 2.2. `Room` Model
+
 Quản lý cơ sở lưu trú của Host, đáp ứng trọn vẹn quy trình tạo phòng, lưu nháp, đăng bán và tìm kiếm bản đồ.
 
 ```javascript
@@ -277,6 +279,7 @@ export default mongoose.model('Room', RoomSchema);
 ---
 
 ### 2.3. `Booking` Model
+
 Quản lý đơn đặt phòng, liên kết vé điện tử e-Pass và đồng hồ đếm ngược SLA 24h.
 
 ```javascript
@@ -358,6 +361,7 @@ export default mongoose.model('Booking', BookingSchema);
 ---
 
 ### 2.4. `RoomAvailability` Model
+
 Kiểm soát tình trạng trống/bận theo từng ngày của phòng, chống Overbooking và cho phép Host chủ động khóa lịch bảo trì.
 
 ```javascript
@@ -389,6 +393,7 @@ export default mongoose.model('RoomAvailability', RoomAvailabilitySchema);
 ---
 
 ### 2.5. `Review` Model
+
 Lưu đánh giá từ khách du lịch sau khi hoàn tất chuyến đi (xác thực chặt chẽ qua `bookingId`).
 
 ```javascript
@@ -412,7 +417,7 @@ const ReviewSchema = new mongoose.Schema({
     cleanliness: { type: Number, min: 1, max: 5 }, // Vệ sinh
     location:    { type: Number, min: 1, max: 5 }, // Vị trí
     service:     { type: Number, min: 1, max: 5 }, // Dịch vụ
-    amenities:   { type: Number, min: 1, max: 5 }, // Tiện nghi phòng
+    roomAmenities:  { type: Number, min: 1, max: 5 }, // Tiện nghi phòng
     value:       { type: Number, min: 1, max: 5 }  // Giá trị
   },
   fullName: { type: String, trim: true },
@@ -429,6 +434,7 @@ export default mongoose.model('Review', ReviewSchema);
 ---
 
 ### 2.6. `TripPlan` Model
+
 Lưu trữ lịch trình du lịch thông minh do Gemini AI tạo ra.
 
 ```javascript

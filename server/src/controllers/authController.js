@@ -262,6 +262,31 @@ export const forgotPassword = async (req, res) => {
     }
 };
 
+export const verifyOtp = async (req, res) => {
+    try {
+        const token = (req.body.otp || req.body.token || '').toString().trim();
+        const email = (req.body.email || '').toString().trim().toLowerCase();
+        if (!token) return res.status(400).json({ message: "Vui lòng nhập mã OTP" });
+
+        const query = {
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        };
+        if (email) {
+            query.email = email;
+        }
+
+        const user = await User.findOne(query);
+
+        if (!user) return res.status(400).json({ message: "Mã OTP không đúng hoặc đã hết hạn" });
+
+        return res.status(200).json({ message: "Xác thực mã OTP thành công", valid: true });
+    } catch (error) {
+        console.error("Lỗi verifyOtp:", error);
+        return res.status(500).json({ message: "Lỗi hệ thống" });
+    }
+};
+
 export const resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
