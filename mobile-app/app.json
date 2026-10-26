@@ -6,7 +6,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "scheme": "smarttravel",
     "ios": {
       "supportsTablet": true,
@@ -19,7 +18,9 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font",
+      "expo-sqlite"
     ]
   }
 }

@@ -1,0 +1,67 @@
+openapi: 3.0.3
+info:
+  title: Room booking calendar
+  version: 1.0.0
+servers:
+  - url: http://localhost:5000/api
+paths:
+  /bookings/calendar:
+    get:
+      summary: Read occupied night ranges for one room
+      description: |
+        Returns future bookings except CANCELLED and REJECTED. Dates use the
+        property's Asia/Ho_Chi_Minh timezone. Each range occupies nights in
+        [checkIn, checkOut); checkout on the next booking's check-in is allowed.
+        No guest details or booking identifiers are returned. Refresh on opening
+        the calendar; final booking submission still checks availability.
+      parameters:
+        - in: query
+          name: roomId
+          required: true
+          schema: { type: string, pattern: '^[a-fA-F0-9]{24}$' }
+      responses:
+        '200':
+          description: Calendar snapshot, including an empty array for an available room
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, data]
+                properties:
+                  success: { type: boolean, enum: [true] }
+                  data:
+                    type: object
+                    required: [roomId, timeZone, bookedRanges]
+                    properties:
+                      roomId: { type: string }
+                      timeZone: { type: string, enum: [Asia/Ho_Chi_Minh] }
+                      bookedRanges:
+                        type: array
+                        items:
+                          type: object
+                          required: [checkIn, checkOut]
+                          properties:
+                            checkIn: { type: string, format: date }
+                            checkOut: { type: string, format: date }
+              example:
+                success: true
+                data:
+                  roomId: '664c1234567890abcdef1234'
+                  timeZone: Asia/Ho_Chi_Minh
+                  bookedRanges:
+                    - { checkIn: '2026-11-12', checkOut: '2026-11-14' }
+        '400':
+          description: Missing or invalid MongoDB roomId
+          content:
+            application/json:
+              example: { success: false, message: 'Mã phòng không hợp lệ.' }
+        '404':
+          description: Room does not exist
+          content:
+            application/json:
+              example: { success: false, message: 'Không tìm thấy phòng.' }
+        '503':
+          description: Database temporarily unavailable
+          content:
+            application/json:
+              example: { success: false, message: 'Chưa tải được lịch phòng. Vui lòng thử lại.' }

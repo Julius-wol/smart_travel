@@ -2,9 +2,9 @@ import mongoose from 'mongoose';
 import Booking from '../models/Booking.js';
 import Room from '../models/Room.js';
 
-const PHONE_REGEX = /^(0)(3|5|7|8|9)[0-9]{8}$/;
-const NAME_REGEX = /^[a-zA-ZÀ-ỹ\s]+$/u;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^0(3[2-9]|5[2689]|7[06-9]|8[1-9]|9[0-9])[0-9]{7}$/;
+const NAME_REGEX = /^[\p{L}\p{M} ]+$/u;
+const EMAIL_REGEX = /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
 /**
  * 1. Kiểm tra tình trạng phòng trống trong khoảng thời gian đã chọn
@@ -13,8 +13,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const checkAvailability = async (req, res) => {
   try {
     const { roomId, checkIn, checkOut } = req.query;
+    res.set('Cache-Control', 'no-store');
 
-    if (!roomId || !checkIn || !checkOut) {
+    if (!mongoose.isValidObjectId(roomId) || !checkIn || !checkOut) {
       return res.status(400).json({
         success: false,
         code: 'CR_BOOK_04',
@@ -31,6 +32,10 @@ export const checkAvailability = async (req, res) => {
         code: 'CR_BOOK_04',
         message: 'Thời gian nhận phòng và trả phòng không hợp lệ.',
       });
+    }
+
+    if (!await Room.exists({ _id: roomId })) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy phòng tương ứng.' });
     }
 
     const conflictingBooking = await Booking.findOne({
@@ -83,7 +88,6 @@ export const createBooking = async (req, res) => {
       specialNote = '',
       notes = '',
       paymentMethod = 'NAPAS_QR',
-      totalPrice,
       userId,
     } = req.body;
 
@@ -107,7 +111,7 @@ export const createBooking = async (req, res) => {
     const trimmedEmail = String(info.email).trim().toLowerCase();
 
     if (
-      trimmedFullName.length > 50 ||
+      !trimmedFullName || trimmedFullName.length > 50 ||
       !NAME_REGEX.test(trimmedFullName) ||
       !PHONE_REGEX.test(trimmedPhoneNumber) ||
       !EMAIL_REGEX.test(trimmedEmail)
@@ -119,14 +123,15 @@ export const createBooking = async (req, res) => {
       });
     }
 
-    const noteText = (specialNote || notes || '').trim();
-    if (noteText && noteText.length > 200) {
+    const rawNote = specialNote || notes || '';
+    if (typeof rawNote !== 'string' || rawNote.length > 200) {
       return res.status(400).json({
         success: false,
         code: 'CR_BOOK_04',
         message: 'Yêu cầu đặc biệt không được vượt quá 200 ký tự.',
       });
     }
+    const noteText = rawNote.trim();
 
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
@@ -140,17 +145,8 @@ export const createBooking = async (req, res) => {
     }
 
     // 2. Tìm kiếm phòng
-    let targetRoomId = roomId;
-    let room = null;
-    if (roomId && mongoose.isValidObjectId(roomId)) {
-      room = await Room.findById(roomId);
-    }
-    if (!room) {
-      room = await Room.findOne({ status: 'ACTIVE' });
-      if (room) {
-        targetRoomId = room._id;
-      }
-    }
+    const targetRoomId = roomId;
+    const room = mongoose.isValidObjectId(roomId) ? await Room.findById(roomId) : null;
 
     if (!room) {
       return res.status(404).json({
@@ -182,7 +178,7 @@ export const createBooking = async (req, res) => {
     const nights = Math.max(1, Math.round((checkOutDate.getTime() - checkInDate.getTime()) / msPerDay));
     const pricePerNight = room.pricePerNight || 0;
     const subtotal = pricePerNight * nights;
-    const finalTotalPrice = totalPrice || subtotal;
+    const finalTotalPrice = subtotal;
 
     // 5. Sinh mã đặt phòng duy nhất dạng ST-xxxx
     let bookingCode;

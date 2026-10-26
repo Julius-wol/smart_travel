@@ -1,0 +1,6 @@
+simulation: checkout
+routing: path
+mocks:
+  - name: checkout
+    routeKey: checkout
+    path: ../mocks/checkout/config.yaml

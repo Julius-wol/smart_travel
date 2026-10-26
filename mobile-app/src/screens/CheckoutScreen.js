@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import LoadingOverlay from '../components/LoadingOverlay';
 import ToastNotification from '../components/ToastNotification';
-import { API_URL } from '../utils/config';
+import { DatePickerModal } from '../components/DatePickerModal';
+import { checkCheckoutAvailability, createCheckoutBooking } from '../services/checkoutBooking';
+import { guestInfoValidationSchema } from '../utils/checkoutValidation';
+
+const UNAVAILABLE_MESSAGE = 'Hiện tại, phòng của bạn đã được đặt trong thời gian bạn chọn. Vui lòng chọn thời điểm khác';
+const CONTACT_MESSAGE = 'Vui lòng điền đầy đủ và chính xác thông tin liên hệ.';
 
 /**
  * Màn hình [SMART-88] Checkout & Payment (Xác nhận & Thanh toán)
@@ -49,6 +54,7 @@ const CheckoutScreen = ({ navigation, route }) => {
   const [checkInDate, setCheckInDate] = useState(initialCheckIn);
   const [nights, setNights] = useState(initialNights);
   const [guests, setGuests] = useState(initialGuests);
+  const [dateModalVisible, setDateModalVisible] = useState(false);
   const [activeDatePreset, setActiveDatePreset] = useState(
     route.params?.checkIn ? 'custom' : 'tomorrow'
   );
@@ -65,28 +71,30 @@ const CheckoutScreen = ({ navigation, route }) => {
   const formatVND = (num) => new Intl.NumberFormat('vi-VN').format(num) + 'đ';
   const pricePerNight = homestay?.pricePerNight || homestay?.price || 1450000;
   const roomTotal = pricePerNight * nights;
-  const serviceFee = 150000;
-  const voucherDiscount = 500000;
-  const totalAmount = Math.max(0, roomTotal + serviceFee - voucherDiscount);
+  // The nightly rate includes VAT and service fees; no automatic promotion.
+  const totalAmount = roomTotal;
 
-  // Điền thông tin từ tài khoản đăng nhập; khách vẫn có thể chỉnh sửa liên hệ.
-  const [fullName, setFullName] = useState(
-    [user?.lastName, user?.firstName].filter(Boolean).join(' ').trim()
-  );
-  const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
-  const [email, setEmail] = useState(user?.email || '');
+  // Thông tin người đặt lấy từ tài khoản và chỉ đọc tại Checkout.
+  const fullName = [user?.lastName, user?.firstName].filter(Boolean).join(' ').trim();
+  const phoneNumber = user?.phone || '';
+  const email = user?.email || '';
 
   // Phương thức thanh toán được chọn
-  const [paymentMethod, setPaymentMethod] = useState('momo');
+  const [paymentMethod, setPaymentMethod] = useState('NAPAS_QR');
+  const [hasSpecialNote, setHasSpecialNote] = useState(true);
+  const [specialNote, setSpecialNote] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const processingRef = useRef(false);
+  const [isSimulating, setIsSimulating] = useState(false);
 
   // Trạng thái Loading Overlay (CR_BOOK_05)
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Trạng thái Toast thông báo (CR_BOOK_04)
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'error' });
+  const [toast, setToast] = useState({ id: 0, visible: false, message: '', type: 'error' });
 
   const showToast = (message, type = 'error') => {
-    setToast({ visible: true, message, type });
+    setToast((previous) => ({ id: previous.id + 1, visible: true, message, type }));
   };
 
   const hideToast = () => {
@@ -144,24 +152,45 @@ const CheckoutScreen = ({ navigation, route }) => {
 
   // Xử lý xác nhận thanh toán (gọi API thực tế lưu vào MongoDB)
   const handleConfirmPayment = async () => {
-    console.log('👉 [CheckoutScreen] Đang nhấn Xác nhận & Thanh toán...');
-
-    // CR_BOOK_04: Kiểm tra thông tin liên hệ
-    if (!fullName.trim() || !phoneNumber.trim() || !email.trim()) {
-      showToast('Vui lòng điền đầy đủ và chính xác thông tin liên hệ.', 'error');
+    if (processingRef.current) return;
+    try {
+      guestInfoValidationSchema.validateSync({
+        fullName, phoneNumber, email, paymentMethod,
+        specialNote: hasSpecialNote ? specialNote : '',
+      }, { abortEarly: false });
+      setFieldErrors({});
+    } catch (error) {
+      setFieldErrors(Object.fromEntries(error.inner.map((item) => [item.path, item.message])));
+      showToast(CONTACT_MESSAGE, 'error');
       return;
     }
 
-    if (!email.includes('@') || !email.includes('.')) {
-      showToast('Định dạng email liên hệ không hợp lệ.', 'error');
-      return;
-    }
-
-    // CR_BOOK_05: Bật Loading Overlay full screen
+    processingRef.current = true;
     setIsProcessing(true);
 
     try {
       const roomId = homestay?._id || homestay?.id;
+      const availabilityResult = await checkCheckoutAvailability({
+        roomId, checkIn: checkInDate.toISOString(), checkOut: checkOutDate.toISOString(),
+      });
+      const availability = availabilityResult.body;
+      if (!availabilityResult.ok || !availability.success) {
+        showToast(availability.message || 'Không thể kiểm tra tình trạng phòng. Vui lòng thử lại.', 'error');
+        return;
+      }
+      if (availability.available === false || availability.data?.isAvailable === false) {
+        showToast(UNAVAILABLE_MESSAGE, 'error');
+        return;
+      }
+      if (availability.available !== true && availability.data?.isAvailable !== true) {
+        throw new Error('Invalid availability response');
+      }
+
+      // CR_BOOK_05: thời gian mô phỏng tách biệt với thời gian gọi API.
+      setIsSimulating(true);
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setIsSimulating(false);
+
       const payload = {
         roomId,
         userId: user?._id || user?.id,
@@ -173,26 +202,20 @@ const CheckoutScreen = ({ navigation, route }) => {
         nights,
         guests,
         paymentMethod,
+        specialNote: hasSpecialNote ? specialNote : '',
         totalPrice: totalAmount,
       };
 
-      console.log('📦 [CheckoutScreen] Gửi API tạo booking tới:', `${API_URL}/bookings`, payload);
+      const res = await createCheckoutBooking(payload, token);
+      const data = res.body;
 
-      const res = await fetch(`${API_URL}/bookings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      console.log('📥 [CheckoutScreen] Phản hồi từ máy chủ:', res.status, data);
-      setIsProcessing(false);
+      if (data.code === 'CR_BOOK_09' || res.status === 409 || data.conflict) {
+        showToast(UNAVAILABLE_MESSAGE, 'error');
+        return;
+      }
 
       // CR_BOOK_07: Xung đột lịch phòng thời gian thực
-      if (res.status === 409 || data.conflict) {
+      if (data.code === 'CR_BOOK_07') {
         setConflictMessage(
           data.message ||
             'Rất tiếc, phòng này vừa được khách khác đặt trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác hoặc phòng tương đương.'
@@ -210,14 +233,14 @@ const CheckoutScreen = ({ navigation, route }) => {
         // Chuyển sang màn hình Vé e-Pass thành công với mã booking và thời gian thực tế
         navigation.replace('BookingSuccess', {
           homestay,
-          bookingCode: data.bookingCode || 'ST-5894',
+          bookingCode: data.bookingCode || data.data?.bookingCode,
           user,
           token,
           bookingDetails: {
             fullName: fullName.trim(),
             phoneNumber: phoneNumber.trim(),
             email: email.trim(),
-            totalAmount: formatVND(totalAmount),
+            totalAmount: formatVND(data.data?.totalPrice ?? totalAmount),
             checkIn: formatDateVN(checkInDate),
             checkOut: formatDateVN(checkOutDate),
             nights,
@@ -230,10 +253,12 @@ const CheckoutScreen = ({ navigation, route }) => {
         showToast(data.message || 'Không thể tạo đơn đặt phòng. Vui lòng thử lại.', 'error');
       }
     } catch (error) {
-      console.error('❌ Lỗi khi thanh toán:', error);
-      setIsProcessing(false);
       // CR_BOOK_03: Mất mạng hoặc lỗi kết nối máy chủ
       showToast('Không thể kết nối máy chủ. Vui lòng kiểm tra lại đường truyền.', 'error');
+    } finally {
+      processingRef.current = false;
+      setIsSimulating(false);
+      setIsProcessing(false);
     }
   };
 
@@ -371,7 +396,14 @@ const CheckoutScreen = ({ navigation, route }) => {
           </View>
 
           {/* Date Range Display Box */}
-          <View style={styles.dateRangeBox}>
+          <TouchableOpacity
+            style={styles.dateRangeBox}
+            testID="checkout-edit-dates-btn"
+            accessibilityRole="button"
+            accessibilityLabel="Đổi ngày nhận và trả phòng"
+            disabled={isProcessing}
+            onPress={() => setDateModalVisible(true)}
+          >
             <View style={styles.dateCol}>
               <Text style={styles.dateColLabel}>NHẬN PHÒNG</Text>
               <Text style={styles.dateColMain}>{formatDateVN(checkInDate)}</Text>
@@ -381,7 +413,7 @@ const CheckoutScreen = ({ navigation, route }) => {
             <View style={styles.dateArrowBox}>
               <Ionicons name="arrow-forward" size={16} color="#00796B" />
               <View style={styles.nightsBadge}>
-                <Text style={styles.nightsBadgeText}>{nights} đêm</Text>
+                <Text testID="checkout-nights" style={styles.nightsBadgeText}>{nights} đêm</Text>
               </View>
             </View>
 
@@ -390,7 +422,10 @@ const CheckoutScreen = ({ navigation, route }) => {
               <Text style={styles.dateColMain}>{formatDateVN(checkOutDate)}</Text>
               <Text style={styles.dateColSub}>{getDayNameVN(checkOutDate)} • 12:00</Text>
             </View>
-          </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setDateModalVisible(true)} disabled={isProcessing}>
+            <Text style={styles.changeDatesText}>Đổi ngày</Text>
+          </TouchableOpacity>
 
           {/* Controls: Tăng giảm số đêm & số khách */}
           <View style={styles.steppersRow}>
@@ -454,9 +489,11 @@ const CheckoutScreen = ({ navigation, route }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Họ và tên khách</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, fieldErrors.fullName && styles.inputError]}
+              testID="checkout-full-name"
               value={fullName}
-              onChangeText={setFullName}
+              editable={false}
+              accessibilityLabel="Họ và tên khách (không thể chỉnh sửa)"
               placeholder="Nhập họ và tên khách"
             />
           </View>
@@ -464,9 +501,11 @@ const CheckoutScreen = ({ navigation, route }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Số điện thoại liên hệ</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, fieldErrors.phoneNumber && styles.inputError]}
+              testID="checkout-phone"
               value={phoneNumber}
-              onChangeText={setPhoneNumber}
+              editable={false}
+              accessibilityLabel="Số điện thoại liên hệ (không thể chỉnh sửa)"
               keyboardType="phone-pad"
               placeholder="Nhập số điện thoại liên hệ"
             />
@@ -475,14 +514,44 @@ const CheckoutScreen = ({ navigation, route }) => {
           <View style={[styles.inputGroup, { marginBottom: 0 }]}>
             <Text style={styles.inputLabel}>Email nhận hóa đơn & vé</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, fieldErrors.email && styles.inputError]}
+              testID="checkout-email"
               value={email}
-              onChangeText={setEmail}
+              editable={false}
+              accessibilityLabel="Email nhận hóa đơn và vé (không thể chỉnh sửa)"
               keyboardType="email-address"
               autoCapitalize="none"
               placeholder="Nhập email nhận hóa đơn và vé"
             />
           </View>
+        </View>
+
+        <View style={styles.formCard}>
+          <TouchableOpacity
+            testID="checkout-note-toggle"
+            style={styles.noteToggle}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: hasSpecialNote, disabled: isProcessing }}
+            disabled={isProcessing}
+            onPress={() => setHasSpecialNote((value) => !value)}
+          >
+            <Ionicons name={hasSpecialNote ? 'checkbox' : 'square-outline'} size={22} color="#00796B" />
+            <Text style={styles.inputLabel}>Yêu cầu đặc biệt đến chủ nhà</Text>
+          </TouchableOpacity>
+          {hasSpecialNote && <>
+            <TextInput
+              testID="checkout-special-note"
+              style={[styles.input, fieldErrors.specialNote && styles.inputError]}
+              value={specialNote}
+              onChangeText={(value) => setSpecialNote(value.slice(0, 200))}
+              maxLength={200}
+              multiline
+              editable={!isProcessing}
+              accessibilityLabel="Yêu cầu đặc biệt đến chủ nhà"
+              placeholder="Ví dụ: Xin check-in sớm 13:00 nếu có thể. Cảm ơn!"
+            />
+            <Text style={styles.noteCounter}>{specialNote.length}/200</Text>
+          </>}
         </View>
 
         {/* 4. Phương thức thanh toán */}
@@ -492,17 +561,21 @@ const CheckoutScreen = ({ navigation, route }) => {
           <TouchableOpacity
             style={[
               styles.methodRow,
-              paymentMethod === 'momo' && styles.methodRowActive,
+              paymentMethod === 'EWALLET' && styles.methodRowActive,
             ]}
-            onPress={() => setPaymentMethod('momo')}
+            testID="checkout-method-wallet"
+            accessibilityRole="radio"
+            accessibilityState={{ checked: paymentMethod === 'EWALLET', disabled: isProcessing }}
+            disabled={isProcessing}
+            onPress={() => setPaymentMethod('EWALLET')}
           >
             <Ionicons name="wallet-outline" size={22} color="#A21CAF" style={{ marginRight: 12 }} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.methodName}>Ví MoMo / ZaloPay</Text>
+              <Text style={styles.methodName}>Ví MoMo / ZaloPay / ShopeePay</Text>
               <Text style={styles.methodSub}>Thanh toán quét mã siêu nhanh</Text>
             </View>
             <Ionicons
-              name={paymentMethod === 'momo' ? 'radio-button-on' : 'radio-button-off'}
+              name={paymentMethod === 'EWALLET' ? 'radio-button-on' : 'radio-button-off'}
               size={20}
               color="#00796B"
             />
@@ -512,17 +585,21 @@ const CheckoutScreen = ({ navigation, route }) => {
           <TouchableOpacity
             style={[
               styles.methodRow,
-              paymentMethod === 'bank' && styles.methodRowActive,
+              paymentMethod === 'NAPAS_QR' && styles.methodRowActive,
             ]}
-            onPress={() => setPaymentMethod('bank')}
+            testID="checkout-method-qr"
+            accessibilityRole="radio"
+            accessibilityState={{ checked: paymentMethod === 'NAPAS_QR', disabled: isProcessing }}
+            disabled={isProcessing}
+            onPress={() => setPaymentMethod('NAPAS_QR')}
           >
             <Ionicons name="qr-code-outline" size={22} color="#00796B" style={{ marginRight: 12 }} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.methodName}>Chuyển khoản VietQR</Text>
-              <Text style={styles.methodSub}>Miễn phí giao dịch 24/7</Text>
+              <Text style={styles.methodName}>Chuyển khoản QR Napas 24/7</Text>
+              <Text style={styles.methodSub}>Khuyên dùng · Quét VietQR, xác nhận ngay</Text>
             </View>
             <Ionicons
-              name={paymentMethod === 'bank' ? 'radio-button-on' : 'radio-button-off'}
+              name={paymentMethod === 'NAPAS_QR' ? 'radio-button-on' : 'radio-button-off'}
               size={20}
               color="#00796B"
             />
@@ -532,18 +609,22 @@ const CheckoutScreen = ({ navigation, route }) => {
           <TouchableOpacity
             style={[
               styles.methodRow,
-              paymentMethod === 'card' && styles.methodRowActive,
+              paymentMethod === 'APPLE_GOOGLE_PAY' && styles.methodRowActive,
               { borderBottomWidth: 0 },
             ]}
-            onPress={() => setPaymentMethod('card')}
+            testID="checkout-method-device"
+            accessibilityRole="radio"
+            accessibilityState={{ checked: paymentMethod === 'APPLE_GOOGLE_PAY', disabled: isProcessing }}
+            disabled={isProcessing}
+            onPress={() => setPaymentMethod('APPLE_GOOGLE_PAY')}
           >
             <Ionicons name="card-outline" size={22} color="#2563EB" style={{ marginRight: 12 }} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.methodName}>Thẻ Quốc tế (Visa / Master)</Text>
-              <Text style={styles.methodSub}>Bảo mật 3D Secure</Text>
+              <Text style={styles.methodName}>Apple Pay / Google Pay</Text>
+              <Text style={styles.methodSub}>Xác thực Touch ID / Face ID</Text>
             </View>
             <Ionicons
-              name={paymentMethod === 'card' ? 'radio-button-on' : 'radio-button-off'}
+              name={paymentMethod === 'APPLE_GOOGLE_PAY' ? 'radio-button-on' : 'radio-button-off'}
               size={20}
               color="#00796B"
             />
@@ -555,20 +636,16 @@ const CheckoutScreen = ({ navigation, route }) => {
         <View style={styles.pricingCard}>
           <View style={styles.priceLine}>
             <Text style={styles.priceLabel}>Tiền phòng ({formatVND(pricePerNight)} x {nights} đêm)</Text>
-            <Text style={styles.priceVal}>{formatVND(roomTotal)}</Text>
+            <Text testID="checkout-room-total" style={styles.priceVal}>{formatVND(roomTotal)}</Text>
           </View>
           <View style={styles.priceLine}>
-            <Text style={styles.priceLabel}>Phí dịch vụ & tiện ích</Text>
-            <Text style={styles.priceVal}>150.000đ</Text>
-          </View>
-          <View style={styles.priceLine}>
-            <Text style={[styles.priceLabel, { color: '#00796B' }]}>Voucher giảm giá SMART2026</Text>
-            <Text style={[styles.priceVal, { color: '#00796B' }]}>-500.000đ</Text>
+            <Text style={styles.priceLabel}>Thuế VAT & phí dịch vụ</Text>
+            <Text style={styles.priceVal}>Đã bao gồm</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.priceLineTotal}>
             <Text style={styles.totalLabel}>Tổng thanh toán</Text>
-            <Text style={styles.totalVal}>{formatVND(totalAmount)}</Text>
+            <Text testID="checkout-total-amount" style={styles.totalVal}>{formatVND(totalAmount)}</Text>
           </View>
         </View>
         <TouchableOpacity
@@ -586,12 +663,13 @@ const CheckoutScreen = ({ navigation, route }) => {
       <View style={styles.bottomBar}>
         <View>
           <Text style={styles.bottomTotalText}>Tổng tiền ({nights} đêm)</Text>
-          <Text style={styles.bottomPriceValue}>{formatVND(totalAmount)}</Text>
+          <Text testID="checkout-bottom-total" style={styles.bottomPriceValue}>{formatVND(totalAmount)}</Text>
         </View>
 
         <TouchableOpacity
           style={[styles.payBtn, isProcessing && { opacity: 0.7 }]}
           onPress={handleConfirmPayment}
+          testID="checkout-submit"
           disabled={isProcessing}
           activeOpacity={0.85}
         >
@@ -644,24 +722,46 @@ const CheckoutScreen = ({ navigation, route }) => {
         </View>
       </Modal>
 
+      <DatePickerModal
+        roomId={homestay?._id || homestay?.id}
+        visible={dateModalVisible}
+        onClose={() => setDateModalVisible(false)}
+        initialCheckIn={formatDateInput(checkInDate)}
+        initialCheckOut={formatDateInput(checkOutDate)}
+        onApply={({ checkIn, nights: selectedNights }) => {
+          setCheckInDate(new Date(`${checkIn}T14:00:00`));
+          setNights(selectedNights);
+          setActiveDatePreset('custom');
+        }}
+      />
+
       {/* Loading Overlay (CR_BOOK_05) */}
       <LoadingOverlay
-        visible={isProcessing}
+        visible={isSimulating}
         message="Đang xử lý đặt phòng và xác nhận thanh toán an toàn..."
       />
 
       {/* Toast Notification (CR_BOOK_04, CR_BOOK_03) */}
       <ToastNotification
+        key={toast.id}
         visible={toast.visible}
         message={toast.message}
         type={toast.type}
+        duration={2500}
         onHide={hideToast}
       />
     </SafeAreaView>
   );
 };
 
+const formatDateInput = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 const styles = StyleSheet.create({
+  inputError: { borderColor: '#E53E3E', borderWidth: 1.5 },
+  noteToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  noteCounter: { textAlign: 'right', color: '#718096', fontSize: 12, marginTop: 6 },
+  changeDatesText: { color: '#00796B', fontWeight: '600', textDecorationLine: 'underline', marginTop: 8 },
   homeBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, minHeight: 48, marginTop: 16 },
   homeBtnText: { color: '#00796B', fontSize: 16, fontWeight: '600' },
   container: {
