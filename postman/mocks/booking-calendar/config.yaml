@@ -1,0 +1,11 @@
+version: 1
+id: 11cba83b-023c-471f-a4c5-03a572bf7190
+name: booking-calendar
+slug: booking-calendar
+protocol: http
+interceptRequests: true
+port: 4500
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

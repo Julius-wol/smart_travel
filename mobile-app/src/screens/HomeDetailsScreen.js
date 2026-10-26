@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../utils/config';
 import ToastNotification from '../components/ToastNotification';
+import { DatePickerModal } from '../components/DatePickerModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -24,6 +25,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
  */
 const HomeDetailsScreen = ({ navigation, route }) => {
   const { homestay, user, token, selectedDates, guestConfig } = route.params || {};
+  const [dateModalVisible, setDateModalVisible] = useState(false);
+  const [editedDates, setEditedDates] = useState(null);
+  const stayDates = editedDates || selectedDates;
 
   // Dữ liệu nơi lưu trú (ưu tiên dữ liệu thực từ MongoDB)
   const data = homestay
@@ -338,19 +342,20 @@ const HomeDetailsScreen = ({ navigation, route }) => {
   };
 
   // Tính toán thông tin lưu trú (đồng bộ 100% với ngày & khách chọn từ HomeScreen)
-  const hasCustomDates = !!(selectedDates?.checkIn && selectedDates?.checkOut);
+  const hasCustomDates = !!(stayDates?.checkIn && stayDates?.checkOut);
   const checkInDate = hasCustomDates
-    ? new Date(selectedDates.checkIn)
+    ? new Date(stayDates.checkIn)
     : (() => {
         const d = new Date();
         d.setDate(d.getDate() + 1);
         d.setHours(14, 0, 0, 0);
         return d;
       })();
-  const nightsCount =
-    hasCustomDates && Number(selectedDates.nights) > 0 ? Number(selectedDates.nights) : 2;
+  const nightsCount = hasCustomDates
+    ? Math.round((new Date(stayDates.checkOut) - checkInDate) / (24 * 60 * 60 * 1000))
+    : 2;
   const checkOutDate = hasCustomDates
-    ? new Date(selectedDates.checkOut)
+    ? new Date(stayDates.checkOut)
     : new Date(checkInDate.getTime() + nightsCount * 24 * 60 * 60 * 1000);
 
   const hasCustomGuests = !!guestConfig?.isCustomized;
@@ -359,6 +364,9 @@ const HomeDetailsScreen = ({ navigation, route }) => {
     : 2;
   const roomsCount =
     hasCustomGuests && Number(guestConfig.rooms) > 0 ? Number(guestConfig.rooms) : 1;
+  const roomCapacity = Number(data.maxGuests) > 0
+    ? `Tối đa ${Number(data.maxGuests)} khách`
+    : data.specs.capacity;
 
   // Tính tổng giá theo số đêm đã chọn
   const basePricePerNight = Number(data.price) || 1450000;
@@ -513,7 +521,13 @@ const HomeDetailsScreen = ({ navigation, route }) => {
 
             <View style={styles.stayDetailsRow}>
               {/* Cột 1: Ngày nhận & trả phòng */}
-              <View style={styles.stayItemCol}>
+              <TouchableOpacity
+                style={styles.stayItemCol}
+                testID="edit-stay-dates-btn"
+                accessibilityRole="button"
+                accessibilityLabel="Đổi ngày nhận và trả phòng"
+                onPress={() => setDateModalVisible(true)}
+              >
                 <View style={styles.stayIconRow}>
                   <Ionicons name="calendar-outline" size={14} color="#00796B" style={{ marginRight: 4 }} />
                   <Text style={styles.stayItemLabel}>Thời gian ({nightsCount} đêm)</Text>
@@ -522,23 +536,22 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                   {formatDateShort(checkInDate)} – {formatDateShort(checkOutDate)}
                 </Text>
                 <Text style={styles.stayItemSub}>14:00 Nhận • 12:00 Trả</Text>
-              </View>
+                <Text style={styles.changeDatesText}>Đổi ngày</Text>
+              </TouchableOpacity>
 
               <View style={styles.stayDividerVertical} />
 
-              {/* Cột 2: Số khách & Số phòng */}
+              {/* Cột 2: Sức chứa của phòng theo AC */}
               <View style={styles.stayItemCol}>
                 <View style={styles.stayIconRow}>
                   <Ionicons name="people-outline" size={14} color="#00796B" style={{ marginRight: 4 }} />
-                  <Text style={styles.stayItemLabel}>Khách & Phòng</Text>
+                  <Text style={styles.stayItemLabel}>Sức chứa</Text>
                 </View>
                 <Text style={styles.stayItemValue}>
-                  {totalGuests} khách, {roomsCount} phòng
+                  {roomCapacity}
                 </Text>
                 <Text style={styles.stayItemSub}>
-                  {hasCustomGuests
-                    ? `${guestConfig.adults} lớn${guestConfig.children ? `, ${guestConfig.children} trẻ` : ''}`
-                    : '2 người lớn'}
+                  {data.specs.bedroom}
                 </Text>
               </View>
             </View>
@@ -554,7 +567,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             <View style={styles.specCell}>
               <Ionicons name="people-outline" size={20} color="#00796B" />
               <Text style={styles.specLabel}>Sức chứa</Text>
-              <Text style={styles.specValue}>{data.specs.capacity}</Text>
+              <Text style={styles.specValue}>{roomCapacity}</Text>
             </View>
             <View style={styles.specCell}>
               <Ionicons name="bed-outline" size={20} color="#00796B" />
@@ -871,6 +884,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
       </Modal>
 
       {/* Toast Notification (CR_BOOK_01, CR_BOOK_02) */}
+      <DatePickerModal
+        roomId={data._id || data.id}
+        visible={dateModalVisible}
+        onClose={() => setDateModalVisible(false)}
+        initialCheckIn={formatDateInput(checkInDate)}
+        initialCheckOut={formatDateInput(checkOutDate)}
+        onApply={setEditedDates}
+      />
       <ToastNotification
         visible={toast.visible}
         message={toast.message}
@@ -881,7 +902,17 @@ const HomeDetailsScreen = ({ navigation, route }) => {
   );
 };
 
+const formatDateInput = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
 const styles = StyleSheet.create({
+  changeDatesText: {
+    color: '#00796B',
+    fontSize: 12,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    marginTop: 6,
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
