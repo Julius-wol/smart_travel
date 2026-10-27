@@ -1,0 +1,2188 @@
+{
+  "info": {
+    "name": "Smart Travel - Authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Response contract: {status: HTTP status, message: string, data: object or null}. Run folder 01 in order. Happy signin is request 02. OTP/Google folders disabled by default; see README.md."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "phone",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newPassword",
+      "value": "PmReset!2026_Test",
+      "type": "string"
+    },
+    {
+      "key": "otp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "runRecovery",
+      "value": "false",
+      "type": "string"
+    },
+    {
+      "key": "runGoogle",
+      "value": "false",
+      "type": "string"
+    },
+    {
+      "key": "googleAccessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Automated authentication",
+      "item": [
+        {
+          "name": "01 - Signup: create test account",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Tester\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const id=pm.variables.replaceIn('{{$guid}}').replace(/-/g,'');pm.collectionVariables.set('username','pm_'+id);pm.collectionVariables.set('email','pm_'+id+'@example.com');pm.collectionVariables.set('phone',id);pm.collectionVariables.set('password','PmTest!'+id);['accessToken','refreshToken','otp'].forEach(k=>pm.collectionVariables.unset(k));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201',()=>pm.response.to.have.status(201));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(201);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Signup has null data',()=>pm.expect(response.data).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 - HAPPY CASE - Signin: valid username and password (200)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('JWT in data.accessToken',()=>pm.expect(response.data.accessToken).to.match(/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/));",
+                  "const cookie=pm.response.headers.all().filter(h=>h.key.toLowerCase()==='set-cookie').map(h=>h.value).find(v=>/^refreshToken=/.test(v));",
+                  "pm.test('Secure refresh cookie',()=>{pm.expect(cookie).to.be.a('string');pm.expect(cookie).to.match(/;\\s*HttpOnly/i);pm.expect(cookie).to.match(/;\\s*Secure/i);pm.expect(cookie).to.match(/;\\s*SameSite=None/i);});",
+                  "pm.test('No refresh token in JSON',()=>pm.expect(response.data).not.to.have.property('refreshToken'));",
+                  "if(pm.response.code===200&&response.data?.accessToken)pm.collectionVariables.set('accessToken',response.data.accessToken);",
+                  "if(pm.response.code===200&&cookie)pm.collectionVariables.set('refreshToken',cookie.split(';')[0].slice('refreshToken='.length));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 - HAPPY CASE - Me: valid access token (200)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('Correct account',()=>{pm.expect(response.data.username).to.eql(pm.collectionVariables.get('username'));pm.expect(response.data.email).to.eql(pm.collectionVariables.get('email'));pm.expect(response.data.role).to.eql('USER');});pm.test('No password or reset credentials',()=>['password','resetPasswordToken','resetPasswordExpires'].forEach(k=>pm.expect(response.data).not.to.have.property(k)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 - Signout: username session",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signout",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "refreshToken={{refreshToken}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('No data on signout',()=>pm.expect(response.data).to.eql(null));if(pm.response.code===200){pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup: duplicate username",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"other_{{email}}\",\n  \"password\": \"{{password}}\",\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Tester\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});",
+                  "pm.test('Duplicate field',()=>pm.expect(response.data.field).to.eql('username'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup: duplicate email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"other_{{username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Tester\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});",
+                  "pm.test('Duplicate field',()=>pm.expect(response.data.field).to.eql('email'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup: missing username",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Tester\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup: missing email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Tester\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup: missing password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"{{email}}\",\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Tester\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup: missing firstName",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"lastName\": \"Tester\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup: missing lastName",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"firstName\": \"Postman\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signup: short password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"12345\",\n  \"firstName\": \"Postman\",\n  \"lastName\": \"Tester\",\n  \"phone\": \"{{phone}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signin: missing username",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signin: missing password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signin: unknown account",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"missing_{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401',()=>pm.response.to.have.status(401));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(401);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signin: wrong password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"WrongPassword!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401',()=>pm.response.to.have.status(401));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(401);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me: missing token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/me",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401',()=>pm.response.to.have.status(401));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(401);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me: invalid token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/user/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.token.value"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403',()=>pm.response.to.have.status(403));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(403);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "HAPPY CASE - Signin: valid email and password (200)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('JWT in data.accessToken',()=>pm.expect(response.data.accessToken).to.match(/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/));",
+                  "const cookie=pm.response.headers.all().filter(h=>h.key.toLowerCase()==='set-cookie').map(h=>h.value).find(v=>/^refreshToken=/.test(v));",
+                  "pm.test('Secure refresh cookie',()=>{pm.expect(cookie).to.be.a('string');pm.expect(cookie).to.match(/;\\s*HttpOnly/i);pm.expect(cookie).to.match(/;\\s*Secure/i);pm.expect(cookie).to.match(/;\\s*SameSite=None/i);});",
+                  "pm.test('No refresh token in JSON',()=>pm.expect(response.data).not.to.have.property('refreshToken'));",
+                  "if(pm.response.code===200&&response.data?.accessToken)pm.collectionVariables.set('accessToken',response.data.accessToken);",
+                  "if(pm.response.code===200&&cookie)pm.collectionVariables.set('refreshToken',cookie.split(';')[0].slice('refreshToken='.length));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signout: email session",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signout",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "refreshToken={{refreshToken}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('No data on signout',()=>pm.expect(response.data).to.eql(null));if(pm.response.code===200){pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "HAPPY CASE - Signin: valid phone and password (200)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{phone}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('JWT in data.accessToken',()=>pm.expect(response.data.accessToken).to.match(/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/));",
+                  "const cookie=pm.response.headers.all().filter(h=>h.key.toLowerCase()==='set-cookie').map(h=>h.value).find(v=>/^refreshToken=/.test(v));",
+                  "pm.test('Secure refresh cookie',()=>{pm.expect(cookie).to.be.a('string');pm.expect(cookie).to.match(/;\\s*HttpOnly/i);pm.expect(cookie).to.match(/;\\s*Secure/i);pm.expect(cookie).to.match(/;\\s*SameSite=None/i);});",
+                  "pm.test('No refresh token in JSON',()=>pm.expect(response.data).not.to.have.property('refreshToken'));",
+                  "if(pm.response.code===200&&response.data?.accessToken)pm.collectionVariables.set('accessToken',response.data.accessToken);",
+                  "if(pm.response.code===200&&cookie)pm.collectionVariables.set('refreshToken',cookie.split(';')[0].slice('refreshToken='.length));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signout: phone session",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signout",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "refreshToken={{refreshToken}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('No data on signout',()=>pm.expect(response.data).to.eql(null));if(pm.response.code===200){pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Signout: no session",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signout",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('No data on signout',()=>pm.expect(response.data).to.eql(null));if(pm.response.code===200){pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot password: missing email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot password: unknown email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"missing_{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404',()=>pm.response.to.have.status(404));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(404);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP: missing code",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/verify-otp",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP: invalid code",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/verify-otp",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"otp\": \"invalid-otp\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset password: missing token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/reset-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset password: missing password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/reset-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invalid-otp\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset password: short password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/reset-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invalid-otp\",\n  \"newPassword\": \"12345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset password: invalid token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/reset-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invalid-otp\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Google: missing token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/google",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 - Password recovery (manual OTP)",
+      "item": [
+        {
+          "name": "R01 - Request OTP: send manually first",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runRecovery')!=='true')pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "R02 - Request again within 60 seconds",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runRecovery')!=='true')pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 429',()=>pm.response.to.have.status(429));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(429);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "R03 - Verify OTP",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/verify-otp",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"otp\": \"{{otp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runRecovery')!=='true')pm.execution.skipRequest();if(!pm.collectionVariables.get('otp'))pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('OTP valid',()=>pm.expect(response.data.valid).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "R04 - Reset password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/reset-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{otp}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runRecovery')!=='true')pm.execution.skipRequest();if(!pm.collectionVariables.get('otp'))pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "R05 - Reject old password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runRecovery')!=='true')pm.execution.skipRequest();if(!pm.collectionVariables.get('otp'))pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401',()=>pm.response.to.have.status(401));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(401);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "R06 - Accept new password",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signin",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{newPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runRecovery')!=='true')pm.execution.skipRequest();if(!pm.collectionVariables.get('otp'))pm.execution.skipRequest();pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('JWT in data.accessToken',()=>pm.expect(response.data.accessToken).to.match(/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/));",
+                  "const cookie=pm.response.headers.all().filter(h=>h.key.toLowerCase()==='set-cookie').map(h=>h.value).find(v=>/^refreshToken=/.test(v));",
+                  "pm.test('Secure refresh cookie',()=>{pm.expect(cookie).to.be.a('string');pm.expect(cookie).to.match(/;\\s*HttpOnly/i);pm.expect(cookie).to.match(/;\\s*Secure/i);pm.expect(cookie).to.match(/;\\s*SameSite=None/i);});",
+                  "pm.test('No refresh token in JSON',()=>pm.expect(response.data).not.to.have.property('refreshToken'));",
+                  "if(pm.response.code===200&&response.data?.accessToken)pm.collectionVariables.set('accessToken',response.data.accessToken);",
+                  "if(pm.response.code===200&&cookie)pm.collectionVariables.set('refreshToken',cookie.split(';')[0].slice('refreshToken='.length));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "R07 - Reject reused OTP",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/reset-password",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{otp}}\",\n  \"newPassword\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runRecovery')!=='true')pm.execution.skipRequest();if(!pm.collectionVariables.get('otp'))pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400',()=>pm.response.to.have.status(400));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(400);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "R08 - Close session",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signout",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "refreshToken={{refreshToken}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runRecovery')!=='true')pm.execution.skipRequest();if(!pm.collectionVariables.get('otp'))pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('No data on signout',()=>pm.expect(response.data).to.eql(null));if(pm.response.code===200){pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 - Google OAuth (optional)",
+      "item": [
+        {
+          "name": "G01 - Invalid Google token (external call)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/google",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accessToken\": \"invalid-token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runGoogle')!=='true')pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401',()=>pm.response.to.have.status(401));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(401);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "pm.test('No credentials on failure',()=>{pm.expect(response).not.to.have.property('accessToken');if(response.data){['accessToken','password','refreshToken'].forEach(k=>pm.expect(response.data).not.to.have.property(k));}});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "G02 - HAPPY CASE - Valid Google access token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/google",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accessToken\": \"{{googleAccessToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runGoogle')!=='true')pm.execution.skipRequest();if(!pm.collectionVariables.get('googleAccessToken'))pm.execution.skipRequest();pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "",
+                  "pm.test('JWT in data.accessToken',()=>pm.expect(response.data.accessToken).to.match(/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/));",
+                  "const cookie=pm.response.headers.all().filter(h=>h.key.toLowerCase()==='set-cookie').map(h=>h.value).find(v=>/^refreshToken=/.test(v));",
+                  "pm.test('Secure refresh cookie',()=>{pm.expect(cookie).to.be.a('string');pm.expect(cookie).to.match(/;\\s*HttpOnly/i);pm.expect(cookie).to.match(/;\\s*Secure/i);pm.expect(cookie).to.match(/;\\s*SameSite=None/i);});",
+                  "pm.test('No refresh token in JSON',()=>pm.expect(response.data).not.to.have.property('refreshToken'));",
+                  "if(pm.response.code===200&&response.data?.accessToken)pm.collectionVariables.set('accessToken',response.data.accessToken);",
+                  "if(pm.response.code===200&&cookie)pm.collectionVariables.set('refreshToken',cookie.split(';')[0].slice('refreshToken='.length));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "G03 - Close Google session",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signout",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "refreshToken={{refreshToken}}"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if(pm.collectionVariables.get('runGoogle')!=='true')pm.execution.skipRequest();if(!pm.collectionVariables.get('googleAccessToken'))pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200',()=>pm.response.to.have.status(200));",
+                  "pm.test('JSON response',()=>pm.response.to.be.json);",
+                  "const response=pm.response.json();",
+                  "pm.test('Standard status/message/data envelope',()=>{",
+                  "pm.expect(response).to.have.all.keys('status','message','data');",
+                  "pm.expect(response.status).to.eql(200);",
+                  "pm.expect(response.status).to.eql(pm.response.code);",
+                  "pm.expect(response.message).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "pm.test('No data on signout',()=>pm.expect(response.data).to.eql(null));if(pm.response.code===200){pm.collectionVariables.unset('accessToken');pm.collectionVariables.unset('refreshToken');}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
