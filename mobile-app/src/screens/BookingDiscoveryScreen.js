@@ -31,7 +31,9 @@ import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
  * BookingDiscoveryScreen Component (SMART-84 - SCR-MOB-BOOK-01)
  * Màn hình Khám phá & Đặt phòng Homestay theo thiết kế Figma Node 29:1190
  */
-const BookingDiscoveryScreen = ({ navigation }) => {
+const BookingDiscoveryScreen = ({ navigation, route }) => {
+  const user = route?.params?.user;
+  const token = route?.params?.token;
   const dispatch = useDispatch();
   const flatListRef = useRef(null);
 
@@ -160,7 +162,7 @@ const BookingDiscoveryScreen = ({ navigation }) => {
         onLogoPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
         onSearchPress={() => {}}
         onNotificationPress={() => {}}
-        onProfilePress={() => {}}
+        onProfilePress={() => navigation.navigate('Profile', { user, token })}
         unreadNotifications={2}
       />
 
