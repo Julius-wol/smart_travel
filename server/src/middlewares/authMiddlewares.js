@@ -1,3 +1,4 @@
+import { sendResponse } from '../utils/apiResponse.js';
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
@@ -9,23 +10,23 @@ const authHeader = req.headers["authorization"];
 const token = authHeader && authHeader.split(" ")[1];
 
 if(!token) {
-    return res.status(401).json({ message: "Không có accesstoken" });
+    return sendResponse(res, 401, "Không có accesstoken");
 }
 
    //xac nhan token hop le
 jwt.verify (token, process.env.ACCES_TOKEN_SECRET || 'secret_key', async (err, decodedUser) => {
     if(err) {
         console.log(err);
-        return res.status(403).json({ message: "Accesstoken hết hạn hoặc không đúng" });
+        return sendResponse(res, 403, "Accesstoken hết hạn hoặc không đúng");
     }
     
 
     try {
         // tìm user
-        const user = await User.findById(decodedUser.userId).select("-password");
+        const user = await User.findById(decodedUser.userId).select("-password -resetPasswordToken -resetPasswordExpires");
         
         if(!user) {
-            return res.status(404).json({ message: "Người dùng không tồn tại" });
+            return sendResponse(res, 404, "Người dùng không tồn tại");
         }
 
 
@@ -34,13 +35,13 @@ jwt.verify (token, process.env.ACCES_TOKEN_SECRET || 'secret_key', async (err, d
         next();
     } catch(dbErr) {
         console.error(dbErr);
-        return res.status(500).json({ message: "Lỗi hệ thống database" });
+        return sendResponse(res, 500, "Lỗi hệ thống database");
     }
 });
 
     }catch(error)   {
         console.error("Lỗi khi xác thực", error)
-        return res.status(500).json({ message: "Lỗi hệ thống"})
+        return sendResponse(res, 500, "Lỗi hệ thống")
     }
 }
 
