@@ -1,12 +1,13 @@
+import { sendResponse } from '../utils/apiResponse.js';
 export const authMe = async (req, res) => {
 try{
  const user = req.user; //lấy từ midd
 
- return res.status(200).json(user);
+ return sendResponse(res, 200, 'Lấy thông tin người dùng thành công', user);
 
 }catch(error){
     console.error("Lỗi khi gọi authMe", error);
-    return res.status(500).json({ message: "Lỗi hệ thống"});
+    return sendResponse(res, 500, "Lỗi hệ thống");
 }
 
 }

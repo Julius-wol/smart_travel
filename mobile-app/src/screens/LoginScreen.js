@@ -149,7 +149,7 @@ const LoginScreen = ({ navigation }) => {
         return;
       }
 
-      const accessToken = loginData.accessToken;
+      const accessToken = loginData.data.accessToken;
 
       // GET PROFILE 
       const profileRes = await fetch(`${API_URL}/user/me`, {
@@ -163,7 +163,7 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        completeLogin(profileData, accessToken);
+        completeLogin(profileData.data, accessToken);
       } else {
         const msg = 'Không lấy được thông tin User';
         setFormError(msg);
@@ -199,12 +199,12 @@ const LoginScreen = ({ navigation }) => {
 
       // Lấy thông tin profile
       const profileRes = await fetch(`${API_URL}/user/me`, {
-        headers: { 'Authorization': `Bearer ${data.accessToken}` },
+        headers: { 'Authorization': `Bearer ${data.data.accessToken}` },
       });
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        completeLogin(profileData, data.accessToken);
+        completeLogin(profileData.data, data.data.accessToken);
       } else {
         showErrorPopup('Không lấy được thông tin tài khoản Google', 'Lỗi tài khoản');
       }

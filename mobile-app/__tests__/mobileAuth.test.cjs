@@ -74,8 +74,8 @@ for (const provider of ['password', 'google']) {
   for (const role of ['HOST', 'USER']) {
     test(`${provider}: ${role === 'HOST' ? 'rejects HOST' : 'allows USER'}`, async () => {
       const screen = renderScreen('LoginScreen', ['traveler@gmail.com', 'secret123'], [
-        { ok: true, data: { accessToken: 'jwt' } },
-        { ok: true, data: { role, username: 'traveler' } },
+        { ok: true, data: { status: 200, message: 'OK', data: { accessToken: 'jwt' } } },
+        { ok: true, data: { status: 200, message: 'OK', data: { role, username: 'traveler' } } },
       ], provider === 'google' ? {
         type: 'success', authentication: { accessToken: 'google-token' },
       } : null);
