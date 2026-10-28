@@ -1,41 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../../constants/theme';
-
-const DEFAULT_REVIEWS = [
-  {
-    id: 'rev-1',
-    guestName: 'Trần Thị Bình',
-    initials: 'TB',
-    rating: 5,
-    roomName: 'Villa Mộng Mơ H5',
-    date: '13/10/2026',
-    comment:
-      'Phòng sạch sẽ, view hồ bơi buổi sáng rất đẹp. Chủ nhà nhiệt tình hỗ trợ check-in sớm. Điểm trừ là wifi hơi yếu ở tầng 2.',
-  },
-  {
-    id: 'rev-2',
-    guestName: 'Lê Hoàng Nam',
-    initials: 'LN',
-    rating: 5,
-    roomName: 'Villa Mộng Mơ',
-    date: '05/11/2026',
-    comment:
-      'Chuyến nghỉ dưỡng tuyệt vời cho cả gia đình! Bếp nướng BBQ ngoài trời đầy đủ dụng cụ, hồ bơi nước ấm ngắm cảnh cực chill...',
-  },
-];
 
 const HostRecentReviews = ({
   recentReviews,
   onNavigateReviews,
 }) => {
-  const reviewsList = recentReviews?.list || DEFAULT_REVIEWS;
-  const overallRating = recentReviews?.overallRating || 4.7;
+  const reviewsList = recentReviews?.list || [];
+  const overallRating = recentReviews?.overallRating || 5.0;
 
   return (
     <View style={styles.cardContainer} testID="recent-reviews-card">
-      {/* 1. Header (Figma 4.1) */}
+      {/* 1. Header */}
       <View style={styles.headerRow}>
         <View style={styles.titleCol}>
           <View style={styles.titleWithBadge}>
@@ -45,7 +22,7 @@ const HostRecentReviews = ({
               <Text style={styles.ratingBadgeText}>{`${overallRating} / 5.0`}</Text>
             </View>
           </View>
-          <Text style={styles.cardSubtitle}>Từ khách đã hoàn thành kỳ nghỉ</Text>
+          <Text style={styles.cardSubtitle}>Từ khách đã hoàn thành kỳ nghỉ thực tế</Text>
         </View>
 
         {/* Action Link: Xem tất cả */}
@@ -60,51 +37,58 @@ const HostRecentReviews = ({
         </TouchableOpacity>
       </View>
 
-      {/* 2. Top 3 Reviews List (Figma 4.2) */}
+      {/* 2. Reviews List */}
       <View style={styles.listContainer}>
-        {reviewsList.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            testID={`review-item-${item.id}`}
-            style={styles.reviewItem}
-            onPress={onNavigateReviews}
-            activeOpacity={0.8}
-          >
-            {/* Top Row: Avatar + Name + Stars */}
-            <View style={styles.reviewTopRow}>
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarText}>{item.initials}</Text>
-              </View>
+        {reviewsList.length === 0 ? (
+          <View style={styles.emptyReviewBox}>
+            <Ionicons name="chatbubble-ellipses-outline" size={28} color="#94A3B8" style={{ marginBottom: 8 }} />
+            <Text style={styles.emptyReviewText}>Chưa có đánh giá nào từ khách lưu trú.</Text>
+          </View>
+        ) : (
+          reviewsList.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              testID={`review-item-${item.id}`}
+              style={styles.reviewItem}
+              onPress={onNavigateReviews}
+              activeOpacity={0.8}
+            >
+              {/* Top Row: Avatar + Name + Stars */}
+              <View style={styles.reviewTopRow}>
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarText}>{item.initials}</Text>
+                </View>
 
-              <View style={styles.reviewerCol}>
-                <Text style={styles.guestName}>{item.guestName}</Text>
-                <View style={styles.starsRow}>
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Ionicons
-                      key={star}
-                      name="star"
-                      size={12}
-                      color="#EAB308"
-                      style={{ marginRight: 2 }}
-                    />
-                  ))}
+                <View style={styles.reviewerCol}>
+                  <Text style={styles.guestName}>{item.guestName}</Text>
+                  <View style={styles.starsRow}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Ionicons
+                        key={star}
+                        name="star"
+                        size={12}
+                        color={star <= Math.round(item.rating || 5) ? '#EAB308' : '#E2E8F0'}
+                        style={{ marginRight: 2 }}
+                      />
+                    ))}
+                  </View>
                 </View>
               </View>
-            </View>
 
-            {/* Meta Row: Room Name + Date */}
-            <View style={styles.metaRow}>
-              <Text style={styles.metaText}>
-                {item.roomName} • {item.date}
+              {/* Meta Row: Room Name + Date */}
+              <View style={styles.metaRow}>
+                <Text style={styles.metaText}>
+                  {item.roomName} • {item.date}
+                </Text>
+              </View>
+
+              {/* Comment Body */}
+              <Text style={styles.commentText} numberOfLines={3}>
+                "{item.comment}"
               </Text>
-            </View>
-
-            {/* Review Comment Quote (max 2 lines) */}
-            <Text style={styles.commentQuote} numberOfLines={2}>
-              "{item.comment}"
-            </Text>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          ))
+        )}
       </View>
     </View>
   );
@@ -125,11 +109,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
     marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
   titleCol: {
     flex: 1,
@@ -141,25 +122,24 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0B1C30',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
     fontFamily: TYPOGRAPHY.fontFamily,
   },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF9C3',
-    paddingHorizontal: 7,
+    backgroundColor: '#FEF08A',
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#FEF08A',
+    borderRadius: 12,
   },
   ratingBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#854D0E',
+    color: '#713F12',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   cardSubtitle: {
     fontSize: 12,
@@ -177,6 +157,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#00685F',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   listContainer: {
     gap: 12,
@@ -191,21 +172,21 @@ const styles = StyleSheet.create({
   reviewTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
   },
   avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   avatarText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#475569',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   reviewerCol: {
     flex: 1,
@@ -213,25 +194,41 @@ const styles = StyleSheet.create({
   guestName: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0B1C30',
+    color: '#0F172A',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   starsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 2,
   },
   metaRow: {
-    marginBottom: 6,
+    marginTop: 6,
   },
   metaText: {
     fontSize: 11,
     color: '#64748B',
     fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
-  commentQuote: {
+  commentText: {
     fontSize: 12,
     color: '#334155',
     lineHeight: 18,
+    marginTop: 6,
+    fontFamily: TYPOGRAPHY.fontFamily,
     fontStyle: 'italic',
+  },
+  emptyReviewBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 28,
+  },
+  emptyReviewText: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
 });
 

@@ -31,6 +31,14 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+// Chống trùng lặp tiền tố /api/api từ axios client
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace('/api/api/', '/api/');
+  }
+  next();
+});
+
 // 2. EJS View Engine (Web Admin)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));

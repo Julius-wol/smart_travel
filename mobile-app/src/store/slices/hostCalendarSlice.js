@@ -5,7 +5,7 @@ import {
   blockRoomDatesApi,
   unblockRoomDatesApi,
   quickApproveBookingApi,
-  quickRejectBookingApi
+  quickRejectBookingApi,
 } from '../../services/hostCalendarService';
 
 // Async Thunks
@@ -14,7 +14,7 @@ export const fetchHostRooms = createAsyncThunk(
   async (ownerId, { rejectWithValue }) => {
     try {
       const response = await getHostRoomsApi(ownerId);
-      return response.data;
+      return response.data || [];
     } catch (error) {
       return rejectWithValue(error);
     }
@@ -40,11 +40,13 @@ export const blockDatesThunk = createAsyncThunk(
       const response = await blockRoomDatesApi(data);
       const state = getState().hostCalendar;
       if (state.selectedRoom) {
-        dispatch(fetchHostCalendar({
-          roomId: state.selectedRoom._id,
-          month: state.currentMonth,
-          year: state.currentYear
-        }));
+        dispatch(
+          fetchHostCalendar({
+            roomId: state.selectedRoom._id,
+            month: state.currentMonth,
+            year: state.currentYear,
+          })
+        );
       }
       return response;
     } catch (error) {
@@ -60,11 +62,13 @@ export const unblockDatesThunk = createAsyncThunk(
       const response = await unblockRoomDatesApi(data);
       const state = getState().hostCalendar;
       if (state.selectedRoom) {
-        dispatch(fetchHostCalendar({
-          roomId: state.selectedRoom._id,
-          month: state.currentMonth,
-          year: state.currentYear
-        }));
+        dispatch(
+          fetchHostCalendar({
+            roomId: state.selectedRoom._id,
+            month: state.currentMonth,
+            year: state.currentYear,
+          })
+        );
       }
       return response;
     } catch (error) {
@@ -80,11 +84,35 @@ export const quickApproveBookingThunk = createAsyncThunk(
       const response = await quickApproveBookingApi(bookingId);
       const state = getState().hostCalendar;
       if (state.selectedRoom) {
-        dispatch(fetchHostCalendar({
-          roomId: state.selectedRoom._id,
-          month: state.currentMonth,
-          year: state.currentYear
-        }));
+        dispatch(
+          fetchHostCalendar({
+            roomId: state.selectedRoom._id,
+            month: state.currentMonth,
+            year: state.currentYear,
+          })
+        );
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+export const quickRejectBookingThunk = createAsyncThunk(
+  'hostCalendar/rejectBooking',
+  async ({ bookingId, rejectReason }, { rejectWithValue, dispatch, getState }) => {
+    try {
+      const response = await quickRejectBookingApi(bookingId, rejectReason);
+      const state = getState().hostCalendar;
+      if (state.selectedRoom) {
+        dispatch(
+          fetchHostCalendar({
+            roomId: state.selectedRoom._id,
+            month: state.currentMonth,
+            year: state.currentYear,
+          })
+        );
       }
       return response;
     } catch (error) {
@@ -98,8 +126,8 @@ const now = new Date();
 const initialState = {
   rooms: [],
   selectedRoom: null,
-  currentMonth: 11, // Tháng 11 theo đúng thiết kế Figma SMART-105
-  currentYear: 2026,
+  currentMonth: now.getMonth() + 1,
+  currentYear: now.getFullYear(),
   kpi: {
     occupancyRate: 0,
     soldNights: 0,
@@ -127,7 +155,6 @@ const hostCalendarSlice = createSlice({
       state.selectedRoom = action.payload;
     },
     changeMonth: (state, action) => {
-      // action.payload: +1 hoặc -1
       let newMonth = state.currentMonth + action.payload;
       let newYear = state.currentYear;
       if (newMonth > 12) {
@@ -141,8 +168,9 @@ const hostCalendarSlice = createSlice({
       state.currentYear = newYear;
     },
     resetToCurrentMonth: (state) => {
-      state.currentMonth = 11;
-      state.currentYear = 2026;
+      const cur = new Date();
+      state.currentMonth = cur.getMonth() + 1;
+      state.currentYear = cur.getFullYear();
     },
     openBlockModal: (state, action) => {
       state.selectedRange = action.payload || { start: null, end: null };
@@ -177,7 +205,7 @@ const hostCalendarSlice = createSlice({
       .addCase(fetchHostRooms.fulfilled, (state, action) => {
         state.loading = false;
         state.rooms = action.payload;
-        if (!state.selectedRoom && action.payload.length > 0) {
+        if (!state.selectedRoom && action.payload && action.payload.length > 0) {
           state.selectedRoom = action.payload[0];
         }
       })
@@ -194,12 +222,12 @@ const hostCalendarSlice = createSlice({
       })
       .addCase(fetchHostCalendar.fulfilled, (state, action) => {
         state.loading = false;
-        state.calendarDays = action.payload.days || [];
-        state.kpi = action.payload.kpi || initialState.kpi;
-        if (action.payload.room) {
+        state.calendarDays = action.payload?.days || [];
+        state.kpi = action.payload?.kpi || initialState.kpi;
+        if (action.payload?.room) {
           state.selectedRoom = {
             ...state.selectedRoom,
-            ...action.payload.room
+            ...action.payload.room,
           };
         }
       })

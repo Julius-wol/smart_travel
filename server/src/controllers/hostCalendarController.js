@@ -1,12 +1,14 @@
+import mongoose from 'mongoose';
 import Room from '../models/Room.js';
 import RoomBlock from '../models/RoomBlock.js';
 import Booking from '../models/Booking.js';
+import User from '../models/User.js';
 
 const REASON_LABELS = {
   MAINTENANCE: 'Sửa chữa / Bảo trì định kỳ',
   EXTERNAL_GUEST: 'Giữ chỗ cho khách đặt ngoài hệ thống',
   HOLIDAY_PERSONAL: 'Nghỉ lễ / Gia đình sử dụng',
-  OTHER: 'Khác'
+  OTHER: 'Khác',
 };
 
 /**
@@ -21,150 +23,73 @@ const formatDateStr = (d) => {
 };
 
 /**
- * Lấy danh sách các phòng thuộc sở hữu của Host
+ * Lấy danh sách các phòng thực tế của Host từ MongoDB Atlas
  * GET /api/host/rooms
  */
 export const getHostRooms = async (req, res) => {
   try {
-    const { ownerId } = req.query;
-    const filter = ownerId ? { ownerId } : {};
-    
-    let rooms = await Room.find(filter).select('_id title code address specs pricePerNight weekendPricePerNight maxGuests images status');
-    
-    // Đảm bảo có phòng chuẩn Villa Mộng Mơ View Hồ & Rừng Thông (#P-VL204) theo thiết kế Figma
-    let figmaRoom = rooms.find(r => r.code === '#P-VL204' || r.title.includes('Villa Mộng Mơ'));
-    if (!figmaRoom) {
-      figmaRoom = await Room.create({
-        title: 'Villa Mộng Mơ View Hồ & Rừng Thông',
-        code: '#P-VL204',
-        address: 'Số 123 Đường Hoa Hồng, Khu Du Lịch Hồ Tuyền Lâm, Phường 4, Đà Lạt',
-        city: 'Đà Lạt',
-        specs: { bedroom: '4 phòng ngủ', bed: '4 giường', bath: '3 phòng tắm' },
-        pricePerNight: 2500000,
-        weekendPricePerNight: 2800000,
-        maxGuests: 6,
-        status: 'ACTIVE',
-        images: ['https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=600']
-      });
-      rooms.unshift(figmaRoom);
-    } else {
-      rooms = [figmaRoom, ...rooms.filter(r => r._id.toString() !== figmaRoom._id.toString())];
+    let ownerId = req.query.ownerId || req.user?.id || req.user?._id;
+
+    if (!ownerId) {
+      const hostUser = await User.findOne({ role: { $in: ['HOST', 'host'] } }).lean();
+      if (hostUser) {
+        ownerId = hostUser._id;
+      }
     }
+
+    let filter = {};
+    if (ownerId && mongoose.isValidObjectId(ownerId)) {
+      filter = { ownerId: new mongoose.Types.ObjectId(ownerId) };
+    }
+
+    let rooms = await Room.find(filter)
+      .select('_id title name code roomCode address specs pricePerNight regularPrice weekendPrice weekendPricePerNight maxGuests images status')
+      .lean();
+
+    // Nếu host được chỉ định chưa có phòng, fallback về tất cả các phòng đang phát hành
+    if (!rooms || rooms.length === 0) {
+      rooms = await Room.find({
+        status: { $in: ['PUBLISHED', 'ACTIVE', 'Published', 'active'] },
+      })
+        .select('_id title name code roomCode address specs pricePerNight regularPrice weekendPrice weekendPricePerNight maxGuests images status')
+        .lean();
+    }
+
+    // Chuẩn hóa dữ liệu trả về cho frontend
+    const normalizedRooms = rooms.map((r) => {
+      const price = r.pricePerNight || r.regularPrice || 1450000;
+      const weekend = r.weekendPricePerNight || r.weekendPrice || Math.round(price * 1.15);
+      return {
+        _id: r._id,
+        title: r.title || r.name || 'Phòng nghỉ dưỡng',
+        code: r.code || r.roomCode || `#MP-${String(r._id).slice(-4).toUpperCase()}`,
+        address: r.address || 'Đà Nẵng',
+        specs: r.specs || { bedroom: '2 phòng ngủ', bed: '2 giường', bath: '2 phòng tắm' },
+        pricePerNight: price,
+        weekendPricePerNight: weekend,
+        maxGuests: r.maxGuests || 4,
+        images: r.images && r.images.length > 0 ? r.images : ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600'],
+        status: r.status,
+      };
+    });
 
     return res.status(200).json({
       success: true,
-      message: 'Lấy danh sách phòng thành công',
-      data: rooms
+      message: 'Lấy danh sách phòng thành công từ MongoDB Atlas',
+      data: normalizedRooms,
     });
   } catch (error) {
+    console.error('Lỗi khi lấy danh sách phòng Host:', error);
     return res.status(500).json({
       success: false,
       message: 'Lỗi máy chủ khi lấy danh sách phòng',
-      error: error.message
+      error: error.message,
     });
   }
 };
 
 /**
- * Helper tự động seed dữ liệu mẫu cho Tháng 11/2026 nếu DB trống
- */
-const seedFigmaCalendarDataIfEmpty = async (roomId) => {
-  const existingBlocks = await RoomBlock.countDocuments({ roomId });
-  const existingBookings = await Booking.countDocuments({ roomId });
-
-  if (existingBlocks === 0) {
-    // Ngày 8-10 khóa bảo trì
-    await RoomBlock.create({
-      roomId,
-      startDate: new Date('2026-11-08T00:00:00Z'),
-      endDate: new Date('2026-11-10T23:59:59Z'),
-      reason: 'MAINTENANCE',
-      reasonLabel: 'Khóa bảo trì',
-      internalNote: 'Bảo trì hệ thống nước nóng & cảnh quan'
-    });
-  }
-
-  if (existingBookings === 0) {
-    // 1. Booking ngày 1 - 4: Lê Hoàng Nam
-    await Booking.create({
-      roomId,
-      bookingCode: '#BK-9750',
-      fullName: 'Lê Hoàng Nam',
-      phoneNumber: '0987.654.321',
-      email: 'nam.le@example.com',
-      checkIn: new Date('2026-11-01T14:00:00Z'),
-      checkOut: new Date('2026-11-04T12:00:00Z'),
-      nights: 3,
-      guests: 2,
-      totalPrice: 7800000,
-      status: 'CONFIRMED'
-    });
-
-    // 2. Booking ngày 13 - 15: Đỗ Thùy Dung
-    await Booking.create({
-      roomId,
-      bookingCode: '#BK-9788',
-      fullName: 'Đỗ Thùy Dung',
-      phoneNumber: '0909.112.233',
-      email: 'dung.do@example.com',
-      checkIn: new Date('2026-11-13T14:00:00Z'),
-      checkOut: new Date('2026-11-15T12:00:00Z'),
-      nights: 2,
-      guests: 2,
-      totalPrice: 5600000,
-      status: 'CONFIRMED'
-    });
-
-    // 3. Booking ngày 20 - 23 (CHỜ DUYỆT SLA): Nguyễn Văn An
-    await Booking.create({
-      roomId,
-      bookingCode: '#BK-9821',
-      fullName: 'Nguyễn Văn An',
-      phoneNumber: '0912.345.678',
-      email: 'an.nguyen@example.com',
-      checkIn: new Date('2026-11-20T14:00:00Z'),
-      checkOut: new Date('2026-11-23T12:00:00Z'),
-      nights: 2,
-      guests: 4,
-      totalPrice: 7500000,
-      status: 'PENDING',
-      notes: 'Xin nhận phòng sớm lúc 13h00 nếu được do gia đình có con nhỏ...'
-    });
-
-    // 4. Booking ngày 23 - 30: Trần Minh Tuấn
-    await Booking.create({
-      roomId,
-      bookingCode: '#BK-9835',
-      fullName: 'Trần Minh Tuấn',
-      phoneNumber: '0933.445.566',
-      email: 'tuan.tran@example.com',
-      checkIn: new Date('2026-11-23T14:00:00Z'),
-      checkOut: new Date('2026-11-30T12:00:00Z'),
-      nights: 7,
-      guests: 2,
-      totalPrice: 18000000,
-      status: 'CONFIRMED'
-    });
-
-    // 5. Booking tháng 10: Lê Văn Thịnh
-    await Booking.create({
-      roomId,
-      bookingCode: '#BK-9640',
-      fullName: 'Lê Văn Thịnh',
-      phoneNumber: '0918.776.655',
-      email: 'thinh.le@example.com',
-      checkIn: new Date('2026-10-10T14:00:00Z'),
-      checkOut: new Date('2026-10-25T12:00:00Z'),
-      nights: 15,
-      guests: 2,
-      totalPrice: 38000000,
-      status: 'CONFIRMED'
-    });
-  }
-};
-
-/**
- * Lấy ma trận lịch và chỉ số KPI của phòng theo tháng
+ * Lấy ma trận lịch và chỉ số KPI thực tế của phòng theo tháng từ MongoDB
  * GET /api/host/calendar
  */
 export const getHostCalendar = async (req, res) => {
@@ -174,48 +99,48 @@ export const getHostCalendar = async (req, res) => {
       return res.status(400).json({
         success: false,
         code: 'EMPTY-ROOM-CAL',
-        message: 'Không tìm thấy dữ liệu lịch phòng. Vui lòng chọn một phòng đang hoạt động để xem lịch.'
+        message: 'Không tìm thấy dữ liệu lịch phòng. Vui lòng chọn một phòng đang hoạt động để xem lịch.',
       });
     }
 
-    const room = await Room.findById(roomId);
+    const room = await Room.findById(roomId).lean();
     if (!room) {
       return res.status(404).json({
         success: false,
         code: 'EMPTY-ROOM-CAL',
-        message: 'Không tìm thấy thông tin phòng lưu trú.'
+        message: 'Không tìm thấy thông tin phòng lưu trú.',
       });
     }
 
-    // Tự động seed dữ liệu ban đầu cho phòng nếu chưa có
-    await seedFigmaCalendarDataIfEmpty(roomId);
-
-    // Xác định tháng và năm
+    // Xác định tháng và năm (Mặc định là tháng & năm hiện tại)
     const now = new Date();
-    const month = req.query.month ? parseInt(req.query.month, 10) : 11;
-    const year = req.query.year ? parseInt(req.query.year, 10) : 2026;
+    const month = req.query.month ? parseInt(req.query.month, 10) : now.getMonth() + 1;
+    const year = req.query.year ? parseInt(req.query.year, 10) : now.getFullYear();
 
     // Xác định số ngày trong tháng
     const daysInMonth = new Date(year, month, 0).getDate();
     const startOfMonth = new Date(year, month - 1, 1, 0, 0, 0, 0);
     const endOfMonth = new Date(year, month - 1, daysInMonth, 23, 59, 59, 999);
 
-    // Truy vấn các khoảng ngày bị khóa (RoomBlock) trong tháng
+    // Truy vấn các khoảng ngày bị khóa thực tế trong RoomBlock
     const blocks = await RoomBlock.find({
       roomId,
       $or: [
-        { startDate: { $lte: endOfMonth }, endDate: { $gte: startOfMonth } }
-      ]
-    });
+        { startDate: { $lte: endOfMonth }, endDate: { $gte: startOfMonth } },
+      ],
+    }).lean();
 
-    // Truy vấn các đơn booking trong tháng (Confirmed hoặc Pending)
-    let bookings = await Booking.find({
+    // Truy vấn các đơn booking thực tế trong tháng
+    const bookings = await Booking.find({
       roomId,
-      status: { $in: ['CONFIRMED', 'PENDING'] },
+      status: { $in: ['CONFIRMED', 'PENDING', 'COMPLETED'] },
       $or: [
-        { checkIn: { $lte: endOfMonth }, checkOut: { $gte: startOfMonth } }
-      ]
-    });
+        { checkIn: { $lte: endOfMonth }, checkOut: { $gte: startOfMonth } },
+      ],
+    }).lean();
+
+    const priceBase = room.pricePerNight || room.regularPrice || 1450000;
+    const weekendBase = room.weekendPricePerNight || room.weekendPrice || Math.round(priceBase * 1.15);
 
     // Tạo mảng từng ngày trong tháng
     const days = [];
@@ -230,24 +155,21 @@ export const getHostCalendar = async (req, res) => {
       const currentDate = new Date(year, month - 1, day);
       const dateStr = formatDateStr(currentDate);
       const dayOfWeekNum = currentDate.getDay(); // 0: Sun, 1: Mon, ... 6: Sat
-      const isWeekend = (dayOfWeekNum === 5 || dayOfWeekNum === 6 || dayOfWeekNum === 0); // Thứ 6, Thứ 7, CN
+      const isWeekend = dayOfWeekNum === 5 || dayOfWeekNum === 6 || dayOfWeekNum === 0;
 
       // Giá áp dụng theo ngày
-      const price = isWeekend 
-        ? (room.weekendPricePerNight || Math.round(room.pricePerNight * 1.12))
-        : room.pricePerNight;
-
+      const price = isWeekend ? weekendBase : priceBase;
       const isPast = dateStr < todayStr;
 
       // Tìm xem có block nào trùng ngày này không
-      const matchedBlock = blocks.find(b => {
+      const matchedBlock = blocks.find((b) => {
         const bStart = formatDateStr(b.startDate);
         const bEnd = formatDateStr(b.endDate);
         return dateStr >= bStart && dateStr <= bEnd;
       });
 
       // Tìm xem có booking nào trùng ngày này không (checkIn <= date < checkOut)
-      const matchedBooking = bookings.find(b => {
+      const matchedBooking = bookings.find((b) => {
         const bCheckIn = formatDateStr(b.checkIn);
         const bCheckOut = formatDateStr(b.checkOut);
         return dateStr >= bCheckIn && dateStr < bCheckOut;
@@ -264,10 +186,10 @@ export const getHostCalendar = async (req, res) => {
           id: matchedBlock._id,
           reason: matchedBlock.reason,
           reasonLabel: matchedBlock.reasonLabel || REASON_LABELS[matchedBlock.reason] || 'Khóa bảo trì',
-          internalNote: matchedBlock.internalNote || ''
+          internalNote: matchedBlock.internalNote || '',
         };
       } else if (matchedBooking) {
-        if (matchedBooking.status === 'CONFIRMED') {
+        if (['CONFIRMED', 'COMPLETED'].includes(matchedBooking.status)) {
           status = 'BOOKED';
           soldNights++;
           estimatedRevenue += price;
@@ -275,18 +197,18 @@ export const getHostCalendar = async (req, res) => {
           status = 'PENDING';
         }
 
-        const isSpanStart = (dateStr === formatDateStr(matchedBooking.checkIn));
+        const isSpanStart = dateStr === formatDateStr(matchedBooking.checkIn);
         bookingData = {
           id: matchedBooking._id,
-          bookingCode: matchedBooking.bookingCode || ('#BK-' + matchedBooking._id.toString().slice(-4).toUpperCase()),
-          customerName: matchedBooking.fullName || 'Khách lưu trú',
+          bookingCode: matchedBooking.bookingCode || `#BK-${matchedBooking._id.toString().slice(-4).toUpperCase()}`,
+          customerName: matchedBooking.fullName || matchedBooking.customerName || 'Khách lưu trú',
           phoneNumber: matchedBooking.phoneNumber || '',
           nights: matchedBooking.nights || 1,
           guests: matchedBooking.guests || 2,
-          totalPrice: matchedBooking.totalPrice || (price * (matchedBooking.nights || 1)),
+          totalPrice: matchedBooking.totalPrice || price * (matchedBooking.nights || 1),
           specialRequest: matchedBooking.notes || '',
           status: matchedBooking.status,
-          isSpanStart
+          isSpanStart,
         };
       } else {
         status = 'AVAILABLE';
@@ -304,7 +226,7 @@ export const getHostCalendar = async (req, res) => {
         price,
         status,
         booking: bookingData,
-        block: blockData
+        block: blockData,
       });
     }
 
@@ -317,11 +239,11 @@ export const getHostCalendar = async (req, res) => {
       data: {
         room: {
           _id: room._id,
-          title: room.title,
-          code: room.code || '#P-VL204',
-          specs: room.specs?.bedroom || '4 phòng ngủ',
-          pricePerNight: room.pricePerNight,
-          weekendPricePerNight: room.weekendPricePerNight || Math.round(room.pricePerNight * 1.12)
+          title: room.title || room.name,
+          code: room.code || room.roomCode || `#MP-${String(room._id).slice(-4).toUpperCase()}`,
+          specs: room.specs?.bedroom || (typeof room.specs === 'string' ? room.specs : '2 phòng ngủ'),
+          pricePerNight: priceBase,
+          weekendPricePerNight: weekendBase,
         },
         month,
         year,
@@ -329,16 +251,17 @@ export const getHostCalendar = async (req, res) => {
           occupancyRate,
           soldNights,
           availableNights,
-          estimatedRevenue
+          estimatedRevenue,
         },
-        days
-      }
+        days,
+      },
     });
   } catch (error) {
+    console.error('Lỗi khi lấy dữ liệu Host Calendar:', error);
     return res.status(500).json({
       success: false,
       message: 'Lỗi máy chủ khi lấy dữ liệu lịch',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -354,16 +277,15 @@ export const blockRoomDates = async (req, res) => {
     if (!roomId || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng cung cấp đầy đủ roomId, startDate và endDate'
+        message: 'Vui lòng cung cấp đầy đủ roomId, startDate và endDate',
       });
     }
 
-    // Bắt buộc phải chọn lý do
     if (!reason) {
       return res.status(400).json({
         success: false,
         code: 'CAL-BLOCK-REASON-REQ',
-        message: 'Vui lòng chọn lý do khóa lịch phòng trước khi tiếp tục.'
+        message: 'Vui lòng chọn lý do khóa lịch phòng trước khi tiếp tục.',
       });
     }
 
@@ -373,22 +295,20 @@ export const blockRoomDates = async (req, res) => {
     if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
       return res.status(400).json({
         success: false,
-        message: 'Khoảng ngày khóa không hợp lệ'
+        message: 'Khoảng ngày khóa không hợp lệ',
       });
     }
 
-    // Kiểm tra không khóa ngày quá khứ
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (end < today) {
       return res.status(400).json({
         success: false,
         code: 'CAL-NAV-PAST',
-        message: 'Không thể thực hiện thao tác khóa hoặc mở ngày cho các mốc thời gian trong quá khứ.'
+        message: 'Không thể thực hiện thao tác khóa hoặc mở ngày cho các mốc thời gian trong quá khứ.',
       });
     }
 
-    // Kiểm tra xung đột với đơn đặt phòng CONFIRMED
     const startCheck = new Date(start);
     startCheck.setHours(0, 0, 0, 0);
     const endCheck = new Date(end);
@@ -396,20 +316,19 @@ export const blockRoomDates = async (req, res) => {
 
     const conflictingBooking = await Booking.findOne({
       roomId,
-      status: 'CONFIRMED',
+      status: { $in: ['CONFIRMED', 'COMPLETED'] },
       checkIn: { $lte: endCheck },
-      checkOut: { $gt: startCheck }
+      checkOut: { $gt: startCheck },
     });
 
     if (conflictingBooking) {
       return res.status(409).json({
         success: false,
         code: 'CAL-BLOCK-CONFLICT',
-        message: 'Không thể khóa ngày! Khoảng thời gian này đã có đơn đặt phòng đã xác nhận. Vui lòng kiểm tra lại.'
+        message: 'Không thể khóa ngày! Khoảng thời gian này đã có đơn đặt phòng đã xác nhận. Vui lòng kiểm tra lại.',
       });
     }
 
-    // Tạo bản ghi khóa phòng mới
     const roomBlock = new RoomBlock({
       roomId,
       startDate: startCheck,
@@ -417,7 +336,7 @@ export const blockRoomDates = async (req, res) => {
       reason,
       reasonLabel: REASON_LABELS[reason] || 'Khóa bảo trì',
       internalNote: internalNote ? internalNote.slice(0, 100) : '',
-      createdBy: userId || null
+      createdBy: userId || null,
     });
 
     await roomBlock.save();
@@ -426,13 +345,14 @@ export const blockRoomDates = async (req, res) => {
       success: true,
       code: 'CAL-BLOCK-SUCCESS',
       message: 'Đã khóa phòng thành công cho các ngày được chọn. Khách du lịch sẽ không thể đặt phòng vào thời gian này.',
-      data: roomBlock
+      data: roomBlock,
     });
   } catch (error) {
+    console.error('Lỗi khi khóa ngày phòng:', error);
     return res.status(500).json({
       success: false,
       message: 'Lỗi máy chủ khi khóa ngày',
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -448,45 +368,49 @@ export const unblockRoomDates = async (req, res) => {
     if (!roomId) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng cung cấp roomId'
+        message: 'Thiếu thông tin roomId',
       });
     }
 
+    let deletedCount = 0;
     if (blockId) {
-      await RoomBlock.findByIdAndDelete(blockId);
+      const result = await RoomBlock.deleteOne({ _id: blockId, roomId });
+      deletedCount = result.deletedCount;
     } else if (date) {
       const targetDate = new Date(date);
-      targetDate.setHours(12, 0, 0, 0);
-
-      // Xóa tất cả các block bao trùm ngày này
-      await RoomBlock.deleteMany({
+      const result = await RoomBlock.deleteMany({
         roomId,
         startDate: { $lte: targetDate },
-        endDate: { $gte: targetDate }
+        endDate: { $gte: targetDate },
       });
-    } else {
-      return res.status(400).json({
+      deletedCount = result.deletedCount;
+    }
+
+    if (deletedCount === 0) {
+      return res.status(404).json({
         success: false,
-        message: 'Cần cung cấp blockId hoặc date để mở khóa'
+        message: 'Không tìm thấy bản ghi khóa phòng để mở lại.',
       });
     }
 
     return res.status(200).json({
       success: true,
       code: 'CAL-UNBLOCK-SUCCESS',
-      message: 'Đã mở bán lại phòng thành công. Phòng đã sẵn sàng đón khách trên ứng dụng.'
+      message: 'Đã mở bán lại phòng thành công. Phòng đã sẵn sàng nhận đơn đặt mới trên hệ thống.',
+      data: { roomId, deletedCount },
     });
   } catch (error) {
+    console.error('Lỗi khi mở khóa ngày:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi mở khóa ngày',
-      error: error.message
+      message: 'Lỗi máy chủ khi mở bán lại ngày',
+      error: error.message,
     });
   }
 };
 
 /**
- * Duyệt nhanh đơn đặt phòng đang chờ SLA trực tiếp trên Lịch
+ * Duyệt nhanh đơn đặt phòng đang chờ SLA
  * POST /api/host/bookings/:id/approve
  */
 export const quickApproveBooking = async (req, res) => {
@@ -497,24 +421,34 @@ export const quickApproveBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy đơn đặt phòng'
+        code: 'CAL-BOOKING-NOT-FOUND',
+        message: 'Không tìm thấy đơn đặt phòng yêu cầu.',
+      });
+    }
+
+    if (booking.status !== 'PENDING') {
+      return res.status(400).json({
+        success: false,
+        message: `Đơn đặt phòng đang ở trạng thái ${booking.status}, không thể duyệt.`,
       });
     }
 
     booking.status = 'CONFIRMED';
+    booking.confirmedAt = new Date();
     await booking.save();
 
     return res.status(200).json({
       success: true,
-      code: 'BOOK-APPROVE-SUCCESS',
-      message: `Đã phê duyệt đơn đặt phòng #${booking.bookingCode || id} thành công. Lịch phòng đã được tự động khóa.`,
-      data: booking
+      code: 'CAL-QUICK-APPROVE-SUCCESS',
+      message: `Đã xác nhận đơn đặt phòng ${booking.bookingCode || ''} thành công! Khách đã nhận được vé điện tử e-Pass.`,
+      data: booking,
     });
   } catch (error) {
+    console.error('Lỗi khi duyệt đơn đặt phòng:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi duyệt đơn đặt phòng',
-      error: error.message
+      message: 'Lỗi máy chủ khi duyệt đơn',
+      error: error.message,
     });
   }
 };
@@ -527,30 +461,43 @@ export const quickRejectBooking = async (req, res) => {
   try {
     const { id } = req.params;
     const { rejectReason } = req.body;
+
     const booking = await Booking.findById(id);
 
     if (!booking) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy đơn đặt phòng'
+        code: 'CAL-BOOKING-NOT-FOUND',
+        message: 'Không tìm thấy đơn đặt phòng yêu cầu.',
       });
     }
 
-    booking.status = 'REJECTED';
-    booking.notes = rejectReason ? `${booking.notes || ''} [Lý do từ chối: ${rejectReason}]` : booking.notes;
+    booking.status = 'CANCELLED';
+    booking.cancelReason = rejectReason || 'Chủ nhà từ chối nhận phòng';
+    booking.cancelledAt = new Date();
     await booking.save();
 
     return res.status(200).json({
       success: true,
-      code: 'BOOK-REJECT-SUCCESS',
-      message: `Đã từ chối đơn đặt phòng #${booking.bookingCode || id} thành công. Ngày phòng đã được mở lại.`,
-      data: booking
+      code: 'CAL-QUICK-REJECT-SUCCESS',
+      message: `Đã từ chối đơn đặt phòng ${booking.bookingCode || ''}. Hệ thống đã gửi thông báo đến khách hàng.`,
+      data: booking,
     });
   } catch (error) {
+    console.error('Lỗi khi từ chối đơn đặt phòng:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi từ chối đơn đặt phòng',
-      error: error.message
+      message: 'Lỗi máy chủ khi từ chối đơn',
+      error: error.message,
     });
   }
+};
+
+export default {
+  getHostRooms,
+  getHostCalendar,
+  blockRoomDates,
+  unblockRoomDates,
+  quickApproveBooking,
+  quickRejectBooking,
 };

@@ -7,7 +7,7 @@ const getHostOwnerId = async (req) => {
   if (req.user && (req.user.id || req.user._id)) {
     return req.user.id || req.user._id;
   }
-  const hostUser = await User.findOne({ role: 'host' });
+  const hostUser = await User.findOne({ role: { $in: ['HOST', 'host'] } });
   if (hostUser) return hostUser._id;
   const anyUser = await User.findOne({});
   return anyUser ? anyUser._id : null;
@@ -23,8 +23,8 @@ export const calculateSuperhostScore = (roomData) => {
   else if (hasTitle || hasLocation) score += 15;
 
   // 2. Định giá & Chính sách (25%)
-  const hasPrice = roomData.pricePerNight && roomData.pricePerNight >= 50000;
-  const hasWeekend = !!roomData.weekendPricePerNight;
+  const hasPrice = (roomData.pricePerNight || roomData.regularPrice) && (roomData.pricePerNight || roomData.regularPrice) >= 50000;
+  const hasWeekend = !!(roomData.weekendPricePerNight || roomData.weekendPrice);
   const hasPolicy = roomData.cancellationPolicy48h !== false;
   if (hasPrice && hasWeekend && hasPolicy) score += 25;
   else if (hasPrice) score += 18;
@@ -56,18 +56,22 @@ export const getInventory = async (req, res) => {
 
     const { search, roomType, status, sort } = req.query;
 
-    // Filter query cơ bản luôn gắn với ownerId
-    const baseOwnerFilter = ownerId ? { ownerId } : {};
+    // Filter query cơ bản luôn gắn với ownerId nếu host có phòng
+    let baseOwnerFilter = ownerId ? { ownerId } : {};
+    const countOwned = await Room.countDocuments(baseOwnerFilter);
+    if (countOwned === 0) {
+      baseOwnerFilter = {};
+    }
 
     // 1. Tính toán 4 thẻ KPI Metrics
     const totalRooms = await Room.countDocuments(baseOwnerFilter);
     const publishedRooms = await Room.countDocuments({
       ...baseOwnerFilter,
-      status: { $in: ['Published', 'ACTIVE'] },
+      status: { $in: ['PUBLISHED', 'ACTIVE', 'Published', 'active'] },
     });
     const archivedRooms = await Room.countDocuments({
       ...baseOwnerFilter,
-      status: { $in: ['Archived', 'HIDDEN'] },
+      status: { $in: ['Archived', 'HIDDEN', 'archived', 'hidden'] },
     });
 
     // Đếm đơn chờ duyệt trong 24h
@@ -86,33 +90,35 @@ export const getInventory = async (req, res) => {
       const term = search.trim();
       filter.$or = [
         { title: { $regex: term, $options: 'i' } },
+        { name: { $regex: term, $options: 'i' } },
         { code: { $regex: term, $options: 'i' } },
+        { roomCode: { $regex: term, $options: 'i' } },
       ];
     }
 
     // Lọc theo loại phòng
-    if (roomType && roomType !== 'All' && roomType !== 'Tất cả loại phòng') {
+    if (roomType && roomType !== 'All' && roomType !== 'ALL' && roomType !== 'Tất cả loại phòng') {
       filter.$or = [
-        { roomType: roomType },
-        { 'specs.type': roomType },
+        { roomType: { $regex: roomType, $options: 'i' } },
+        { 'specs.type': { $regex: roomType, $options: 'i' } },
       ];
     }
 
     // Lọc theo trạng thái
-    if (status && status !== 'All' && status !== 'Tất cả trạng thái') {
-      if (status === 'Published') {
-        filter.status = { $in: ['Published', 'ACTIVE'] };
-      } else if (status === 'Archived') {
-        filter.status = { $in: ['Archived', 'HIDDEN'] };
+    if (status && status !== 'All' && status !== 'ALL' && status !== 'Tất cả trạng thái') {
+      if (status === 'Published' || status === 'ACTIVE') {
+        filter.status = { $in: ['PUBLISHED', 'ACTIVE', 'Published', 'active'] };
+      } else if (status === 'Archived' || status === 'HIDDEN') {
+        filter.status = { $in: ['Archived', 'HIDDEN', 'archived', 'hidden'] };
       } else if (status === 'Draft') {
-        filter.status = 'Draft';
+        filter.status = { $in: ['Draft', 'DRAFT', 'draft'] };
       }
     }
 
     // Sắp xếp
-    let sortObj = { updatedAt: -1 };
+    let sortObj = { updatedAt: -1, createdAt: -1 };
     if (sort === 'oldest') {
-      sortObj = { updatedAt: 1 };
+      sortObj = { createdAt: 1 };
     }
 
     // Truy vấn dữ liệu & đếm tổng bản ghi lọc
@@ -130,19 +136,27 @@ export const getInventory = async (req, res) => {
           roomId: room._id,
           status: 'PENDING',
         });
-        
+
         // Chuẩn hóa trạng thái hiển thị
         let displayStatus = 'Published';
-        if (room.status === 'Archived' || room.status === 'HIDDEN') {
+        const st = (room.status || '').toUpperCase();
+        if (st === 'ARCHIVED' || st === 'HIDDEN') {
           displayStatus = 'Archived';
-        } else if (room.status === 'Draft') {
+        } else if (st === 'DRAFT') {
           displayStatus = 'Draft';
         }
 
+        const price = room.pricePerNight || room.regularPrice || 1450000;
+        const code = room.code || room.roomCode || `#MP-${String(room._id).slice(-4).toUpperCase()}`;
+
         return {
           ...room,
+          code,
+          pricePerNight: price,
+          regularPrice: price,
           status: displayStatus,
           pendingBookingsCount: pendingCount,
+          profileScore: room.profileScore || calculateSuperhostScore(room),
         };
       })
     );
@@ -206,9 +220,17 @@ export const getRoomById = async (req, res) => {
       });
     }
 
+    const price = room.pricePerNight || room.regularPrice || 1450000;
+    const weekend = room.weekendPricePerNight || room.weekendPrice || Math.round(price * 1.15);
+
     return res.status(200).json({
       success: true,
-      data: room,
+      data: {
+        ...room,
+        pricePerNight: price,
+        weekendPricePerNight: weekend,
+        code: room.code || room.roomCode || `#MP-${String(room._id).slice(-4).toUpperCase()}`,
+      },
     });
   } catch (error) {
     console.error('Error in getRoomById:', error);
@@ -253,11 +275,11 @@ export const createRoom = async (req, res) => {
       }
     }
 
-    const isPublished = roomData.status === 'Published' || roomData.status === 'ACTIVE';
+    const isPublished = roomData.status === 'Published' || roomData.status === 'ACTIVE' || roomData.status === 'PUBLISHED';
 
     // Ràng buộc khi đăng bán chính thức
     if (isPublished) {
-      if (!roomData.address || !roomData.city || !roomData.pricePerNight) {
+      if (!roomData.address || !roomData.city || (!roomData.pricePerNight && !roomData.regularPrice)) {
         return res.status(400).json({
           success: false,
           code: 'ROOM-REQ-001',
@@ -321,7 +343,6 @@ export const updateRoom = async (req, res) => {
       });
     }
 
-    // Kiểm tra phân quyền (BR-HOST-01)
     if (ownerId && room.ownerId && room.ownerId.toString() !== ownerId.toString()) {
       return res.status(403).json({
         success: false,
@@ -330,37 +351,42 @@ export const updateRoom = async (req, res) => {
       });
     }
 
-    // Kiểm tra trùng tên phòng nếu có đổi tên
-    if (roomData.title && roomData.title.trim().toLowerCase() !== room.title.trim().toLowerCase()) {
-      const existing = await Room.findOne({
-        ownerId: room.ownerId,
-        _id: { $ne: room._id },
-        title: { $regex: new RegExp(`^${roomData.title.trim()}$`, 'i') },
+    // Kiểm tra tên phòng không được để trống
+    if (roomData.title !== undefined && !roomData.title.trim()) {
+      return res.status(400).json({
+        success: false,
+        code: 'ROOM-REQ-001',
+        message: 'Vui lòng nhập đầy đủ các trường thông tin bắt buộc có dấu (*).',
       });
-      if (existing) {
+    }
+
+    const isPublished = (roomData.status || room.status) === 'Published' || (roomData.status || room.status) === 'ACTIVE' || (roomData.status || room.status) === 'PUBLISHED';
+    if (isPublished) {
+      const merged = { ...room.toObject(), ...roomData };
+      if (!merged.address || !merged.city || (!merged.pricePerNight && !merged.regularPrice)) {
         return res.status(400).json({
           success: false,
-          code: 'ROOM-NAME-DUP',
-          message: 'Tên phòng nghỉ đã tồn tại trong danh mục của bạn. Vui lòng đặt tên phân biệt.',
+          code: 'ROOM-REQ-001',
+          message: 'Vui lòng nhập đầy đủ các trường thông tin bắt buộc có dấu (*).',
+        });
+      }
+      if (!Array.isArray(merged.images) || merged.images.length < 3) {
+        return res.status(400).json({
+          success: false,
+          code: 'ROOM-IMG-001',
+          message: 'Album ảnh chưa đạt yêu cầu. Bạn cần tải lên tối thiểu 3 hình ảnh rõ nét.',
         });
       }
     }
 
-    const isPublished = roomData.status === 'Published' || room.status === 'Published';
-    if (isPublished && Array.isArray(roomData.images) && roomData.images.length < 3) {
-      return res.status(400).json({
-        success: false,
-        code: 'ROOM-IMG-001',
-        message: 'Album ảnh chưa đạt yêu cầu. Bạn cần tải lên tối thiểu 3 hình ảnh rõ nét.',
-      });
-    }
-
-    const score = calculateSuperhostScore({ ...room.toObject(), ...roomData });
+    const mergedData = { ...room.toObject(), ...roomData };
+    const score = calculateSuperhostScore(mergedData);
 
     Object.assign(room, roomData);
     room.profileScore = score;
     room.isSuperhostStandard = score >= 90;
     room.lastEditedBy = ownerId;
+    room.updatedAt = new Date();
 
     await room.save();
 
@@ -382,7 +408,7 @@ export const updateRoom = async (req, res) => {
 
 /**
  * 5. PATCH /api/rooms/host/inventory/:id/status
- * Đổi trạng thái nhanh giữa Published và Archived
+ * Bật / Tắt trạng thái hoạt động của phòng (Published <-> Archived)
  */
 export const toggleStatus = async (req, res) => {
   try {
@@ -407,26 +433,40 @@ export const toggleStatus = async (req, res) => {
       });
     }
 
+    // Nếu muốn chuyển sang Archived -> Kiểm tra xem có đơn booking đang chờ (PENDING) không
+    if (status === 'Archived') {
+      const pendingBookings = await Booking.countDocuments({
+        roomId: room._id,
+        status: 'PENDING',
+      });
+
+      if (pendingBookings > 0) {
+        return res.status(409).json({
+          success: false,
+          code: 'ROOM-PAUSE-PENDING',
+          message: `Không thể tạm dừng phòng! Phòng này đang có ${pendingBookings} đơn đặt phòng đang chờ phản hồi. Vui lòng xử lý đơn trước khi tạm dừng.`,
+        });
+      }
+    }
+
     room.status = status;
+    room.lastEditedBy = ownerId;
+    room.updatedAt = new Date();
     await room.save();
 
-    const isPublished = status === 'Published';
     return res.status(200).json({
       success: true,
-      code: isPublished ? 'ROOM-STA-001' : 'ROOM-STA-002',
-      message: isPublished
-        ? 'Đã kích hoạt mở bán phòng thành công. Phòng đã sẵn sàng đón khách trên ứng dụng.'
-        : 'Đã tạm dừng hiển thị phòng. Du khách sẽ không tìm thấy phòng này trên ứng dụng.',
-      data: {
-        id: room._id,
-        status: room.status,
-      },
+      code: status === 'Published' ? 'ROOM-PUBLISH-001' : 'ROOM-PAUSE-001',
+      message: status === 'Published'
+        ? 'Phòng đã được mở bán trở lại. Khách du lịch có thể tìm thấy và đặt phòng này.'
+        : 'Phòng đã tạm dừng hoạt động. Khách du lịch sẽ không tìm thấy phòng này trên hệ thống.',
+      data: room,
     });
   } catch (error) {
     console.error('Error in toggleStatus:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi đổi trạng thái phòng',
+      message: 'Lỗi máy chủ khi thay đổi trạng thái phòng',
       error: error.message,
     });
   }
@@ -434,23 +474,23 @@ export const toggleStatus = async (req, res) => {
 
 /**
  * 6. POST /api/rooms/host/inventory/:id/duplicate
- * Sao chép phòng thành bản nháp mới
+ * Sao chép phòng thành bản nháp (Draft)
  */
 export const duplicateRoom = async (req, res) => {
   try {
     const { id } = req.params;
     const ownerId = await getHostOwnerId(req);
 
-    const originalRoom = await Room.findById(id).lean();
-    if (!originalRoom) {
+    const sourceRoom = await Room.findById(id).lean();
+    if (!sourceRoom) {
       return res.status(404).json({
         success: false,
         code: 'ROOM-NOT-FOUND',
-        message: 'Không tìm thấy phòng gốc để nhân bản',
+        message: 'Không tìm thấy phòng gốc để sao chép',
       });
     }
 
-    if (ownerId && originalRoom.ownerId && originalRoom.ownerId.toString() !== ownerId.toString()) {
+    if (ownerId && sourceRoom.ownerId && sourceRoom.ownerId.toString() !== ownerId.toString()) {
       return res.status(403).json({
         success: false,
         code: 'AUTH-403',
@@ -458,30 +498,37 @@ export const duplicateRoom = async (req, res) => {
       });
     }
 
-    const { _id, createdAt, updatedAt, code, ...cleanData } = originalRoom;
+    delete sourceRoom._id;
+    delete sourceRoom.createdAt;
+    delete sourceRoom.updatedAt;
+
+    const newCode = `MP-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const duplicatedRoom = new Room({
-      ...cleanData,
-      title: `Bản sao của ${originalRoom.title}`,
-      code: '#P-VL' + Math.floor(100 + Math.random() * 900),
+      ...sourceRoom,
+      code: newCode,
+      roomCode: newCode,
+      title: `${sourceRoom.title || sourceRoom.name || 'Phòng'} (Bản sao)`,
       status: 'Draft',
       ownerId,
       lastEditedBy: ownerId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     await duplicatedRoom.save();
 
     return res.status(201).json({
       success: true,
-      code: 'ROOM-DUP-001',
-      message: `Đã nhân bản phòng thành công thành bản nháp [${duplicatedRoom.title}].`,
+      code: 'ROOM-CLONE-001',
+      message: 'Đã sao chép phòng thành công! Bản sao được lưu ở trạng thái Bản nháp.',
       data: duplicatedRoom,
     });
   } catch (error) {
     console.error('Error in duplicateRoom:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi nhân bản phòng',
+      message: 'Lỗi máy chủ khi sao chép phòng',
       error: error.message,
     });
   }
@@ -489,7 +536,7 @@ export const duplicateRoom = async (req, res) => {
 
 /**
  * 7. DELETE /api/rooms/host/inventory/:id
- * Xóa phòng (có kiểm tra ràng buộc booking tương lai)
+ * Xóa phòng (hoặc chuyển sang Archived nếu còn đơn tương lai)
  */
 export const deleteRoom = async (req, res) => {
   try {
@@ -513,7 +560,7 @@ export const deleteRoom = async (req, res) => {
       });
     }
 
-    // Kiểm tra đơn đặt phòng trong tương lai (booking_time >= today)
+    // Kiểm tra đơn đặt phòng trong tương lai
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -521,12 +568,11 @@ export const deleteRoom = async (req, res) => {
       roomId: room._id,
       status: { $in: ['PENDING', 'CONFIRMED'] },
       $or: [
+        { checkIn: { $gte: today } },
         { checkInDate: { $gte: today } },
-        { bookingDate: { $gte: today.toISOString().split('T')[0] } },
       ],
     });
 
-    // Nếu còn đơn đặt phòng tới: Chặn xóa và tự động chuyển sang Archived
     if (upcomingBookingsCount > 0) {
       room.status = 'Archived';
       await room.save();
@@ -542,7 +588,6 @@ export const deleteRoom = async (req, res) => {
       });
     }
 
-    // Không còn đơn hàng -> Xóa vĩnh viễn
     await Room.findByIdAndDelete(id);
 
     return res.status(200).json({
@@ -572,14 +617,13 @@ export const exportExcel = async (req, res) => {
 
     const rooms = await Room.find(filter).sort({ updatedAt: -1 }).lean();
 
-    // Tạo CSV content đơn giản, tương thích Excel
     const header = ['Mã phòng', 'Tên phòng', 'Loại phòng', 'Giá niêm yết (VNĐ)', 'Giá cuối tuần', 'Trạng thái', 'Điểm Superhost'];
     const rows = rooms.map((r) => [
-      r.code || '',
-      `"${(r.title || '').replace(/"/g, '""')}"`,
+      r.code || r.roomCode || '',
+      `"${(r.title || r.name || '').replace(/"/g, '""')}"`,
       r.roomType || r.specs?.type || 'Homestay',
-      r.pricePerNight || 0,
-      r.weekendPricePerNight || 0,
+      r.pricePerNight || r.regularPrice || 0,
+      r.weekendPricePerNight || r.weekendPrice || 0,
       r.status || 'Published',
       `${r.profileScore || 0}%`,
     ]);
@@ -597,4 +641,15 @@ export const exportExcel = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+export default {
+  getInventory,
+  getRoomById,
+  createRoom,
+  updateRoom,
+  toggleStatus,
+  duplicateRoom,
+  deleteRoom,
+  exportExcel,
 };

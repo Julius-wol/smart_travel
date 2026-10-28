@@ -3,63 +3,21 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../../constants/theme';
 
-const DEFAULT_TODAY = [
-  {
-    id: 'sc-1',
-    bookingCode: '#BK-8821',
-    guestName: 'Lê Hoàng Nam',
-    initials: 'HN',
-    roomName: 'Villa Mộng Mơ H5',
-    maskedPhone: '0912.***.678',
-    type: 'CHECK_IN',
-    time: '14:00',
-    statusBadge: '🟢 Check-in 14:00',
-    specialNote: '',
-  },
-  {
-    id: 'sc-2',
-    bookingCode: '#BK-8815',
-    guestName: 'Đỗ Thùy Dung',
-    initials: 'TĐ',
-    roomName: 'Studio Ban Công',
-    maskedPhone: '0988.***.321',
-    type: 'CHECK_OUT',
-    time: '12:00',
-    statusBadge: '🔵 Check-out 12:00',
-    specialNote: 'Đã bàn giao chìa khóa',
-  },
-];
-
-const DEFAULT_TOMORROW = [
-  {
-    id: 'sc-5',
-    bookingCode: '#BK-8840',
-    guestName: 'Nguyễn Phương Thảo',
-    initials: 'NT',
-    roomName: 'Studio Ban Công',
-    maskedPhone: '0903.***.112',
-    type: 'CHECK_IN',
-    time: '14:00',
-    statusBadge: '🟢 Check-in 14:00',
-    specialNote: 'Check-in tự động Smart Lock',
-  },
-];
-
 const HostCheckInOutSchedule = ({
   schedule,
   activeTab = 'TODAY',
   onSwitchTab,
 }) => {
-  const todayList = schedule?.today || DEFAULT_TODAY;
-  const tomorrowList = schedule?.tomorrow || DEFAULT_TOMORROW;
+  const todayList = schedule?.today || [];
+  const tomorrowList = schedule?.tomorrow || [];
   const currentList = activeTab === 'TODAY' ? todayList : tomorrowList;
 
-  const todayCount = schedule?.todayCount || todayList.length;
-  const tomorrowCount = schedule?.tomorrowCount || tomorrowList.length;
+  const todayCount = schedule?.todayCount !== undefined ? schedule.todayCount : todayList.length;
+  const tomorrowCount = schedule?.tomorrowCount !== undefined ? schedule.tomorrowCount : tomorrowList.length;
 
   return (
     <View style={styles.cardContainer} testID="checkinout-schedule-card">
-      {/* 1. Header & Subtext (Figma 3.1) */}
+      {/* 1. Header & Subtext */}
       <View style={styles.headerRow}>
         <View style={styles.titleCol}>
           <Text style={styles.cardTitle}>Lịch Nhận / Trả phòng</Text>
@@ -102,70 +60,79 @@ const HostCheckInOutSchedule = ({
         </View>
       </View>
 
-      {/* 2. Guest List Items (Figma 3.2, 3.3) */}
+      {/* 2. Guest List Items */}
       <View style={styles.listContainer}>
-        {currentList.map((item) => {
-          const isCheckIn = item.type === 'CHECK_IN';
-          return (
-            <View key={item.id} style={styles.guestItemRow} testID={`guest-item-${item.id}`}>
-              {/* Left Initials Avatar */}
-              <View
-                style={[
-                  styles.avatarCircle,
-                  { backgroundColor: isCheckIn ? '#E8FBF4' : '#EFF4FF' },
-                ]}
-              >
-                <Text
+        {currentList.length === 0 ? (
+          <View style={styles.emptyScheduleBox}>
+            <Ionicons name="calendar-outline" size={28} color="#94A3B8" style={{ marginBottom: 8 }} />
+            <Text style={styles.emptyScheduleText}>
+              Không có lịch nhận hoặc trả phòng trong {activeTab === 'TODAY' ? 'hôm nay' : 'ngày mai'}.
+            </Text>
+          </View>
+        ) : (
+          currentList.map((item) => {
+            const isCheckIn = item.type === 'CHECK_IN';
+            return (
+              <View key={item.id} style={styles.guestItemRow} testID={`guest-item-${item.id}`}>
+                {/* Left Initials Avatar */}
+                <View
                   style={[
-                    styles.avatarText,
-                    { color: isCheckIn ? '#00685F' : '#3B82F6' },
+                    styles.avatarCircle,
+                    { backgroundColor: isCheckIn ? '#E8FBF4' : '#EFF4FF' },
                   ]}
                 >
-                  {item.initials}
-                </Text>
-              </View>
-
-              {/* Guest Details */}
-              <View style={styles.infoCol}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.guestName}>{item.guestName}</Text>
-                  <Text style={styles.bookingCode}>({item.bookingCode})</Text>
+                  <Text
+                    style={[
+                      styles.avatarText,
+                      { color: isCheckIn ? '#00685F' : '#3B82F6' },
+                    ]}
+                  >
+                    {item.initials}
+                  </Text>
                 </View>
 
-                <Text style={styles.roomName}>{item.roomName}</Text>
-
-                <View style={styles.phoneRow}>
-                  <Ionicons name="call-outline" size={12} color="#64748B" style={{ marginRight: 4 }} />
-                  <Text style={styles.phoneText}>SĐT: {item.maskedPhone}</Text>
-                </View>
-
-                {item.specialNote ? (
-                  <View style={styles.noteBadge}>
-                    <Ionicons name="information-circle-outline" size={12} color="#D97706" style={{ marginRight: 4 }} />
-                    <Text style={styles.noteText}>{item.specialNote}</Text>
+                {/* Guest Details */}
+                <View style={styles.infoCol}>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.guestName}>{item.guestName}</Text>
+                    <Text style={styles.bookingCode}>({item.bookingCode})</Text>
                   </View>
-                ) : null}
-              </View>
 
-              {/* Status Badge Pill */}
-              <View
-                style={[
-                  styles.statusPill,
-                  isCheckIn ? styles.statusCheckIn : styles.statusCheckOut,
-                ]}
-              >
-                <Text
+                  <Text style={styles.roomName}>{item.roomName}</Text>
+
+                  <View style={styles.phoneRow}>
+                    <Ionicons name="call-outline" size={12} color="#64748B" style={{ marginRight: 4 }} />
+                    <Text style={styles.phoneText}>SĐT: {item.maskedPhone}</Text>
+                  </View>
+
+                  {item.specialNote ? (
+                    <View style={styles.noteBadge}>
+                      <Ionicons name="information-circle-outline" size={12} color="#D97706" style={{ marginRight: 4 }} />
+                      <Text style={styles.noteText}>{item.specialNote}</Text>
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Status Badge Pill */}
+                <View
                   style={[
-                    styles.statusPillText,
-                    isCheckIn ? styles.statusCheckInText : styles.statusCheckOutText,
+                    styles.statusPill,
+                    isCheckIn ? styles.statusCheckIn : styles.statusCheckOut,
                   ]}
                 >
-                  {item.statusBadge}
-                </Text>
+                  <Text
+                    style={[
+                      styles.statusPillText,
+                      isCheckIn ? styles.statusCheckInText : styles.statusCheckOutText,
+                    ]}
+                  >
+                    {item.statusBadge}
+                  </Text>
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })
+        )}
       </View>
     </View>
   );
@@ -186,20 +153,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
     marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
   titleCol: {
     flex: 1,
     minWidth: 160,
   },
   cardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#0B1C30',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0F172A',
     fontFamily: TYPOGRAPHY.fontFamily,
   },
   cardSubtitle: {
@@ -215,25 +179,22 @@ const styles = StyleSheet.create({
     padding: 3,
   },
   tabBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 6,
   },
   tabBtnActive: {
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOWS.card,
   },
   tabBtnText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#64748B',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   tabBtnTextActive: {
-    color: '#0F172A',
+    color: '#00685F',
     fontWeight: '700',
   },
   listContainer: {
@@ -241,7 +202,7 @@ const styles = StyleSheet.create({
   },
   guestItemRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     padding: 12,
     backgroundColor: '#F8FAFC',
     borderRadius: 10,
@@ -249,16 +210,17 @@ const styles = StyleSheet.create({
     borderColor: '#F1F5F9',
   },
   avatarCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   avatarText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   infoCol: {
     flex: 1,
@@ -266,23 +228,26 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
   },
   guestName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#0B1C30',
+    color: '#0F172A',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   bookingCode: {
-    fontSize: 11,
+    fontSize: 12,
     color: '#64748B',
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   roomName: {
     fontSize: 12,
-    color: '#475569',
-    marginTop: 2,
+    color: '#334155',
     fontWeight: '500',
+    marginTop: 2,
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   phoneRow: {
     flexDirection: 'row',
@@ -292,49 +257,56 @@ const styles = StyleSheet.create({
   phoneText: {
     fontSize: 11,
     color: '#64748B',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   noteBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFBEB',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginTop: 6,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 4,
     alignSelf: 'flex-start',
   },
   noteText: {
     fontSize: 11,
-    color: '#B45309',
+    color: '#92400E',
     fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   statusPill: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 14,
+    borderRadius: 16,
     marginLeft: 8,
   },
   statusCheckIn: {
     backgroundColor: '#E8FBF4',
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  statusCheckInText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#047857',
   },
   statusCheckOut: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  statusCheckOutText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#1D4ED8',
+    backgroundColor: '#EFF4FF',
   },
   statusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily,
+  },
+  statusCheckInText: {
+    color: '#00685F',
+  },
+  statusCheckOutText: {
+    color: '#2563EB',
+  },
+  emptyScheduleBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 28,
+  },
+  emptyScheduleText: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
     fontFamily: TYPOGRAPHY.fontFamily,
   },
 });

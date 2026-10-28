@@ -20,7 +20,7 @@ const PERIOD_OPTIONS = [
 ];
 
 const HostDashboardHeader = ({
-  hostName = 'Robin Nguyen',
+  hostName = 'Lê Hoàng Host',
   selectedPeriod = '30_DAYS',
   periodLabel = '30 ngày qua',
   onSelectPeriod,
@@ -33,17 +33,17 @@ const HostDashboardHeader = ({
 
   return (
     <View style={[styles.headerContainer, isMobile && styles.mobileHeader]}>
-      {/* 1. Left Col: Lời chào & Tên Host (Figma 1.1) */}
+      {/* 1. Left Col: Lời chào & Tên Host */}
       <View style={styles.greetingCol}>
         <Text style={styles.headingTitle}>
           {`Xin chào, ${hostName} 👋`}
         </Text>
         <Text style={styles.subheading}>
-          Đây là tình hình kinh doanh của bạn
+          Đây là tình hình kinh doanh thực tế của bạn
         </Text>
       </View>
 
-      {/* 2. Right Col: Bộ lọc Thời Gian & Nút Xuất Báo Cáo (Figma 1.2, 1.3) */}
+      {/* 2. Right Col: Bộ lọc Thời Gian & Nút Xuất Báo Cáo */}
       <View style={[styles.actionRow, isMobile && styles.mobileActionRow]}>
         {/* Dropdown Khoảng thời gian */}
         <TouchableOpacity
@@ -59,22 +59,24 @@ const HostDashboardHeader = ({
 
         {/* Nút Xuất báo cáo */}
         <TouchableOpacity
-          testID="export-report-btn"
+          testID="btn-export-report"
           style={[styles.exportBtn, exportLoading && styles.exportBtnDisabled]}
           onPress={onExport}
           disabled={exportLoading}
-          activeOpacity={0.85}
+          activeOpacity={0.8}
         >
           {exportLoading ? (
             <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 6 }} />
           ) : (
-            <MaterialCommunityIcons name="file-excel-box-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+            <MaterialCommunityIcons name="file-export-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
           )}
-          <Text style={styles.exportBtnText}>Xuất báo cáo</Text>
+          <Text style={styles.exportBtnText}>
+            {exportLoading ? 'Đang xuất...' : 'Xuất báo cáo'}
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Modal Dropdown Chọn Mốc Thời Gian */}
+      {/* Modal Dropdown Chọn Khoảng Thời Gian */}
       <Modal
         visible={dropdownVisible}
         transparent
@@ -86,26 +88,30 @@ const HostDashboardHeader = ({
           activeOpacity={1}
           onPress={() => setDropdownVisible(false)}
         >
-          <View style={styles.dropdownMenu}>
-            <Text style={styles.dropdownMenuTitle}>Chọn khoảng thời gian</Text>
+          <View style={styles.dropdownModal}>
+            <Text style={styles.dropdownModalTitle}>Chọn khoảng thời gian</Text>
             {PERIOD_OPTIONS.map((opt) => {
               const isSelected = opt.id === selectedPeriod;
               return (
                 <TouchableOpacity
                   key={opt.id}
-                  testID={`period-opt-${opt.id}`}
-                  style={[styles.dropdownItem, isSelected && styles.dropdownItemActive]}
+                  testID={`period-option-${opt.id}`}
+                  style={[styles.dropdownOption, isSelected && styles.dropdownOptionSelected]}
                   onPress={() => {
                     onSelectPeriod && onSelectPeriod(opt.id);
                     setDropdownVisible(false);
                   }}
-                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive]}>
+                  <Text
+                    style={[
+                      styles.dropdownOptionText,
+                      isSelected && styles.dropdownOptionTextSelected,
+                    ]}
+                  >
                     {opt.label}
                   </Text>
                   {isSelected && (
-                    <Ionicons name="checkmark-circle" size={18} color="#00685F" />
+                    <Ionicons name="checkmark" size={16} color="#00685F" />
                   )}
                 </TouchableOpacity>
               );
@@ -122,38 +128,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 18,
     paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    paddingTop: 20,
+    paddingBottom: 12,
   },
   mobileHeader: {
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 14,
+    gap: 16,
   },
   greetingCol: {
     flex: 1,
   },
   headingTitle: {
+    fontFamily: TYPOGRAPHY.fontFamily,
     fontSize: 22,
     fontWeight: '800',
-    color: '#0B1C30',
-    fontFamily: TYPOGRAPHY.fontFamily,
+    color: '#0F172A',
     letterSpacing: -0.3,
   },
   subheading: {
+    fontFamily: TYPOGRAPHY.fontFamily,
     fontSize: 13,
     color: '#64748B',
-    marginTop: 3,
-    fontWeight: '500',
-    fontFamily: TYPOGRAPHY.fontFamily,
+    marginTop: 4,
   },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   mobileActionRow: {
     width: '100%',
@@ -162,83 +165,77 @@ const styles = StyleSheet.create({
   dropdownBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     borderRadius: 8,
-    paddingHorizontal: 12,
     paddingVertical: 8,
+    paddingHorizontal: 12,
+    ...SHADOWS.card,
   },
   dropdownLabel: {
+    fontFamily: TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '600',
     color: '#0F172A',
-    fontFamily: TYPOGRAPHY.fontFamily,
   },
   exportBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#00685F',
     borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    shadowColor: '#00685F',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    ...SHADOWS.card,
   },
   exportBtnDisabled: {
     opacity: 0.7,
   },
   exportBtnText: {
+    fontFamily: TYPOGRAPHY.fontFamily,
     fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
-    fontFamily: TYPOGRAPHY.fontFamily,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  dropdownMenu: {
+  dropdownModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
     width: '100%',
     maxWidth: 320,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
     ...SHADOWS.card,
   },
-  dropdownMenuTitle: {
-    fontSize: 14,
+  dropdownModalTitle: {
+    fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#0B1C30',
+    color: '#0F172A',
     marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
-  dropdownItem: {
+  dropdownOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     borderRadius: 8,
-    marginVertical: 2,
   },
-  dropdownItemActive: {
+  dropdownOptionSelected: {
     backgroundColor: '#E8FBF4',
   },
-  dropdownItemText: {
-    fontSize: 14,
+  dropdownOptionText: {
+    fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: 13,
     color: '#334155',
-    fontWeight: '500',
   },
-  dropdownItemTextActive: {
+  dropdownOptionTextSelected: {
     color: '#00685F',
     fontWeight: '700',
   },

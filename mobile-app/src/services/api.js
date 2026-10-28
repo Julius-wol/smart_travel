@@ -10,10 +10,15 @@ const api = axios.create({
   },
 });
 
-// Request Interceptor: Tự động đính kèm JWT Bearer Token nếu có
+// Request Interceptor: Tự động chuẩn hóa URL và đính kèm JWT Bearer Token nếu có
 api.interceptors.request.use(
   async (config) => {
-    // Có thể bổ sung lấy token từ AsyncStorage hoặc Redux nếu có
+    // Nếu baseURL đã chứa /api mà config.url lại bắt đầu bằng /api/ -> xóa tiền tố trùng lặp
+    if (config.url && config.url.startsWith('/api/')) {
+      config.url = config.url.substring(4);
+    } else if (config.url === '/api') {
+      config.url = '/';
+    }
     return config;
   },
   (error) => {
@@ -21,7 +26,7 @@ api.interceptors.request.use(
   }
 );
 
-// Response Interceptor: Chuẩn hóa dữ liệu trả về theo format của Hiến pháp
+// Response Interceptor: Chuẩn hóa dữ liệu trả về theo format
 api.interceptors.response.use(
   (response) => {
     return response.data;

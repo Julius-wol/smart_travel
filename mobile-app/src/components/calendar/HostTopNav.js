@@ -9,17 +9,17 @@ const HostTopNav = ({
   onMenuPress,
   onProfile,
   user = {
-    name: 'Robin Nguyen',
-    email: 'robinnguyen@gmail.com',
-    initials: 'RN',
+    name: 'Lê Hoàng Host',
+    email: 'host@smarttravel.com',
+    initials: 'LH',
   },
 }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 960;
   const isMobile = width < 768;
 
-  const displayName = user?.name || user?.fullName || 'Robin Nguyen';
-  const displayEmail = user?.email || 'robinnguyen@gmail.com';
+  const displayName = user?.name || user?.fullName || 'Lê Hoàng Host';
+  const displayEmail = user?.email || 'host@smarttravel.com';
   const displayInitials =
     user?.initials ||
     displayName
@@ -28,7 +28,7 @@ const HostTopNav = ({
       .join('')
       .slice(0, 2)
       .toUpperCase() ||
-    'RN';
+    'LH';
 
   return (
     <View style={[styles.topNav, isMobile && styles.mobileTopNav]}>
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: '#E1E5E9',
   },
   mobileTopNav: {
     paddingVertical: 10,

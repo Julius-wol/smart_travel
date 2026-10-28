@@ -7,11 +7,11 @@ import {
   Modal,
   useWindowDimensions,
 } from 'react-native';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../../constants/theme';
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+  return new Intl.NumberFormat('vi-VN').format(amount || 0) + ' đ';
 };
 
 const HostRevenueTrendChart = ({
@@ -25,65 +25,59 @@ const HostRevenueTrendChart = ({
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const [roomDropdownVisible, setRoomDropdownVisible] = useState(false);
-  const [selectedPointIndex, setSelectedPointIndex] = useState(6); // Mặc định điểm 16/10 (Figma)
+  const [selectedPointIndex, setSelectedPointIndex] = useState(0);
 
-  const timeline = chartData?.timeline || [
-    { date: '2026-09-22', label: '22/09', revenue: 1200000, bookingsCount: 1, details: '1 đơn (The Muse)' },
-    { date: '2026-09-26', label: '26/09', revenue: 2400000, bookingsCount: 1, details: '1 đơn (Villa Mộng Mơ)' },
-    { date: '2026-09-30', label: '30/09', revenue: 3100000, bookingsCount: 2, details: '2 đơn (Studio & Villa)' },
-    { date: '2026-10-04', label: '04/10', revenue: 1800000, bookingsCount: 1, details: '1 đơn (Ocean View)' },
-    { date: '2026-10-08', label: '08/10', revenue: 3500000, bookingsCount: 2, details: '2 đơn (Villa Mộng Mơ)' },
-    { date: '2026-10-12', label: '12/10', revenue: 2900000, bookingsCount: 2, details: '2 đơn (The Muse & Ocean)' },
-    {
-      date: '2026-10-15',
-      label: '16/10',
-      revenue: 5000000,
-      bookingsCount: 2,
-      details: '2 đơn (Villa Mộng Mơ & Ocean View)',
-    },
-    {
-      date: '2026-10-20',
-      label: '20/10',
-      revenue: 7500000,
-      bookingsCount: 3,
-      details: '3 đơn (Đỉnh doanh thu ngày phụ nữ)',
-    },
-  ];
-
-  const roomsList = chartData?.roomsList || [
-    { id: 'ALL', title: 'Tất cả 3 phòng' },
-    { id: '6ace59ef30cddf9c0815f9bc', title: 'Villa Mộng Mơ H5' },
-    { id: '6ace59ef30cddf9c0815f9c5', title: 'The Muse Bohemian Studio' },
-    { id: '6ace59ef30cddf9c0815f9c8', title: 'Ocean View Bungalow' },
-  ];
+  const timeline = chartData?.timeline && chartData.timeline.length > 0 ? chartData.timeline : [];
+  const roomsList = chartData?.roomsList && chartData.roomsList.length > 0
+    ? chartData.roomsList
+    : [{ id: 'ALL', title: 'Tất cả phòng' }];
 
   const currentRoomTitle =
-    roomsList.find((r) => r.id === selectedRoomId)?.title || 'Tất cả 3 phòng';
+    roomsList.find((r) => r.id === selectedRoomId)?.title || roomsList[0]?.title || 'Tất cả phòng';
 
   const summary = chartData?.summary || {
-    dailyAverageFormatted: '1.506.000 đ',
-    peakRevenueFormatted: '7.500.000 đ (Ngày 20/10)',
+    dailyAverageFormatted: '0 đ',
+    peakRevenueFormatted: '0 đ',
   };
 
-  // Trục Y tối đa
-  const maxRevenue = 8000000;
-  const maxBookings = 4;
+  // Trục Y tính toán linh hoạt theo dữ liệu thực tế
+  const maxRevValue = timeline.length > 0
+    ? Math.max(...timeline.map((t) => t.revenue || 0), 2000000)
+    : 2000000;
+  const maxRevenue = Math.ceil(maxRevValue / 1000000) * 1000000;
+
+  const maxBookingsVal = timeline.length > 0
+    ? Math.max(...timeline.map((t) => t.bookingsCount || 0), 4)
+    : 4;
+  const maxBookings = Math.max(4, maxBookingsVal);
   const chartHeight = 180;
 
   const yLabels =
     chartMode === 'REVENUE'
-      ? ['8tr', '6tr', '4tr', '2tr', '0tr']
-      : ['4 đơn', '3 đơn', '2 đơn', '1 đơn', '0 đơn'];
+      ? [
+          `${(maxRevenue / 1000000).toFixed(0)}tr`,
+          `${((maxRevenue * 0.75) / 1000000).toFixed(0)}tr`,
+          `${((maxRevenue * 0.5) / 1000000).toFixed(0)}tr`,
+          `${((maxRevenue * 0.25) / 1000000).toFixed(0)}tr`,
+          '0tr',
+        ]
+      : [
+          `${maxBookings} đơn`,
+          `${Math.round(maxBookings * 0.75)} đơn`,
+          `${Math.round(maxBookings * 0.5)} đơn`,
+          `${Math.round(maxBookings * 0.25)} đơn`,
+          '0 đơn',
+        ];
 
-  const selectedPoint = timeline[selectedPointIndex] || timeline[timeline.length - 2];
+  const selectedPoint = timeline[selectedPointIndex] || timeline[timeline.length - 1] || null;
 
   return (
     <View style={styles.cardContainer} testID="host-revenue-chart-card">
-      {/* 1. Header & Controls (Figma 2.1, 2.2, 2.3) */}
+      {/* 1. Header & Controls */}
       <View style={[styles.headerRow, isMobile && styles.mobileHeaderRow]}>
         <View style={styles.titleCol}>
           <Text style={styles.chartTitle}>Biểu đồ doanh thu & xu hướng đặt phòng</Text>
-          <Text style={styles.chartSubtitle}>Doanh thu theo ngày trong {periodLabel}</Text>
+          <Text style={styles.chartSubtitle}>Doanh thu thực tế theo ngày trong {periodLabel}</Text>
         </View>
 
         <View style={styles.controlsRow}>
@@ -122,27 +116,32 @@ const HostRevenueTrendChart = ({
             </TouchableOpacity>
           </View>
 
-          {/* Dropdown Lọc theo phòng */}
+          {/* Filter Dropdown: Chọn phòng */}
           <TouchableOpacity
-            testID="room-filter-dropdown-btn"
+            testID="dropdown-room-filter"
             style={styles.roomSelectBtn}
             onPress={() => setRoomDropdownVisible(true)}
-            activeOpacity={0.75}
+            activeOpacity={0.8}
           >
             <Text style={styles.roomSelectText} numberOfLines={1}>
               {currentRoomTitle}
             </Text>
-            <Ionicons name="chevron-down" size={13} color="#64748B" style={{ marginLeft: 4 }} />
+            <Ionicons name="chevron-down" size={14} color="#64748B" style={{ marginLeft: 6 }} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* 2. Interactive Tooltip Nổi (Figma Node 394:1125) */}
+      {/* 2. Tooltip Điểm Đang Chọn */}
       {selectedPoint && (
-        <View style={styles.tooltipCard} testID="chart-active-tooltip">
+        <View style={styles.tooltipContainer} testID="chart-active-tooltip">
           <View style={styles.tooltipHeader}>
-            <Ionicons name="calendar-outline" size={12} color="#94A3B8" style={{ marginRight: 4 }} />
-            <Text style={styles.tooltipDate}>{selectedPoint.date}</Text>
+            <Text style={styles.tooltipDate}>Ngày {selectedPoint.label}</Text>
+            {selectedPoint.isPeak && (
+              <View style={styles.peakBadge}>
+                <Ionicons name="flash" size={10} color="#D97706" style={{ marginRight: 2 }} />
+                <Text style={styles.peakBadgeText}>Đỉnh doanh thu</Text>
+              </View>
+            )}
           </View>
           <Text style={styles.tooltipValue}>
             {chartMode === 'REVENUE'
@@ -169,51 +168,57 @@ const HostRevenueTrendChart = ({
 
         {/* Data Bars & Points */}
         <View style={styles.plotArea}>
-          {timeline.map((item, index) => {
-            const isSelected = index === selectedPointIndex;
-            const currentVal = chartMode === 'REVENUE' ? item.revenue : item.bookingsCount;
-            const maxVal = chartMode === 'REVENUE' ? maxRevenue : maxBookings;
-            const ratio = Math.min(1, Math.max(0.08, currentVal / maxVal));
-            const barHeight = Math.round(ratio * chartHeight);
+          {timeline.length === 0 ? (
+            <View style={styles.emptyPlotBox}>
+              <Text style={styles.emptyPlotText}>Chưa có phát sinh doanh thu trong khoảng thời gian này</Text>
+            </View>
+          ) : (
+            timeline.map((item, index) => {
+              const isSelected = index === selectedPointIndex;
+              const currentVal = chartMode === 'REVENUE' ? item.revenue : item.bookingsCount;
+              const maxVal = chartMode === 'REVENUE' ? maxRevenue : maxBookings;
+              const ratio = Math.min(1, Math.max(0.08, currentVal / maxVal));
+              const barHeight = Math.round(ratio * chartHeight);
 
-            return (
-              <TouchableOpacity
-                key={item.label}
-                testID={`chart-point-${index}`}
-                style={styles.plotCol}
-                onPress={() => setSelectedPointIndex(index)}
-                activeOpacity={0.8}
-              >
-                {/* Column Visual Fill */}
-                <View style={styles.barTrack}>
-                  <View
-                    style={[
-                      styles.barFill,
-                      { height: barHeight },
-                      isSelected ? styles.barFillSelected : styles.barFillDefault,
-                    ]}
-                  />
-                  {/* Point Marker */}
-                  <View
-                    style={[
-                      styles.pointMarker,
-                      { bottom: Math.max(0, barHeight - 6) },
-                      isSelected && styles.pointMarkerSelected,
-                    ]}
-                  />
-                </View>
+              return (
+                <TouchableOpacity
+                  key={item.label + index}
+                  testID={`chart-point-${index}`}
+                  style={styles.plotCol}
+                  onPress={() => setSelectedPointIndex(index)}
+                  activeOpacity={0.8}
+                >
+                  {/* Column Visual Fill */}
+                  <View style={styles.barTrack}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        { height: barHeight },
+                        isSelected ? styles.barFillSelected : styles.barFillDefault,
+                      ]}
+                    />
+                    {/* Point Marker */}
+                    <View
+                      style={[
+                        styles.pointMarker,
+                        { bottom: Math.max(0, barHeight - 6) },
+                        isSelected && styles.pointMarkerSelected,
+                      ]}
+                    />
+                  </View>
 
-                {/* X-Axis Date Label */}
-                <Text style={[styles.xAxisLabel, isSelected && styles.xAxisLabelSelected]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  {/* X-Axis Date Label */}
+                  <Text style={[styles.xAxisLabel, isSelected && styles.xAxisLabelSelected]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
       </View>
 
-      {/* 4. Chart Footer Summary (Figma 2.5) */}
+      {/* 4. Chart Footer Summary */}
       <View style={styles.chartFooter}>
         <View style={styles.summaryItem}>
           <View style={[styles.statusDot, { backgroundColor: '#10B981' }]} />
@@ -251,18 +256,24 @@ const HostRevenueTrendChart = ({
               return (
                 <TouchableOpacity
                   key={r.id}
-                  testID={`room-opt-${r.id}`}
-                  style={[styles.dropdownItem, isSelected && styles.dropdownItemActive]}
+                  testID={`filter-room-option-${r.id}`}
+                  style={[styles.dropdownOption, isSelected && styles.dropdownOptionSelected]}
                   onPress={() => {
                     onSelectRoom && onSelectRoom(r.id);
                     setRoomDropdownVisible(false);
                   }}
-                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.dropdownItemText, isSelected && styles.dropdownItemTextActive]}>
+                  <Text
+                    style={[
+                      styles.dropdownOptionText,
+                      isSelected && styles.dropdownOptionTextSelected,
+                    ]}
+                  >
                     {r.title}
                   </Text>
-                  {isSelected && <Ionicons name="checkmark-circle" size={18} color="#00685F" />}
+                  {isSelected && (
+                    <Ionicons name="checkmark" size={16} color="#00685F" />
+                  )}
                 </TouchableOpacity>
               );
             })}
@@ -277,9 +288,9 @@ const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
-    marginHorizontal: 20,
-    marginTop: 18,
     padding: 20,
+    marginHorizontal: 20,
+    marginTop: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     ...SHADOWS.card,
@@ -288,20 +299,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   mobileHeaderRow: {
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 12,
   },
   titleCol: {
     flex: 1,
+    minWidth: 200,
   },
   chartTitle: {
     fontSize: 16,
-    fontWeight: '800',
-    color: '#0B1C30',
+    fontWeight: '700',
+    color: '#0F172A',
     fontFamily: TYPOGRAPHY.fontFamily,
   },
   chartSubtitle: {
@@ -313,7 +325,8 @@ const styles = StyleSheet.create({
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    flexWrap: 'wrap',
   },
   segmentedToggle: {
     flexDirection: 'row',
@@ -322,99 +335,109 @@ const styles = StyleSheet.create({
     padding: 3,
   },
   toggleBtn: {
-    paddingHorizontal: 10,
     paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 6,
   },
   toggleBtnActive: {
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOWS.card,
   },
   toggleBtnText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#64748B',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   toggleBtnTextActive: {
-    color: '#0F172A',
+    color: '#00685F',
     fontWeight: '700',
   },
   roomSelectBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     borderRadius: 8,
-    paddingHorizontal: 10,
     paddingVertical: 6,
-    maxWidth: 160,
+    paddingHorizontal: 12,
+    maxWidth: 200,
   },
   roomSelectText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#334155',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
-  tooltipCard: {
+  tooltipContainer: {
     backgroundColor: '#0F172A',
-    borderRadius: 10,
-    padding: 12,
-    alignSelf: 'center',
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 4,
-    minWidth: 240,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 14,
+    alignSelf: 'flex-start',
+    ...SHADOWS.card,
   },
   tooltipHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    gap: 6,
   },
   tooltipDate: {
     fontSize: 11,
     color: '#94A3B8',
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily,
+  },
+  peakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#78350F',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  peakBadgeText: {
+    fontSize: 9,
+    color: '#FDE68A',
+    fontWeight: '700',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   tooltipValue: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
+    color: '#F8FAFC',
+    marginTop: 2,
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   tooltipDetails: {
     fontSize: 11,
     color: '#CBD5E1',
     marginTop: 2,
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   chartCanvasArea: {
     height: 220,
+    marginTop: 12,
     position: 'relative',
-    marginTop: 10,
+    justifyContent: 'flex-end',
   },
   gridlinesWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 30,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'space-between',
+    paddingBottom: 24,
   },
   gridlineRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   yAxisLabel: {
-    width: 44,
-    fontSize: 11,
+    width: 42,
+    fontSize: 10,
     color: '#94A3B8',
     fontFamily: TYPOGRAPHY.fontFamily,
+    textAlign: 'right',
+    paddingRight: 6,
   },
   gridlineDash: {
     flex: 1,
@@ -422,74 +445,73 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
   plotArea: {
-    position: 'absolute',
-    top: 0,
-    left: 48,
-    right: 10,
-    bottom: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-end',
+    justifyContent: 'space-around',
+    height: 200,
+    marginLeft: 42,
+    paddingBottom: 4,
   },
   plotCol: {
-    flex: 1,
     alignItems: 'center',
+    flex: 1,
     height: '100%',
     justifyContent: 'flex-end',
   },
   barTrack: {
-    width: 24,
+    width: 14,
     height: 180,
     justifyContent: 'flex-end',
     alignItems: 'center',
     position: 'relative',
   },
   barFill: {
-    width: 14,
-    borderRadius: 7,
+    width: 8,
+    borderRadius: 4,
   },
   barFillDefault: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#CBD5E1',
   },
   barFillSelected: {
-    backgroundColor: '#0284C7',
+    backgroundColor: '#00685F',
+    width: 10,
   },
   pointMarker: {
     position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#94A3B8',
+  },
+  pointMarkerSelected: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 3,
-    borderColor: '#0284C7',
-  },
-  pointMarkerSelected: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderColor: '#0369A1',
-    borderWidth: 4,
+    borderColor: '#00685F',
+    backgroundColor: '#00685F',
   },
   xAxisLabel: {
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: 8,
-    fontWeight: '500',
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 6,
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   xAxisLabelSelected: {
-    color: '#0284C7',
-    fontWeight: '800',
+    color: '#00685F',
+    fontWeight: '700',
   },
   chartFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 18,
+    justifyContent: 'flex-end',
+    gap: 18,
+    marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
+    flexWrap: 'wrap',
   },
   summaryItem: {
     flexDirection: 'row',
@@ -507,51 +529,58 @@ const styles = StyleSheet.create({
     fontFamily: TYPOGRAPHY.fontFamily,
   },
   summaryValue: {
-    color: '#0F172A',
     fontWeight: '700',
+    color: '#0F172A',
+  },
+  emptyPlotBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyPlotText: {
+    fontSize: 12,
+    color: '#94A3B8',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   dropdownModal: {
-    width: '100%',
-    maxWidth: 320,
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 12,
     padding: 16,
+    width: '100%',
+    maxWidth: 360,
     ...SHADOWS.card,
   },
   dropdownModalTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#0B1C30',
-    marginBottom: 10,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    color: '#0F172A',
+    marginBottom: 12,
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
-  dropdownItem: {
+  dropdownOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     borderRadius: 8,
-    marginVertical: 2,
   },
-  dropdownItemActive: {
+  dropdownOptionSelected: {
     backgroundColor: '#E8FBF4',
   },
-  dropdownItemText: {
+  dropdownOptionText: {
     fontSize: 13,
     color: '#334155',
-    fontWeight: '500',
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
-  dropdownItemTextActive: {
+  dropdownOptionTextSelected: {
     color: '#00685F',
     fontWeight: '700',
   },
