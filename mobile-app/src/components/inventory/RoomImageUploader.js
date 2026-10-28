@@ -209,13 +209,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
     maxWidth: 480,
   },
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   counterText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#00685F',
   },
   counterWarning: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#92400E',
     flex: 1,
   },
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   },
   coverBadgeText: {
     fontSize: 10,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
   setCoverBtn: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   setCoverText: {
     fontSize: 10,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#00685F',
   },
   deletePhotoBtn: {
@@ -336,12 +336,12 @@ const styles = StyleSheet.create({
   },
   addPhotoText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#00685F',
   },
   addPhotoSub: {
     fontSize: 10,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#94A3B8',
     textAlign: 'center',
   },
@@ -371,12 +371,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 16,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
   },
   inputLabel: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#334155',
     marginBottom: 6,
   },
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   },
   confirmUrlText: {
     color: '#FFFFFF',
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     fontSize: 13,
   },
   presetGrid: {

@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   kpiLabel: {
     fontSize: 11,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#64748B',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   },
   kpiValue: {
     fontSize: 26,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     lineHeight: 32,
     marginBottom: 6,
   },
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   subBadgeText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#94A3B8',
   },
   pendingLabelBadge: {
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   },
   pendingBadgeText: {
     fontSize: 10,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#7C3AED',
     letterSpacing: 0.5,
   },
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   pendingUnitText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#7C3AED',
   },
   pendingLinkRow: {
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
   },
   pendingLinkText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#6D28D9',
   },
 });

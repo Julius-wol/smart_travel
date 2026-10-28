@@ -821,13 +821,13 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     fontSize: 22,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     marginBottom: 4,
   },
   pageSubtitle: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
   },
   codeBadge: {
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
   },
   codeBadgeText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#00685F',
   },
   mainColsRow: {
@@ -888,12 +888,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
   },
   sectionSubtitle: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
     marginBottom: 12,
   },
@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#334155',
     marginBottom: 6,
   },
@@ -917,7 +917,7 @@ const styles = StyleSheet.create({
   },
   counterHint: {
     fontSize: 11,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#94A3B8',
   },
   textInput: {
@@ -936,7 +936,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 11,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#EF4444',
     marginTop: 4,
   },
@@ -970,12 +970,12 @@ const styles = StyleSheet.create({
   },
   typePillText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#475569',
   },
   typePillTextActive: {
     color: '#00685F',
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
   },
   steppersGrid: {
     flexDirection: 'row',
@@ -994,7 +994,7 @@ const styles = StyleSheet.create({
   },
   stepperLabel: {
     fontSize: 11,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#64748B',
     marginBottom: 8,
   },
@@ -1015,7 +1015,7 @@ const styles = StyleSheet.create({
   },
   stepperValue: {
     fontSize: 15,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
   },
   areaInput: {
@@ -1025,7 +1025,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 8,
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     textAlign: 'center',
     backgroundColor: '#FFFFFF',
   },
@@ -1050,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   pickerText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#0F172A',
   },
   gpsLocationBtn: {
@@ -1065,7 +1065,7 @@ const styles = StyleSheet.create({
   },
   gpsLocationText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#00685F',
   },
   checkboxRow: {
@@ -1076,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#334155',
     flex: 1,
   },
@@ -1102,12 +1102,12 @@ const styles = StyleSheet.create({
   },
   amenityText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#334155',
   },
   amenityTextActive: {
     color: '#00685F',
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
   },
   summaryCard: {
     backgroundColor: '#FFFFFF',
@@ -1119,7 +1119,7 @@ const styles = StyleSheet.create({
   },
   summaryCardTitle: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     marginBottom: 12,
     borderBottomWidth: 1,
@@ -1133,12 +1133,12 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
   },
   summaryValue: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#0F172A',
   },
   stickyBottomBar: {
@@ -1167,7 +1167,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#64748B',
   },
   rightActionGroup: {
@@ -1187,7 +1187,7 @@ const styles = StyleSheet.create({
   },
   draftBtnText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#00685F',
   },
   publishBtn: {
@@ -1203,7 +1203,7 @@ const styles = StyleSheet.create({
   },
   publishBtnText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
   modalBackdrop: {
@@ -1223,7 +1223,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 15,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     marginBottom: 12,
   },
@@ -1237,7 +1237,7 @@ const styles = StyleSheet.create({
   },
   provinceOptionText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#334155',
   },
   cancelModalCard: {
@@ -1251,14 +1251,14 @@ const styles = StyleSheet.create({
   },
   cancelModalTitle: {
     fontSize: 16,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     marginTop: 10,
     marginBottom: 6,
   },
   cancelModalText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 18,
@@ -1280,7 +1280,7 @@ const styles = StyleSheet.create({
   },
   modalKeepText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#475569',
   },
   modalLeaveBtn: {
@@ -1293,7 +1293,7 @@ const styles = StyleSheet.create({
   },
   modalLeaveText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
 });

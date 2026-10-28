@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 /**
  * Design Tokens & Theme - Smart Travel Mobile App
  * Trích xuất 100% từ thiết kế Figma (Node 29:1190)
@@ -49,26 +50,35 @@ export const COLORS = {
   calPastDayText: '#BCC9C6',  // Chữ ngày quá khứ bị làm mờ
 };
 
-// Hỗ trợ cả TYPOGRAPHY.fontFamily dạng chuỗi và các thuộc tính con (regular, medium, semiBold, bold, extraBold)
-// Tránh việc JS fallback về String.prototype.bold (là một Function) gây lỗi trên React Native Web
+// Đồng bộ font chữ hệ thống thống nhất 100% giữa module Host và User (HomeScreen, ProfileScreen, LoginScreen)
+// Trên Web: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif
+// Trên iOS: System
+// Trên Android: sans-serif
+const SYSTEM_FONT = Platform.select({
+  ios: 'System',
+  android: 'sans-serif',
+  web: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  default: undefined,
+});
+
 const createFontFamilyToken = () => {
-  const token = new String('PlusJakartaSans_400Regular');
-  token.regular = 'PlusJakartaSans_400Regular';
-  token.medium = 'PlusJakartaSans_500Medium';
-  token.semiBold = 'PlusJakartaSans_600SemiBold';
-  token.bold = 'PlusJakartaSans_700Bold';
-  token.extraBold = 'PlusJakartaSans_800ExtraBold';
+  const token = new String(SYSTEM_FONT || '');
+  token.regular = SYSTEM_FONT;
+  token.medium = SYSTEM_FONT;
+  token.semiBold = SYSTEM_FONT;
+  token.bold = SYSTEM_FONT;
+  token.extraBold = SYSTEM_FONT;
   return token;
 };
 
 export const TYPOGRAPHY = {
   fontFamily: createFontFamilyToken(),
   fonts: {
-    regular: 'PlusJakartaSans_400Regular',
-    medium: 'PlusJakartaSans_500Medium',
-    semiBold: 'PlusJakartaSans_600SemiBold',
-    bold: 'PlusJakartaSans_700Bold',
-    extraBold: 'PlusJakartaSans_800ExtraBold',
+    regular: SYSTEM_FONT,
+    medium: SYSTEM_FONT,
+    semiBold: SYSTEM_FONT,
+    bold: SYSTEM_FONT,
+    extraBold: SYSTEM_FONT,
   },
   weights: {
     regular: '400',

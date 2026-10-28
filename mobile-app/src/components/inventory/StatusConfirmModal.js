@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     textAlign: 'center',
     marginBottom: 8,
@@ -134,12 +134,12 @@ const styles = StyleSheet.create({
   },
   roomBadgeText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#334155',
   },
   description: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 20,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#64748B',
   },
   confirmButton: {
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
 });

@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
   },
   scoreBadge: {
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   scoreBadgeText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
   },
   progressBarTrack: {
     height: 8,
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   statusDescription: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
     lineHeight: 17,
     marginBottom: 14,
@@ -219,12 +219,12 @@ const styles = StyleSheet.create({
   },
   checkText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
   },
   checkTextDone: {
     color: '#0F172A',
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
   },
 });
 

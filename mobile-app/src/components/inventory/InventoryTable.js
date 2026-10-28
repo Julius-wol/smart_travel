@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#64748B',
   },
   emptyContainer: {
@@ -399,14 +399,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
     textAlign: 'center',
     maxWidth: 440,
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   },
   emptyResetText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#475569',
   },
   emptyAddBtn: {
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   },
   emptyAddText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
   tableCard: {
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   },
   thText: {
     fontSize: 11,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#64748B',
     letterSpacing: 0.5,
   },
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   },
   photoCountText: {
     fontSize: 10,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
   roomTitleRow: {
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   },
   roomTitle: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     flexShrink: 1,
   },
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   },
   codePillText: {
     fontSize: 11,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#475569',
   },
   specsRow: {
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   roomTypeTag: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#00685F',
   },
   specsDot: {
@@ -545,28 +545,28 @@ const styles = StyleSheet.create({
   },
   specsText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
   },
   locationText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#94A3B8',
     flexShrink: 1,
   },
   priceText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
   },
   priceUnit: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
   },
   weekendPriceText: {
     fontSize: 11,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#94A3B8',
     marginTop: 2,
   },
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   },
   statusPillText: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
   },
   pendingBadge: {
     backgroundColor: '#EDE9FE',
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   },
   pendingBadgeText: {
     fontSize: 11,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#7C3AED',
   },
   noPendingText: {
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   },
   mobileActionLabel: {
     fontSize: 12,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#64748B',
   },
 });

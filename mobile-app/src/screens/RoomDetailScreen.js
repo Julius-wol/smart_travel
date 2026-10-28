@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   headerTitle: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 18,
     fontWeight: '700',
     color: '#0B1C30',
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   tagSonTraText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     color: '#07006C',
     fontSize: 11,
     letterSpacing: 0.5,
@@ -790,12 +790,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   tagEcoText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     color: '#002116',
     fontSize: 11,
   },
   propertyTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontWeight: '800',
     fontSize: 22,
     color: '#0B1C30',
     lineHeight: 30,
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   ratingScoreNumber: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 18,
     color: '#0B1C30',
   },
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   ratingReviewsLink: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontWeight: '600',
     fontSize: 14,
     color: '#00685F',
     textDecorationLine: 'underline',
@@ -841,7 +841,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   locationAddress: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontWeight: '600',
     fontSize: 13,
     color: '#0B1C30',
   },
@@ -883,7 +883,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   bentoValue: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontWeight: '600',
     fontSize: 13,
     color: '#0B1C30',
     marginTop: 2,
@@ -894,7 +894,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionHeading: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 18,
     color: '#0B1C30',
   },
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   amenityTitle: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontWeight: '600',
     fontSize: 13,
     color: '#0B1C30',
   },
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   viewAllButtonText: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontWeight: '600',
     fontSize: 13,
     color: '#0B1C30',
   },
@@ -967,13 +967,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scoreNumber: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontWeight: '800',
     fontSize: 22,
     color: '#FFFFFF',
     lineHeight: 24,
   },
   scoreOutOf: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 10,
     color: '#89F5E7',
   },
@@ -981,7 +981,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scoreTitle: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 16,
     color: '#0B1C30',
   },
@@ -1018,7 +1018,7 @@ const styles = StyleSheet.create({
   progressScore: {
     width: 26,
     textAlign: 'right',
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 12,
     color: '#0B1C30',
   },
@@ -1049,7 +1049,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#00685F',
   },
   filterChipText: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontWeight: '600',
     fontSize: 12,
     color: '#0B1C30',
   },
@@ -1089,7 +1089,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   reviewAuthor: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 14,
     color: '#0B1C30',
   },
@@ -1107,7 +1107,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   reviewRatingText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 12,
     color: '#0B1C30',
   },
@@ -1138,7 +1138,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   policySectionTitle: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 16,
     color: '#0B1C30',
   },
@@ -1158,12 +1158,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkCardTag: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 10,
     color: '#3D4947',
   },
   checkCardTime: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontWeight: '800',
     fontSize: 18,
     color: '#0B1C30',
   },
@@ -1194,7 +1194,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   cancellationTitle: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     fontSize: 13,
     color: '#0B1C30',
   },
@@ -1228,7 +1228,7 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   priceValue: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontWeight: '800',
     fontSize: 20,
     color: '#00685F',
     letterSpacing: -0.3,
@@ -1244,7 +1244,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   priceTaxIncluded: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontWeight: '600',
     fontSize: 11,
     color: '#4648D4',
   },
@@ -1258,7 +1258,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.button,
   },
   bookButtonText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontWeight: '700',
     color: '#FFFFFF',
     fontSize: 14,
   },

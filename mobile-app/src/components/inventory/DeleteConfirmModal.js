@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     textAlign: 'center',
     marginBottom: 8,
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   roomBadgeText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#334155',
   },
   warningBox: {
@@ -218,13 +218,13 @@ const styles = StyleSheet.create({
   warningText: {
     flex: 1,
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#92400E',
     lineHeight: 18,
   },
   suggestionText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
     textAlign: 'center',
     marginBottom: 20,
@@ -240,12 +240,12 @@ const styles = StyleSheet.create({
   },
   closeBtnText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
   description: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 19,
@@ -257,13 +257,13 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#334155',
     marginBottom: 8,
   },
   keywordHighlight: {
     color: '#EF4444',
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
   },
   keywordInput: {
     borderWidth: 1.5,
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     height: 42,
     paddingHorizontal: 12,
     fontSize: 15,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     backgroundColor: '#F8FAFC',
     textAlign: 'center',
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#64748B',
   },
   deleteButton: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
 });

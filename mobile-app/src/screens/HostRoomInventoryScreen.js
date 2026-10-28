@@ -450,13 +450,13 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     fontSize: 22,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
     marginBottom: 4,
   },
   pageSubtitle: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
   },
   headerActionGroup: {
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   },
   exportBtnText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.semiBold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '600',
     color: '#00685F',
   },
   addRoomBtn: {
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   },
   addRoomBtnText: {
     fontSize: 14,
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#FFFFFF',
   },
   alertToast: {
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   },
   alertToastText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#FFFFFF',
   },
   paginationRow: {
@@ -530,11 +530,11 @@ const styles = StyleSheet.create({
   },
   paginationInfoText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.regular,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '400',
     color: '#64748B',
   },
   boldText: {
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
     color: '#0F172A',
   },
   paginationButtons: {
@@ -572,12 +572,12 @@ const styles = StyleSheet.create({
   },
   pageNumberText: {
     fontSize: 13,
-    fontFamily: TYPOGRAPHY.fontFamily.medium,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '500',
     color: '#334155',
   },
   pageNumberTextActive: {
     color: '#FFFFFF',
-    fontFamily: TYPOGRAPHY.fontFamily.bold,
+    fontFamily: TYPOGRAPHY.fontFamily, fontWeight: '700',
   },
   drawerBackdrop: {
     flex: 1,
