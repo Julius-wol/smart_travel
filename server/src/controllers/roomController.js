@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Room from '../models/Room.js';
+import User from '../models/User.js';
 
 // Host mặc định cho dữ liệu mẫu
 const DEFAULT_HOST_ID = new mongoose.Types.ObjectId('664c1234567890abcdef1001');
