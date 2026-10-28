@@ -81,7 +81,7 @@ const HostDashboardScreen = ({ navigation }) => {
     setRefreshing(false);
   }, [dispatch, period, selectedRoomId]);
 
-  // Điều hướng từ Sidebar
+  // Điều hướng từ Sidebar: Chỉ navigate tới màn hình kế tiếp hợp lệ, các mục chưa có để nguyên
   const handleSidebarNavigate = (menuId) => {
     setMobileDrawerVisible(false);
     if (menuId === 'calendar') {
@@ -89,6 +89,7 @@ const HostDashboardScreen = ({ navigation }) => {
     } else if (menuId === 'rooms') {
       navigation.navigate('HostRoomInventory');
     }
+    // Các menu khác ('bookings', 'reviews', 'revenue', 'settings'): để nguyên, sẽ code sau
   };
 
   return (
@@ -147,7 +148,7 @@ const HostDashboardScreen = ({ navigation }) => {
           >
             {/* 1. Header Chào Mừng, Bộ Lọc Thời Gian & Nút Xuất Báo Cáo */}
             <HostDashboardHeader
-              hostName={host?.name || 'Robin Nguyen'}
+              hostName={host?.name || 'Lê Hoàng Host'}
               selectedPeriod={period}
               periodLabel={periodLabel}
               onSelectPeriod={(p) => dispatch(setPeriod(p))}
@@ -156,12 +157,7 @@ const HostDashboardScreen = ({ navigation }) => {
             />
 
             {/* 2. SLA Alert Banner (Cảnh báo đơn chờ duyệt khẩn cấp) */}
-            <HostSlaAlertBanner
-              slaAlert={slaAlert}
-              onNavigateApproval={() => {
-                navigation.navigate('HostCalendar');
-              }}
-            />
+            <HostSlaAlertBanner slaAlert={slaAlert} />
 
             {/* 3. Hàng 4 Thẻ KPI Cốt Lõi */}
             <HostDashboardKpiCards kpis={kpis} />
@@ -186,12 +182,7 @@ const HostDashboardScreen = ({ navigation }) => {
               />
 
               {/* Cột Phải: Đánh Giá Mới Nhất */}
-              <HostRecentReviews
-                recentReviews={recentReviews}
-                onNavigateReviews={() => {
-                  navigation.navigate('HostCalendar');
-                }}
-              />
+              <HostRecentReviews recentReviews={recentReviews} />
             </View>
 
             <View style={{ height: 40 }} />
@@ -238,63 +229,53 @@ const HostDashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   appLayout: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
   },
   desktopSidebarWrapper: {
     width: 250,
-    height: '100%',
     borderRightWidth: 1,
     borderRightColor: '#E2E8F0',
     backgroundColor: '#FFFFFF',
   },
   mainContentCol: {
     flex: 1,
-    height: '100%',
     backgroundColor: '#F8FAFC',
   },
   scrollArea: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 30,
+    paddingBottom: 40,
   },
   bottomColumnsRow: {
     flexDirection: 'row',
-    marginHorizontal: 20,
-    marginTop: 18,
     gap: 16,
+    marginHorizontal: 20,
+    marginTop: 16,
   },
   mobileBottomColumns: {
     flexDirection: 'column',
-    gap: 16,
   },
   toastBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
-    marginTop: 10,
     paddingVertical: 10,
     paddingHorizontal: 16,
+    marginHorizontal: 20,
+    marginTop: 12,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
   },
   toastSuccess: {
-    backgroundColor: '#047857',
+    backgroundColor: '#00685F',
   },
   toastError: {
     backgroundColor: '#DC2626',
   },
   toastText: {
-    flex: 1,
     fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -303,42 +284,34 @@ const styles = StyleSheet.create({
   drawerOverlay: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-  },
-  drawerBackdrop: {
-    flex: 1,
   },
   drawerContent: {
-    width: 270,
-    height: '100%',
+    width: 280,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    height: '100%',
+    ...SHADOWS.card,
   },
   drawerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   drawerHeaderText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
     color: '#64748B',
-    letterSpacing: 0.5,
+    fontFamily: TYPOGRAPHY.fontFamily,
   },
   drawerCloseBtn: {
-    padding: 6,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
+    padding: 4,
+  },
+  drawerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
 });
 

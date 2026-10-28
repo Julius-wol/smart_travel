@@ -78,14 +78,20 @@ const InventoryKpiCards = ({ kpis = {}, onPendingPress }) => {
           <Text style={[styles.kpiValue, { color: '#6D28D9' }]}>{pendingBookings24h}</Text>
           <Text style={styles.pendingUnitText}>đơn mới</Text>
         </View>
-        <TouchableOpacity
-          style={styles.pendingLinkRow}
-          onPress={onPendingPress}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.pendingLinkText}>Xem danh sách yêu cầu</Text>
-          <MaterialCommunityIcons name="arrow-right" size={14} color="#6D28D9" />
-        </TouchableOpacity>
+        {onPendingPress ? (
+          <TouchableOpacity
+            style={styles.pendingLinkRow}
+            onPress={onPendingPress}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.pendingLinkText}>Xem danh sách yêu cầu</Text>
+            <MaterialCommunityIcons name="arrow-right" size={14} color="#6D28D9" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.pendingLinkRow}>
+            <Text style={styles.pendingLinkText}>Cần xử lý trong 24 giờ</Text>
+          </View>
+        )}
       </View>
     </View>
   );

@@ -28,16 +28,18 @@ const HostSlaAlertBanner = ({
           </Text>
         </View>
 
-        {/* Action Link */}
-        <TouchableOpacity
-          testID="btn-navigate-approval"
-          style={styles.actionLink}
-          onPress={onNavigateApproval}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.actionLinkText}>Chuyển tới Duyệt đơn</Text>
-          <Ionicons name="arrow-forward" size={14} color="#D97706" style={{ marginLeft: 4 }} />
-        </TouchableOpacity>
+        {/* Action Link: Chỉ hiển thị khi có hàm điều hướng hợp lệ */}
+        {onNavigateApproval ? (
+          <TouchableOpacity
+            testID="btn-navigate-approval"
+            style={styles.actionLink}
+            onPress={onNavigateApproval}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.actionLinkText}>Chuyển tới Duyệt đơn</Text>
+            <Ionicons name="arrow-forward" size={14} color="#D97706" style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );

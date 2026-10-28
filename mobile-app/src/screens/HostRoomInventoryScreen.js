@@ -255,10 +255,7 @@ const HostRoomInventoryScreen = ({ navigation }) => {
             </View>
 
             {/* 4 KPI Cards */}
-            <InventoryKpiCards
-              kpis={kpis}
-              onPendingPress={() => navigation.navigate('HostDashboard')}
-            />
+            <InventoryKpiCards kpis={kpis} />
 
             {/* Filter Bar */}
             <InventoryFilterBar

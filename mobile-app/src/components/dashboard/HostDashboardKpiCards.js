@@ -9,22 +9,24 @@ const HostDashboardKpiCards = ({ kpis }) => {
   const isMobile = width < 600;
 
   const revenue = kpis?.revenue || {
-    formatted: '45.2 M VND',
-    subBadge: '14 đơn hoàn thành & đã xác nhận',
+    formatted: '0 đ',
+    subBadge: 'Chưa có đơn hoàn thành',
   };
 
   const newBookings = kpis?.newBookings || {
-    formatted: '18 đơn',
-    subBadge: 'Tỷ lệ chốt đơn tự động 82%',
+    formatted: '0 đơn',
+    subBadge: 'Tỷ lệ chốt đơn 100%',
   };
 
   const occupancyRate = kpis?.occupancyRate || {
-    formatted: '68%',
+    formatted: '0%',
   };
 
   const avgRating = kpis?.avgRating || {
-    formatted: '4.7 ★',
+    formatted: '5.0 ★',
   };
+
+  const totalReviewsCount = kpis?.avgRating?.totalReviewsCount !== undefined ? kpis.avgRating.totalReviewsCount : 0;
 
   const cards = [
     {
@@ -58,7 +60,7 @@ const HostDashboardKpiCards = ({ kpis }) => {
       id: 'kpi-rating',
       title: 'Điểm đánh giá TB',
       value: avgRating.formatted,
-      subBadge: 'Dựa trên 32 đánh giá',
+      subBadge: `Dựa trên ${totalReviewsCount} đánh giá`,
       iconName: 'star',
       iconColor: '#CA8A04',
       iconBg: '#FEF9C3',
@@ -81,16 +83,20 @@ const HostDashboardKpiCards = ({ kpis }) => {
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{item.title}</Text>
               <View style={[styles.iconBox, { backgroundColor: item.iconBg }]}>
-                <MaterialCommunityIcons name={item.iconName} size={18} color={item.iconColor} />
+                {item.iconName === 'star' ? (
+                  <Ionicons name="star" size={18} color={item.iconColor} />
+                ) : (
+                  <MaterialCommunityIcons name={item.iconName} size={18} color={item.iconColor} />
+                )}
               </View>
             </View>
 
-            {/* Value */}
+            {/* KPI Main Value */}
             <Text style={styles.cardValue}>{item.value}</Text>
 
-            {/* Sub-badge */}
+            {/* Sub-label Badge */}
             {item.subBadge ? (
-              <View style={styles.subBadgeWrap}>
+              <View style={styles.subBadgeBox}>
                 <Text style={styles.subBadgeText}>{item.subBadge}</Text>
               </View>
             ) : null}
@@ -103,7 +109,7 @@ const HostDashboardKpiCards = ({ kpis }) => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
+    marginHorizontal: 20,
     marginTop: 16,
   },
   grid: {
@@ -116,20 +122,22 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 12,
+    padding: 18,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    justifyContent: 'space-between',
     ...SHADOWS.card,
   },
   desktopCard: {
     flex: 1,
+    minWidth: 180,
   },
   tabletCard: {
     width: '48%',
   },
   mobileCard: {
-    width: '47.5%',
+    width: '100%',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -138,10 +146,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardTitle: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '600',
     fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
   },
   iconBox: {
     width: 32,
@@ -151,21 +159,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardValue: {
+    fontFamily: TYPOGRAPHY.fontFamily,
     fontSize: 22,
     fontWeight: '800',
-    color: '#0B1C30',
-    fontFamily: TYPOGRAPHY.fontFamily,
+    color: '#0F172A',
     letterSpacing: -0.4,
-    marginVertical: 4,
   },
-  subBadgeWrap: {
-    marginTop: 4,
+  subBadgeBox: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
   },
   subBadgeText: {
-    fontSize: 11,
-    color: '#64748B',
-    fontWeight: '500',
     fontFamily: TYPOGRAPHY.fontFamily,
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#64748B',
   },
 });
 

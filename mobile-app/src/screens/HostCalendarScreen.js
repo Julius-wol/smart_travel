@@ -198,7 +198,7 @@ const HostCalendarScreen = ({ navigation, route }) => {
     if (navigation?.canGoBack && navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation?.navigate && navigation.navigate('MainTabs', { screen: 'Discovery' });
+      navigation?.navigate && navigation.navigate('HostDashboard');
     }
   };
 

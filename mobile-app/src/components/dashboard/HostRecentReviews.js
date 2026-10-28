@@ -25,19 +25,21 @@ const HostRecentReviews = ({
           <Text style={styles.cardSubtitle}>Từ khách đã hoàn thành kỳ nghỉ thực tế</Text>
         </View>
 
-        {/* Action Link: Xem tất cả */}
-        <TouchableOpacity
-          testID="btn-view-all-reviews"
-          style={styles.viewAllBtn}
-          onPress={onNavigateReviews}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.viewAllText}>Xem tất cả</Text>
-          <Ionicons name="arrow-forward" size={13} color="#00685F" style={{ marginLeft: 3 }} />
-        </TouchableOpacity>
+        {/* Action Link: Xem tất cả (Chỉ hiển thị khi có màn hình tiếp theo) */}
+        {onNavigateReviews ? (
+          <TouchableOpacity
+            testID="btn-view-all-reviews"
+            style={styles.viewAllBtn}
+            onPress={onNavigateReviews}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.viewAllText}>Xem tất cả</Text>
+            <Ionicons name="arrow-forward" size={13} color="#00685F" style={{ marginLeft: 3 }} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
-      {/* 2. Reviews List */}
+      {/* 2. Reviews List - Hiển thị thẻ tĩnh, không tự ý navigate đến trang khác */}
       <View style={styles.listContainer}>
         {reviewsList.length === 0 ? (
           <View style={styles.emptyReviewBox}>
@@ -46,12 +48,10 @@ const HostRecentReviews = ({
           </View>
         ) : (
           reviewsList.map((item) => (
-            <TouchableOpacity
+            <View
               key={item.id}
               testID={`review-item-${item.id}`}
               style={styles.reviewItem}
-              onPress={onNavigateReviews}
-              activeOpacity={0.8}
             >
               {/* Top Row: Avatar + Name + Stars */}
               <View style={styles.reviewTopRow}>
@@ -86,7 +86,7 @@ const HostRecentReviews = ({
               <Text style={styles.commentText} numberOfLines={3}>
                 "{item.comment}"
               </Text>
-            </TouchableOpacity>
+            </View>
           ))
         )}
       </View>
