@@ -73,7 +73,7 @@ const LoginScreen = ({ navigation }) => {
       const loginData = await loginRes.json();
 
       if (!loginRes.ok) {
-        Alert.alert('Đăng nhập thất bại', loginData.message || 'Sai thông tin');
+        Alert.alert('Không thể đăng nhập', loginData.message || 'Sai thông tin');
         return;
       }
 
@@ -91,23 +91,13 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        // Kiểm tra vai trò tài khoản so với vai trò đang chọn
-        const userRole = profileData.role || 'USER';
-        if (role === 'HOST' && userRole !== 'HOST') {
+        if (profileData.role === 'HOST') {
           Alert.alert(
-            'Lưu ý vai trò',
-            'Tài khoản này được đăng ký là "Khách du lịch", không phải "Chủ phòng". Bạn có muốn tiếp tục đăng nhập với tư cách Khách du lịch không?',
-            [
-              { text: 'Hủy', style: 'cancel' },
-              { 
-                text: 'Tiếp tục', 
-                onPress: () => navigation.replace('Home', { user: profileData, token: accessToken }) 
-              }
-            ]
+            'Tài khoản Đối tác Host',
+            'Tài khoản này là tài khoản Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!'
           );
           return;
         }
-
         // Chuyển sang màn hình Trang chủ (Booking Discovery)
         navigation.replace('Home', { user: profileData, token: accessToken });
       } else {
@@ -128,12 +118,12 @@ const LoginScreen = ({ navigation }) => {
       const res = await fetch(`${API_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken }),
+        body: JSON.stringify({ accessToken, platform: 'mobile', role: 'USER' }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        Alert.alert('Lỗi', data.message || 'Đăng nhập Google thất bại');
+        Alert.alert('Không thể đăng nhập', data.message || 'Đăng nhập Google thất bại');
         return;
       }
 
@@ -144,6 +134,13 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
+        if (profileData.role === 'HOST') {
+          Alert.alert(
+            'Tài khoản Đối tác Host',
+            'Tài khoản này là tài khoản Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!'
+          );
+          return;
+        }
         navigation.replace('Home', { user: profileData, token: data.accessToken });
       } else {
         Alert.alert('Lỗi', 'Không lấy được thông tin tài khoản');
@@ -175,23 +172,12 @@ const LoginScreen = ({ navigation }) => {
             </Text>
           </View>
 
-          {/* Selector - Chọn Vai trò */}
-          <View style={styles.roleSelector}>
-            <TouchableOpacity 
-              style={[styles.roleButton, role === 'USER' && styles.roleButtonActive]}
-              onPress={() => setRole('USER')}
-            >
-              <Ionicons name="compass" size={20} color={role === 'USER' ? '#00796B' : '#666'} />
-              <Text style={[styles.roleText, role === 'USER' && styles.roleTextActive]}>Khách du lịch</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.roleButton, role === 'HOST' && styles.roleButtonActive]}
-              onPress={() => setRole('HOST')}
-            >
-              <Ionicons name="home" size={20} color={role === 'HOST' ? '#00796B' : '#666'} />
-              <Text style={[styles.roleText, role === 'HOST' && styles.roleTextActive]}>Chủ phòng</Text>
-            </TouchableOpacity>
+          {/* Vai trò Khách du lịch (Mobile chỉ dành cho Khách du lịch) */}
+          <View style={styles.singleRoleContainer}>
+            <View style={styles.singleRoleBadge}>
+              <Ionicons name="compass" size={20} color="#00796B" />
+              <Text style={styles.singleRoleText}>Khách du lịch</Text>
+            </View>
           </View>
 
           {/* Input Form */}
@@ -328,36 +314,30 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 10,
   },
-  roleSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#EDF2F7',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 30,
+  singleRoleContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  roleButton: {
-    flex: 1,
+  singleRoleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  roleButtonActive: {
     backgroundColor: '#fff',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#B2DFDB',
+    elevation: 2,
+    shadowColor: '#00796B',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
-  roleText: {
+  singleRoleText: {
     marginLeft: 8,
     fontSize: 15,
-    fontWeight: '600',
-    color: '#718096',
-  },
-  roleTextActive: {
+    fontWeight: '700',
     color: '#00796B',
   },
   formContainer: {

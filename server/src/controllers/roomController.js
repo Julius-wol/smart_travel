@@ -50,7 +50,7 @@ const SEED_DATA = [
       checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
       cancellation: 'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00. Sau thời gian này áp dụng chính sách của chủ nhà.',
     },
-    location: { lat: 16.0825, lng: 108.2435 },
+    location: { type: 'Point', coordinates: [108.2435, 16.0825] },
     status: 'ACTIVE',
   },
   {
@@ -82,7 +82,7 @@ const SEED_DATA = [
     ],
     rating: 4.85,
     reviewCount: 94,
-    location: { lat: 16.0503, lng: 108.2418 },
+    location: { type: 'Point', coordinates: [108.2418, 16.0503] },
     status: 'ACTIVE',
   },
   {
@@ -114,7 +114,7 @@ const SEED_DATA = [
     ],
     rating: 4.95,
     reviewCount: 156,
-    location: { lat: 16.0667, lng: 108.2452 },
+    location: { type: 'Point', coordinates: [108.2452, 16.0667] },
     status: 'ACTIVE',
   },
 ];
@@ -131,7 +131,7 @@ export const getAllRooms = async (req, res) => {
       console.log('✅ Đã nạp thành công dữ liệu homestay mẫu vào MongoDB!');
     }
 
-    const conditions = [{ status: 'ACTIVE' }];
+    const conditions = [{ status: { $in: ['ACTIVE', 'Published'] } }];
 
     if (city && city.trim()) {
       conditions.push({ city: { $regex: city.trim(), $options: 'i' } });

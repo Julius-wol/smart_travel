@@ -76,10 +76,18 @@ export const signIn = async (req,res) => {
             return res.status(401).json({ message: "Tài khoản hoặc mật khẩu không đúng" });
         }
 
-//kiem tra pass
         const passwordCorrect = await bcrypt.compare(password, user.password);
         if (!passwordCorrect) {
             return res.status(401).json({ message: "Tài khoản hoặc mật khẩu không đúng" });
+        }
+
+        // Chặn tài khoản HOST đăng nhập vào ứng dụng mobile dành cho khách du lịch
+        if (user.role === 'HOST') {
+            return res.status(403).json({
+                message: "Tài khoản của bạn là Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!",
+                code: "ROLE_NOT_PERMITTED_ON_MOBILE",
+                role: user.role
+            });
         }
         
         //neu khop, tạo accesToken với JWT
@@ -310,6 +318,15 @@ export const googleSignIn = async (req, res) => {
             });
 
             console.log(`✅ Tạo tài khoản Google mới: ${email}`);
+        } else {
+            // Chặn tài khoản HOST đăng nhập vào ứng dụng mobile dành cho khách du lịch
+            if (user.role === 'HOST') {
+                return res.status(403).json({
+                    message: "Tài khoản của bạn là Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!",
+                    code: "ROLE_NOT_PERMITTED_ON_MOBILE",
+                    role: user.role
+                });
+            }
         }
 
         // Tạo JWT access token

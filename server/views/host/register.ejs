@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/host/css/host.css">
+  <style>
+    body {
+      background-color: #F8F9FA;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 16px;
+    }
+
+    .register-wrapper {
+      width: 100%;
+      max-width: 480px;
+      margin: auto;
+    }
+
+    .mobile-style-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand-logo-card {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      padding: 12px 18px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      margin-bottom: 16px;
+    }
+
+    .brand-logo-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .brand-logo-text {
+      font-size: 13px;
+      font-weight: 800;
+      color: #1A202C;
+      margin-top: 4px;
+    }
+
+    .welcome-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #1A202C;
+      margin-bottom: 8px;
+    }
+
+    .welcome-subtitle {
+      font-size: 13.5px;
+      color: #718096;
+      line-height: 1.5;
+    }
+
+    .mobile-form-card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      border: 1px solid #E2E8F0;
+    }
+
+    .field-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2D3748;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .mobile-input-wrap {
+      display: flex;
+      align-items: center;
+      background: #F7FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 0 14px;
+      height: 46px;
+      margin-bottom: 16px;
+    }
+
+    .mobile-input-wrap:focus-within {
+      border-color: #00796B;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.12);
+    }
+
+    .mobile-input-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 14px;
+      color: #2D3748;
+      font-family: inherit;
+    }
+
+    .btn-login-main {
+      width: 100%;
+      height: 48px;
+      background: #00796B;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      box-shadow: 0 4px 12px rgba(0, 121, 107, 0.25);
+      margin-top: 8px;
+    }
+
+    .btn-login-main:hover {
+      background: #006054;
+    }
+
+    .alert-error-box {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #991B1B;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="register-wrapper">
+  <div class="mobile-style-header">
+    <div class="brand-logo-card">
+      <div class="brand-logo-icon">🏠</div>
+      <div class="brand-logo-text">SmartTravel</div>
+    </div>
+    <h1 class="welcome-title">Đăng ký Đối tác Chủ phòng</h1>
+    <p class="welcome-subtitle">
+      Bắt đầu đăng tải cơ sở lưu trú và tiếp cận hàng triệu du khách trên Smart Travel.
+    </p>
+  </div>
+
+  <div class="mobile-form-card">
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert-error-box">
+        <span>⚠️</span>
+        <div><%= error %></div>
+      </div>
+    <% } %>
+
+    <form action="/host/register" method="POST">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label class="field-label">Họ & Tên đệm *</label>
+          <div class="mobile-input-wrap">
+            <input type="text" name="firstName" placeholder="Nguyễn" value="<%= (typeof values !== 'undefined' && values.firstName) ? values.firstName : '' %>" required>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Tên *</label>
+          <div class="mobile-input-wrap">
+            <input type="text" name="lastName" placeholder="Văn Nam" value="<%= (typeof values !== 'undefined' && values.lastName) ? values.lastName : '' %>" required>
+          </div>
+        </div>
+      </div>
+
+      <label class="field-label">Tên đăng nhập (Username) *</label>
+      <div class="mobile-input-wrap">
+        <input type="text" name="username" placeholder="namhost2026" value="<%= (typeof values !== 'undefined' && values.username) ? values.username : '' %>" required>
+      </div>
+
+      <label class="field-label">Email tài khoản *</label>
+      <div class="mobile-input-wrap">
+        <input type="email" name="email" placeholder="nam@gmail.com" value="<%= (typeof values !== 'undefined' && values.email) ? values.email : '' %>" required>
+      </div>
+
+      <label class="field-label">Số điện thoại</label>
+      <div class="mobile-input-wrap">
+        <input type="tel" name="phone" placeholder="0912345678" value="<%= (typeof values !== 'undefined' && values.phone) ? values.phone : '' %>">
+      </div>
+
+      <label class="field-label">Mật khẩu *</label>
+      <div class="mobile-input-wrap">
+        <input type="password" name="password" placeholder="Tối thiểu 6 ký tự" required>
+      </div>
+
+      <label class="field-label">Xác nhận mật khẩu *</label>
+      <div class="mobile-input-wrap">
+        <input type="password" name="confirmPassword" placeholder="Nhập lại mật khẩu" required>
+      </div>
+
+      <button type="submit" class="btn-login-main">
+        <span>Đăng ký Chủ phòng ngay</span>
+        <span>→</span>
+      </button>
+    </form>
+
+    <div style="margin-top: 20px; text-align: center; font-size: 13.5px; color: #4A5568;">
+      <span>Đã có tài khoản Đối tác? </span>
+      <a href="/host/login" style="color: #00796B; font-weight: 700; text-decoration: underline;">Đăng nhập</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

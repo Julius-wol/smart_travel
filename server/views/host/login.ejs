@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/host/css/host.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body {
+      background-color: #F8F9FA;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 16px;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 440px;
+      margin: auto;
+    }
+
+    /* Header Logo & Title matching Mobile Screen */
+    .mobile-style-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand-logo-card {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      padding: 12px 18px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      margin-bottom: 16px;
+    }
+
+    .brand-logo-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .brand-logo-text {
+      font-size: 13px;
+      font-weight: 800;
+      color: #1A202C;
+      margin-top: 4px;
+      letter-spacing: -0.3px;
+    }
+
+    .welcome-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #1A202C;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .welcome-subtitle {
+      font-size: 13.5px;
+      color: #718096;
+      line-height: 1.5;
+      padding: 0 10px;
+    }
+
+    /* Single Role Badge (Web is exclusively for Host) */
+    .role-single-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+
+    .role-single-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      color: #00796B;
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0, 121, 107, 0.08);
+      border: 1.5px solid #B2DFDB;
+    }
+
+    .role-single-icon {
+      font-size: 18px;
+    }
+
+    /* Main Form Card */
+    .mobile-form-card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+      border: 1px solid #E2E8F0;
+    }
+
+    .field-label {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #2D3748;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .mobile-input-wrap {
+      display: flex;
+      align-items: center;
+      background: #F7FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 0 14px;
+      height: 48px;
+      margin-bottom: 20px;
+      transition: all 0.15s ease;
+    }
+
+    .mobile-input-wrap:focus-within {
+      border-color: #00796B;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.12);
+    }
+
+    .mobile-input-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 14.5px;
+      color: #2D3748;
+      font-family: inherit;
+    }
+
+    .input-icon-left {
+      color: #A0AEC0;
+      font-size: 18px;
+      margin-right: 10px;
+    }
+
+    .input-toggle-eye {
+      background: none;
+      border: none;
+      color: #A0AEC0;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+    }
+
+    .form-options-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      font-size: 13px;
+    }
+
+    .checkbox-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #4A5568;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-wrap input {
+      accent-color: #00796B;
+      width: 16px;
+      height: 16px;
+    }
+
+    .forgot-link {
+      color: #00796B;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .btn-login-main {
+      width: 100%;
+      height: 50px;
+      background: #00796B;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: inherit;
+      box-shadow: 0 4px 12px rgba(0, 121, 107, 0.25);
+      transition: background 0.15s ease;
+    }
+
+    .btn-login-main:hover {
+      background: #006054;
+    }
+
+    /* Footer matching Mobile Screen */
+    .form-footer-box {
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    .divider-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: #E2E8F0;
+    }
+
+    .divider-label {
+      padding: 0 14px;
+      font-size: 12.5px;
+      color: #A0AEC0;
+    }
+
+    .google-btn {
+      width: 100%;
+      height: 48px;
+      background: white;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #2D3748;
+      cursor: pointer;
+      margin-bottom: 22px;
+      transition: all 0.15s ease;
+    }
+
+    .google-btn:hover {
+      background: #F7FAFC;
+      border-color: #CBD5E1;
+    }
+
+    .register-hint-row {
+      font-size: 14px;
+      color: #4A5568;
+      margin-bottom: 16px;
+    }
+
+    .register-link-teal {
+      color: #00796B;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    .terms-caption {
+      font-size: 11.5px;
+      color: #A0AEC0;
+      line-height: 1.6;
+      padding: 0 10px;
+    }
+
+    .alert-error-box {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #991B1B;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrapper">
+  <!-- HEADER SECTION (Matching Mobile LoginScreen) -->
+  <div class="mobile-style-header">
+    <div class="brand-logo-card">
+      <div class="brand-logo-icon">✈️</div>
+      <div class="brand-logo-text">SmartTravel</div>
+    </div>
+    <h1 class="welcome-title">Chào mừng trở lại!</h1>
+    <p class="welcome-subtitle">
+      Đăng nhập để tiếp tục quản lý lưu trú và kết nối đón khách du lịch trên hệ thống Smart Travel.
+    </p>
+  </div>
+
+  <!-- ROLE BADGE (Web is exclusively for Host) -->
+  <div class="role-single-wrap">
+    <div class="role-single-badge">
+      <span class="role-single-icon">🏠</span>
+      <span>Chủ phòng</span>
+    </div>
+  </div>
+
+  <!-- MAIN LOGIN FORM CARD -->
+  <div class="mobile-form-card">
+    <div class="alert-error-box" id="googleErrorBox" style="<%= (typeof error !== 'undefined' && error) ? '' : 'display: none;' %>">
+      <span>⚠️</span>
+      <div id="googleErrorText"><%= typeof error !== 'undefined' && error ? error : '' %></div>
+    </div>
+
+    <form action="/host/login" method="POST">
+      <!-- Email / Phone Field -->
+      <label class="field-label" for="emailOrPhoneInput">Email / Số điện thoại</label>
+      <div class="mobile-input-wrap">
+        <span class="input-icon-left">@</span>
+        <input 
+          type="text" 
+          id="emailOrPhoneInput" 
+          name="emailOrPhone" 
+          placeholder="nam@gmail.com hoặc số điện thoại" 
+          value="<%= typeof emailOrPhone !== 'undefined' ? emailOrPhone : '' %>" 
+          required 
+          autocomplete="username"
+        >
+      </div>
+
+      <!-- Password Field with Show/Hide Toggle -->
+      <label class="field-label" for="passwordInput">Mật khẩu</label>
+      <div class="mobile-input-wrap">
+        <span class="input-icon-left">🔒</span>
+        <input 
+          type="password" 
+          id="passwordInput" 
+          name="password" 
+          placeholder="••••••••••" 
+          required 
+          autocomplete="current-password"
+        >
+        <button type="button" class="input-toggle-eye" id="btnToggleEye" title="Hiện/Ẩn mật khẩu">
+          👁️
+        </button>
+      </div>
+
+      <!-- Options Row -->
+      <div class="form-options-row">
+        <label class="checkbox-wrap">
+          <input type="checkbox" name="rememberMe" checked>
+          <span>Ghi nhớ đăng nhập</span>
+        </label>
+        <a href="#forgot" class="forgot-link" onclick="alert('Vui lòng liên hệ quản trị viên hoặc sử dụng tính năng Quên mật khẩu trên app mobile để đặt lại mã OTP.')">
+          Quên mật khẩu?
+        </a>
+      </div>
+
+      <!-- Login Submit Button -->
+      <button type="submit" class="btn-login-main">
+        <span>Đăng nhập ngay</span>
+        <span>→</span>
+      </button>
+    </form>
+
+    <!-- FOOTER SECTION (Divider, Google, Register Link, Terms) -->
+    <div class="form-footer-box">
+      <div class="divider-row">
+        <div class="divider-line"></div>
+        <div class="divider-label">Hoặc đăng nhập với</div>
+        <div class="divider-line"></div>
+      </div>
+
+      <button type="button" class="google-btn" id="btnGoogleLogin" onclick="handleGoogleHostLogin()">
+        <svg width="18" height="18" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span>Tiếp tục với Google</span>
+      </button>
+
+      <div class="register-hint-row">
+        <span>Chưa có tài khoản Đối tác? </span>
+        <a href="/host/register" class="register-link-teal">Đăng ký làm Chủ phòng</a>
+      </div>
+
+      <p class="terms-caption">
+        Bằng việc đăng nhập, bạn đồng ý với <a href="#terms" style="color: inherit; text-decoration: underline;">Điều khoản dịch vụ</a> và <a href="#privacy" style="color: inherit; text-decoration: underline;">Chính sách bảo mật</a> của Smart Travel.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const toggleBtn = document.getElementById('btnToggleEye');
+  const passInput = document.getElementById('passwordInput');
+  if (toggleBtn && passInput) {
+    toggleBtn.addEventListener('click', () => {
+      const isPass = passInput.type === 'password';
+      passInput.type = isPass ? 'text' : 'password';
+      toggleBtn.innerText = isPass ? '🙈' : '👁️';
+    });
+  }
+
+  // Google OAuth Client Setup
+  const googleClientId = '<%= typeof googleClientId !== "undefined" ? googleClientId : "539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com" %>';
+  let googleTokenClient = null;
+
+  function initGoogleAuth() {
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+      try {
+        googleTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            const btn = document.getElementById('btnGoogleLogin');
+            const errorBox = document.getElementById('googleErrorBox');
+            const errorText = document.getElementById('googleErrorText');
+
+            if (tokenResponse.error) {
+              console.error('Google Sign In error:', tokenResponse);
+              if (btn) btn.disabled = false;
+              return;
+            }
+
+            if (tokenResponse.access_token) {
+              try {
+                if (btn) {
+                  btn.disabled = true;
+                  btn.innerHTML = '<span>⏳ Đang đăng nhập với Google...</span>';
+                }
+
+                const res = await fetch('/host/auth/google', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ accessToken: tokenResponse.access_token })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                  window.location.href = data.redirectUrl || '/host/rooms';
+                } else {
+                  if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg><span>Tiếp tục với Google</span>`;
+                  }
+                  if (errorBox && errorText) {
+                    errorText.textContent = data.message || 'Đăng nhập Google thất bại';
+                    errorBox.style.display = 'flex';
+                  } else {
+                    alert(data.message || 'Đăng nhập Google thất bại');
+                  }
+                }
+              } catch (err) {
+                console.error(err);
+                if (btn) btn.disabled = false;
+                if (errorBox && errorText) {
+                  errorText.textContent = 'Lỗi kết nối máy chủ khi đăng nhập Google';
+                  errorBox.style.display = 'flex';
+                }
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.error('Error initializing Google token client:', e);
+      }
+    }
+  }
+
+  function handleGoogleHostLogin() {
+    if (!googleTokenClient) {
+      initGoogleAuth();
+    }
+    if (googleTokenClient) {
+      googleTokenClient.requestAccessToken({ prompt: 'select_account' });
+    } else {
+      alert('Đang kết nối dịch vụ Google OAuth, vui lòng thử lại sau 2 giây.');
+    }
+  }
+
+  window.addEventListener('load', () => {
+    initGoogleAuth();
+  });
+</script>
+
+</body>
+</html>

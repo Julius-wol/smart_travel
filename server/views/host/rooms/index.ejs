@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/host/css/host.css">
+</head>
+<body>
+
+<div class="host-layout">
+  <!-- SIDEBAR NAVIGATION -->
+  <%- include('../partials/sidebar', { activeNav: 'rooms' }) %>
+
+  <!-- MAIN CONTAINER -->
+  <main class="host-main-container">
+    <!-- TOP HEADER -->
+    <%- include('../partials/header', { user, breadcrumbSub: '' }) %>
+
+    <!-- PAGE BODY -->
+    <div class="host-page-body">
+      <!-- PAGE HEADER & ACTIONS (1.5, 1.6, 1.7) -->
+      <div class="host-page-header">
+        <div>
+          <h1 class="host-page-title" data-i18n="inv_title">Quản lý phòng</h1>
+          <p class="host-page-subtext" data-i18n="inv_subtext">Quản lý cơ sở lưu trú, thiết lập biểu giá và trạng thái hiển thị thời gian thực</p>
+        </div>
+        <div class="host-page-actions">
+          <!-- 1.6 Xuất Excel [EXP-001] -->
+          <button type="button" class="btn btn-outline" id="btnExportExcel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span data-i18n="inv_export_excel">Xuất Excel</span>
+          </button>
+
+          <!-- 1.7 + Thêm phòng mới -->
+          <a href="/host/rooms/create" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span data-i18n="inv_add_room">Thêm phòng mới</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- KPI METRICS BAR (1.8 -> 1.11) -->
+      <div class="host-kpi-grid">
+        <!-- 1.8 TỔNG SỐ PHÒNG -->
+        <div class="host-kpi-card">
+          <div class="host-kpi-label" data-i18n="inv_kpi_total">TỔNG SỐ PHÒNG</div>
+          <div class="host-kpi-val"><%= kpis.totalRooms %></div>
+        </div>
+
+        <!-- 1.9 ĐANG MỞ BÁN -->
+        <div class="host-kpi-card">
+          <div class="host-kpi-label" data-i18n="inv_kpi_published">ĐANG MỞ BÁN</div>
+          <div class="host-kpi-val"><%= kpis.publishedCount %></div>
+        </div>
+
+        <!-- 1.10 TẠM DỪNG / BẢO TRÌ -->
+        <div class="host-kpi-card">
+          <div class="host-kpi-label" data-i18n="inv_kpi_archived">TẠM DỪNG / BẢO TRÌ</div>
+          <div class="host-kpi-val"><%= kpis.archivedCount %></div>
+        </div>
+
+        <!-- 1.11 ĐƠN CHỜ DUYỆT MỚI (Highlight tím) -->
+        <div class="host-kpi-card highlight-purple">
+          <div class="host-kpi-label" data-i18n="inv_kpi_pending">ĐƠN CHỜ DUYỆT MỚI</div>
+          <div class="host-kpi-val"><%= kpis.pendingBookings24h %></div>
+          <a href="/host/bookings?tab=pending" class="host-kpi-link">
+            <span data-i18n="inv_kpi_pending_link">Xem danh sách yêu cầu →</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- FILTER & SEARCH BAR (1.12 -> 1.15) -->
+      <div class="host-filter-bar">
+        <!-- 1.12 Search Input -->
+        <div class="host-search-box">
+          <svg class="host-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="host-search-input" placeholder="Tìm theo tên phòng, mã phòng... (Nhấn Enter để tìm)" data-i18n-ph="inv_search_ph" value="<%= filters.search %>">
+          <% if (filters.search) { %>
+            <button type="button" class="host-search-clear" title="Xóa tìm kiếm">✕</button>
+          <% } %>
+        </div>
+
+        <!-- 1.13 Dropdown Loại phòng -->
+        <select class="host-filter-select" id="filterType">
+          <option value="Tất cả loại phòng" <%= filters.type === 'Tất cả loại phòng' ? 'selected' : '' %>>Tất cả loại phòng</option>
+          <option value="Bungalow" <%= filters.type === 'Bungalow' ? 'selected' : '' %>>Bungalow</option>
+          <option value="Biệt thự / Villa" <%= filters.type === 'Biệt thự / Villa' ? 'selected' : '' %>>Biệt thự / Villa</option>
+          <option value="Khách sạn" <%= filters.type === 'Khách sạn' ? 'selected' : '' %>>Khách sạn</option>
+          <option value="Căn hộ Studio" <%= filters.type === 'Căn hộ Studio' ? 'selected' : '' %>>Căn hộ Studio</option>
+          <option value="Homestay" <%= filters.type === 'Homestay' ? 'selected' : '' %>>Homestay</option>
+        </select>
+
+        <!-- 1.14 Dropdown Trạng thái -->
+        <select class="host-filter-select" id="filterStatus">
+          <option value="Tất cả trạng thái" <%= filters.status === 'Tất cả trạng thái' ? 'selected' : '' %>>Tất cả trạng thái</option>
+          <option value="Published" <%= filters.status === 'Published' ? 'selected' : '' %>>Đang bán (Published)</option>
+          <option value="Archived" <%= filters.status === 'Archived' ? 'selected' : '' %>>Tạm dừng (Archived)</option>
+          <option value="Draft" <%= filters.status === 'Draft' ? 'selected' : '' %>>Bản nháp (Draft)</option>
+        </select>
+
+        <!-- 1.15 Dropdown Sắp xếp -->
+        <select class="host-filter-select" id="filterSort">
+          <option value="Mới nhất" <%= filters.sort === 'Mới nhất' ? 'selected' : '' %>>Mới nhất</option>
+          <option value="Cũ nhất" <%= filters.sort === 'Cũ nhất' ? 'selected' : '' %>>Cũ nhất</option>
+        </select>
+      </div>
+
+      <!-- DATA TABLE (1.16 -> 1.21) -->
+      <div class="host-table-card">
+        <% if (rooms && rooms.length > 0) { %>
+          <table class="host-data-table">
+            <thead>
+              <tr>
+                <th style="width: 100px;" data-i18n="inv_col_photo">HÌNH ẢNH</th>
+                <th data-i18n="inv_col_name">TÊN PHÒNG & LOẠI HÌNH</th>
+                <th style="width: 170px;" data-i18n="inv_col_price">GIÁ NIÊM YẾT</th>
+                <th style="width: 140px;" data-i18n="inv_col_status">TRẠNG THÁI</th>
+                <th style="width: 120px;" data-i18n="inv_col_pending">ĐƠN CHỜ</th>
+                <th style="width: 130px; text-align: center;" data-i18n="inv_col_actions">THAO TÁC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% rooms.forEach(room => { %>
+                <tr>
+                  <!-- 1.16 HÌNH ẢNH (Frame bo góc 56x40px, hover preview popover) -->
+                  <td>
+                    <div class="thumb-frame">
+                      <img src="<%= (room.images && room.images.length > 0) ? room.images[0] : 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=200&q=80' %>" alt="<%= room.title %>" class="thumb-img">
+                      <span class="thumb-badge"><%= (room.images && room.images.length > 0) ? `1/${room.images.length}` : '4:3' %></span>
+                      <div class="thumb-popover">
+                        <img src="<%= (room.images && room.images.length > 0) ? room.images[0] : 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&q=80' %>" alt="Xem nhanh">
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- 1.17 TÊN PHÒNG & LOẠI PHÒNG -->
+                  <td>
+                    <div class="room-title-row">
+                      <a href="/host/rooms/<%= room._id %>/edit" class="room-title-link"><%= room.title %></a>
+                      <span class="room-code-badge"><%= room.roomCode || `MP-${room._id.toString().slice(-4)}` %></span>
+                    </div>
+                    <div class="room-specs-sub">
+                      <%= room.specs ? room.specs.type : 'Nhà nghỉ' %> • 
+                      <%= room.area || 45 %>m² • 
+                      <%= room.specs ? room.specs.capacity : `Tối đa ${room.maxGuests || 2} khách` %> • 
+                      <%= room.specs ? room.specs.bedroom : '1 Giường' %>
+                    </div>
+                  </td>
+
+                  <!-- 1.18 GIÁ NIÊM YẾT -->
+                  <td>
+                    <span class="price-bold"><%= Number(room.pricePerNight).toLocaleString('vi-VN') %>đ</span>
+                    <span class="price-unit"> / đêm</span>
+                  </td>
+
+                  <!-- 1.19 TRẠNG THÁI (Pill / Toggle: Published, Archived, Draft) -->
+                  <td>
+                    <% if (room.status === 'Published') { %>
+                      <div class="status-pill published" onclick="handleStatusPillClick('<%= room._id %>', 'Published')" title="Click để chuyển sang Tạm dừng">
+                        <span class="status-dot"></span>
+                        <span>Published</span>
+                      </div>
+                    <% } else if (room.status === 'Archived') { %>
+                      <div class="status-pill archived" onclick="handleStatusPillClick('<%= room._id %>', 'Archived')" title="Click để mở bán lại">
+                        <span class="status-dot"></span>
+                        <span>Archived</span>
+                      </div>
+                    <% } else { %>
+                      <div class="status-pill draft" title="Bản nháp - hoàn thiện và đăng bán từ form">
+                        <span class="status-dot"></span>
+                        <span>Draft</span>
+                      </div>
+                    <% } %>
+                  </td>
+
+                  <!-- 1.20 ĐƠN CHỜ -->
+                  <td>
+                    <% if (room.pendingCount > 0) { %>
+                      <a href="/host/bookings?tab=pending&roomId=<%= room._id %>" class="pending-badge" title="Xem danh sách đơn chờ duyệt">
+                        <%= room.pendingCount %> đơn mới
+                      </a>
+                    <% } else { %>
+                      <span style="color: var(--text-subtle); padding-left: 12px;">-</span>
+                    <% } %>
+                  </td>
+
+                  <!-- 1.21 THAO TÁC (Pencil, Duplicate, Delete) -->
+                  <td>
+                    <div class="action-icons" style="justify-content: center;">
+                      <!-- Pencil (Edit) -->
+                      <a href="/host/rooms/<%= room._id %>/edit" class="btn-icon" title="Chỉnh sửa thông tin phòng">
+                        ✏️
+                      </a>
+
+                      <!-- Duplicate (Nhân bản): ROOM-DUP-001 -->
+                      <button type="button" class="btn-icon" title="Nhân bản phòng" onclick="handleDuplicateRoom('<%= room._id %>')">
+                        📋
+                      </button>
+
+                      <!-- Delete (Xóa): CONFIRM-DEL-001 / ROOM-DEL-001 -->
+                      <button type="button" class="btn-icon delete" title="Xóa phòng" onclick="handleDeleteRoomClick('<%= room._id %>', '<%= room.status %>')">
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+
+          <!-- 1.22 & 1.23 TABLE FOOTER & PAGINATION -->
+          <div class="host-table-footer">
+            <div class="host-pagination-info">
+              Hiển thị <strong><%= pagination.startItem %> – <%= pagination.endItem %></strong> trong tổng số <strong><%= pagination.filteredTotal %></strong> phòng
+            </div>
+
+            <div class="host-pagination-btns">
+              <!-- Previous Button -->
+              <% if (pagination.currentPage > 1) { %>
+                <a href="/host/rooms?page=<%= pagination.currentPage - 1 %>&search=<%= filters.search %>&type=<%= filters.type %>&status=<%= filters.status %>&sort=<%= filters.sort %>" class="page-btn">
+                  ‹ Trước
+                </a>
+              <% } else { %>
+                <span class="page-btn disabled">‹ Trước</span>
+              <% } %>
+
+              <!-- Page Numbers -->
+              <% for (let p = 1; p <= pagination.totalPages; p++) { %>
+                <% if (p === pagination.currentPage) { %>
+                  <span class="page-btn active"><%= p %></span>
+                <% } else { %>
+                  <a href="/host/rooms?page=<%= p %>&search=<%= filters.search %>&type=<%= filters.type %>&status=<%= filters.status %>&sort=<%= filters.sort %>" class="page-btn"><%= p %></a>
+                <% } %>
+              <% } %>
+
+              <!-- Next Button -->
+              <% if (pagination.currentPage < pagination.totalPages) { %>
+                <a href="/host/rooms?page=<%= pagination.currentPage + 1 %>&search=<%= filters.search %>&type=<%= filters.type %>&status=<%= filters.status %>&sort=<%= filters.sort %>" class="page-btn">
+                  Sau ›
+                </a>
+              <% } else { %>
+                <span class="page-btn disabled">Sau ›</span>
+              <% } %>
+            </div>
+          </div>
+
+        <% } else { %>
+          <!-- 1.12 EMPTY STATE [EMPTY-001] -->
+          <div class="host-empty-state">
+            <div class="empty-icon">🔍</div>
+            <div class="empty-title">Không tìm thấy phòng nào phù hợp</div>
+            <div class="empty-subtext">Vui lòng thử tìm kiếm với từ khóa khác hoặc điều chỉnh lại các tiêu chí bộ lọc. [EMPTY-001]</div>
+            <div style="margin-top: 18px;">
+              <a href="/host/rooms" class="btn btn-outline">Đặt lại bộ lọc</a>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<%- include('../partials/modals', { user }) %>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container"></div>
+
+<script src="/host/js/host.js"></script>
+</body>
+</html>

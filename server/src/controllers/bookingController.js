@@ -88,7 +88,7 @@ export const createBooking = async (req, res) => {
       ? userId
       : undefined;
 
-    // Tạo bản ghi đặt phòng mới với thời gian thực
+    // Tạo bản ghi đặt phòng mới với trạng thái PENDING để Host xét duyệt
     const newBooking = await Booking.create({
       bookingCode,
       roomId: targetRoomId,
@@ -96,13 +96,18 @@ export const createBooking = async (req, res) => {
       fullName: fullName.trim(),
       phoneNumber: phoneNumber.trim(),
       email: email.trim(),
+      guestInfo: {
+        fullName: fullName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        email: email.trim()
+      },
       checkIn: startDate,
       checkOut: endDate,
       nights: actualNights,
       guests: guests || 2,
       paymentMethod: paymentMethod || 'momo',
       totalPrice: totalPrice || 2550000,
-      status: 'CONFIRMED',
+      status: 'PENDING',
     });
 
     console.log(`✅ Đã tạo đơn đặt phòng thành công: ${bookingCode} cho khách: ${fullName} (${actualNights} đêm)`);
