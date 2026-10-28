@@ -41,6 +41,7 @@ server/public/uploads/
 # ==========================
 # Mobile App (React Native/Expo)
 # ==========================
+.expo/
 mobile-app/.expo/
 mobile-app/dist/
 mobile-app/web-build/
