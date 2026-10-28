@@ -89,20 +89,10 @@ roomSchema.pre('save', function() {
   }
 });
 
-// Virtuals tương thích ngược cho Mobile App & API Client cũ
-RoomSchema.virtual('pricePerNight')
-  .get(function() { return this.regularPrice; })
-  .set(function(v) { this.regularPrice = v; });
-
-RoomSchema.virtual('reviewCount')
-  .get(function() { return this.numReviews; })
-  .set(function(v) { this.numReviews = v; });
-
 // Indexes hỗ trợ GeoJSON và truy vấn hiệu năng cao
-RoomSchema.index({ location: '2dsphere' });
-RoomSchema.index({ ownerId: 1, status: 1 });
-RoomSchema.index({ title: 'text', city: 'text' });
+roomSchema.index({ ownerId: 1, status: 1 });
+roomSchema.index({ title: 'text', city: 'text' });
 
-const Room = mongoose.model('Room', RoomSchema);
+const Room = mongoose.model('Room', roomSchema);
 export default Room;
 

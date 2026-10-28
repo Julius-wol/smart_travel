@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import * as xlsx from 'xlsx';
 import Room from '../models/Room.js';
 import Booking from '../models/Booking.js';
+import RoomAvailability from '../models/RoomAvailability.js';
 import User from '../models/User.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -697,7 +698,7 @@ export const uploadImages = (req, res) => {
 export const getHostBookings = async (req, res) => {
   try {
     const ownerId = req.user._id;
-    const { tab = 'pending', search, roomId } = req.query;
+    const { tab = 'pending', search, roomId, checkInTime } = req.query;
 
     const hostRooms = await Room.find({ ownerId });
     const hostRoomIds = hostRooms.map(r => r._id);
@@ -709,11 +710,40 @@ export const getHostBookings = async (req, res) => {
     } else if (tab === 'confirmed') {
       query.status = 'CONFIRMED';
     } else if (tab === 'history') {
-      query.status = { $in: ['REJECTED', 'CANCELLED', 'COMPLETED'] };
+      query.status = { $in: ['REJECTED', 'CANCELLED', 'COMPLETED', 'EXPIRED'] };
     }
 
     if (roomId && mongoose.isValidObjectId(roomId)) {
       query.roomId = roomId;
+    }
+
+    // Filter by check-in time (Section 1.7)
+    if (checkInTime && checkInTime !== 'all') {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+      if (checkInTime === 'today') {
+        query.checkIn = { $gte: startOfToday, $lte: endOfToday };
+      } else if (checkInTime === 'tomorrow') {
+        const startOfTomorrow = new Date(startOfToday);
+        startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+        const endOfTomorrow = new Date(endOfToday);
+        endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
+        query.checkIn = { $gte: startOfTomorrow, $lte: endOfTomorrow };
+      } else if (checkInTime === 'this_week') {
+        const dayOfWeek = now.getDay() || 7; // Monday = 1
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfWeek.getDate() - (dayOfWeek - 1));
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        query.checkIn = { $gte: startOfWeek, $lte: endOfWeek };
+      } else if (checkInTime === 'this_month') {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+        query.checkIn = { $gte: startOfMonth, $lte: endOfMonth };
+      }
     }
 
     if (search && search.trim()) {
@@ -743,7 +773,7 @@ export const getHostBookings = async (req, res) => {
     });
     const historyCount = await Booking.countDocuments({
       roomId: { $in: hostRoomIds },
-      status: { $in: ['REJECTED', 'CANCELLED', 'COMPLETED'] }
+      status: { $in: ['REJECTED', 'CANCELLED', 'COMPLETED', 'EXPIRED'] }
     });
 
     res.render('host/bookings/index', {
@@ -757,7 +787,11 @@ export const getHostBookings = async (req, res) => {
       },
       currentTab: tab,
       rooms: hostRooms,
-      selectedRoomId: roomId || ''
+      filters: {
+        search: search || '',
+        roomId: roomId || '',
+        checkInTime: checkInTime || 'all'
+      }
     });
   } catch (error) {
     console.error('Lỗi khi lấy danh sách booking:', error);
@@ -770,27 +804,121 @@ export const updateBookingStatus = async (req, res) => {
     const { id } = req.params;
     const { status, rejectReason } = req.body;
 
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ code: 'AUTH-403', message: 'Mã đơn không hợp lệ' });
+    }
+
     const booking = await Booking.findById(id).populate('roomId');
     if (!booking) {
-      return res.status(404).json({ message: 'Không tìm thấy đơn đặt phòng' });
+      return res.status(404).json({ code: 'AUTH-403', message: 'Không tìm thấy đơn đặt phòng' });
     }
 
     if (booking.roomId.ownerId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ code: 'AUTH-403', message: 'Không có quyền thao tác trên đơn này' });
+      return res.status(403).json({
+        code: 'AUTH-403',
+        message: 'Tài khoản của bạn không có quyền thao tác trên đơn đặt phòng này.'
+      });
     }
 
-    booking.status = status;
-    if (rejectReason) booking.rejectReason = rejectReason;
-    await booking.save();
+    // Check if booking was cancelled by guest before host approval (BOOK-GUEST-CANCELLED)
+    if (booking.status === 'CANCELLED') {
+      return res.status(400).json({
+        success: false,
+        code: 'BOOK-GUEST-CANCELLED',
+        message: 'Du khách đã hủy yêu cầu đặt phòng này trước đó. Thao tác xét duyệt không còn khả dụng.'
+      });
+    }
 
-    return res.status(200).json({
-      success: true,
-      message: status === 'CONFIRMED' ? 'Đã xác nhận duyệt đơn đặt phòng!' : 'Đã từ chối yêu cầu đặt phòng.',
-      booking
-    });
+    // Check SLA 24h expiration (BOOK-SLA-EXPIRED)
+    const hoursElapsed = (Date.now() - new Date(booking.createdAt).getTime()) / 3600000;
+    if (booking.status === 'EXPIRED' || (booking.status === 'PENDING' && hoursElapsed >= 24)) {
+      booking.status = 'EXPIRED';
+      await booking.save();
+      await RoomAvailability.deleteMany({ bookingId: booking._id });
+      return res.status(400).json({
+        success: false,
+        code: 'BOOK-SLA-EXPIRED',
+        message: `Đơn đặt phòng #${booking.bookingCode} đã quá hạn 24h xét duyệt và được hệ thống tự động hủy hoàn tiền.`
+      });
+    }
+
+    if (status === 'CONFIRMED') {
+      // Check Calendar Conflict with other confirmed bookings for this room (BOOK-CAL-CONFLICT)
+      const conflictBooking = await Booking.findOne({
+        roomId: booking.roomId._id,
+        _id: { $ne: booking._id },
+        status: 'CONFIRMED',
+        checkIn: { $lt: booking.checkOut },
+        checkOut: { $gt: booking.checkIn }
+      });
+
+      if (conflictBooking) {
+        return res.status(400).json({
+          success: false,
+          code: 'BOOK-CAL-CONFLICT',
+          message: 'Không thể duyệt đơn! Khoảng thời gian này đã bị trùng lịch với một đơn đặt phòng khác đã xác nhận.'
+        });
+      }
+
+      // Block dates on calendar matrix (SCR-HOST-04)
+      const curr = new Date(booking.checkIn);
+      const end = new Date(booking.checkOut);
+      while (curr < end) {
+        const dayDate = new Date(curr);
+        dayDate.setHours(0, 0, 0, 0);
+        await RoomAvailability.findOneAndUpdate(
+          { roomId: booking.roomId._id, date: dayDate },
+          { status: 'BOOKED', bookingId: booking._id },
+          { upsert: true, new: true }
+        );
+        curr.setDate(curr.getDate() + 1);
+      }
+
+      booking.status = 'CONFIRMED';
+      await booking.save();
+
+      return res.status(200).json({
+        success: true,
+        code: 'BOOK-APPROVE-SUCCESS',
+        message: `Đã phê duyệt đơn đặt phòng #${booking.bookingCode} thành công. Lịch phòng đã được tự động khóa.`,
+        booking
+      });
+    } else if (status === 'REJECTED') {
+      if (!rejectReason || !rejectReason.trim()) {
+        return res.status(400).json({
+          success: false,
+          code: 'BOOK-REQ-REASON',
+          message: 'Vui lòng chọn lý do từ chối yêu cầu đặt phòng trước khi tiếp tục.'
+        });
+      }
+
+      // Release any blocked dates
+      await RoomAvailability.deleteMany({ bookingId: booking._id });
+
+      booking.status = 'REJECTED';
+      booking.rejectReason = rejectReason.trim();
+      if (req.body.rejectionNote) {
+        booking.rejectionNote = req.body.rejectionNote.trim().substring(0, 200);
+      }
+      await booking.save();
+
+      return res.status(200).json({
+        success: true,
+        code: 'BOOK-REJECT-SUCCESS',
+        message: `Đã từ chối đơn đặt phòng #${booking.bookingCode}. Hệ thống đã kích hoạt hoàn tiền 100% cho du khách.`,
+        booking
+      });
+    } else {
+      booking.status = status;
+      await booking.save();
+      return res.status(200).json({
+        success: true,
+        booking
+      });
+    }
   } catch (error) {
     console.error('Lỗi duyệt booking:', error);
-    return res.status(500).json({ message: 'Lỗi server' });
+    return res.status(500).json({ message: 'Lỗi server khi cập nhật trạng thái đơn' });
   }
 };
 
