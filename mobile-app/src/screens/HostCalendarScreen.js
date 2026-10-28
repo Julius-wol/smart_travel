@@ -193,15 +193,6 @@ const HostCalendarScreen = ({ navigation, route }) => {
     }
   };
 
-  // Safe back navigation handler
-  const handleBack = () => {
-    if (navigation?.canGoBack && navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation?.navigate && navigation.navigate('HostDashboard');
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -244,7 +235,6 @@ const HostCalendarScreen = ({ navigation, route }) => {
           <HostTopNav
             breadcrumb="Lịch phòng & Trạng thái trống • Smart Travel Host Portal"
             user={route?.params?.user}
-            onBack={handleBack}
             onMenuPress={() => setMobileDrawerVisible(true)}
             onProfile={() => navigation?.navigate && navigation.navigate('Profile', { user: route?.params?.user, token: route?.params?.token })}
           />

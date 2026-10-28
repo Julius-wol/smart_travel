@@ -235,7 +235,6 @@ const HostRoomFormScreen = ({ route, navigation }) => {
       {/* TopNav */}
       <HostTopNav
         breadcrumb={`Quản lý phòng • ${mode === 'edit' ? 'Chỉnh sửa phòng' : 'Thêm phòng mới'}`}
-        onBack={() => setCancelModalVisible(true)}
       />
 
       {detailLoading ? (

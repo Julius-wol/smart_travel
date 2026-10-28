@@ -109,7 +109,6 @@ const HostDashboardScreen = ({ navigation }) => {
           {/* Top Navigation Bar */}
           <HostTopNav
             breadcrumb="Tổng quan • Smart Travel Host Portal"
-            onBack={() => navigation.goBack && navigation.goBack()}
             onMenuPress={() => setMobileDrawerVisible(true)}
             user={host}
           />

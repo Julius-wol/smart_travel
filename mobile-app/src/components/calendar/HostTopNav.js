@@ -5,7 +5,6 @@ import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../constants/them
 
 const HostTopNav = ({
   breadcrumb = 'Lịch phòng & Trạng thái trống',
-  onBack,
   onMenuPress,
   onProfile,
   user = {
@@ -32,19 +31,18 @@ const HostTopNav = ({
 
   return (
     <View style={[styles.topNav, isMobile && styles.mobileTopNav]}>
-      {/* 1. Left Nav: Hamburger Menu (Mobile) + Breadcrumb */}
+      {/* 1. Left Nav: Hamburger Menu (Mobile) + Breadcrumb (Tiêu đề cố định, không tự ý navigate) */}
       <View style={styles.leftNavRow}>
         {onMenuPress && (
           <TouchableOpacity style={styles.menuDrawerBtn} onPress={onMenuPress} activeOpacity={0.7}>
             <Ionicons name="menu" size={24} color="#00685F" />
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.breadcrumbLink} onPress={onBack} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={17} color="#00685F" style={{ marginRight: 5 }} />
+        <View style={styles.breadcrumbLink}>
           <Text style={styles.breadcrumbText} numberOfLines={1}>
             {breadcrumb}
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* 2. Top Right Actions */}

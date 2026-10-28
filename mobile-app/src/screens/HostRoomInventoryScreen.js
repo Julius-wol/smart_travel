@@ -178,7 +178,6 @@ const HostRoomInventoryScreen = ({ navigation }) => {
           {/* Top Navigation */}
           <HostTopNav
             breadcrumb="Quản lý phòng • Smart Travel Host Portal"
-            onBack={() => navigation.goBack && navigation.goBack()}
             onMenuPress={() => setMobileDrawerVisible(true)}
           />
 
