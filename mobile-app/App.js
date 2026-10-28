@@ -1,6 +1,31 @@
 import React, { useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, Platform, Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// Polyfill Alert.alert for Web (since react-native-web provides an empty alert() {} stub)
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  Alert.alert = (title, message, buttons) => {
+    const text = [title, message].filter(Boolean).join('\n');
+    if (buttons && buttons.length > 0) {
+      const confirmBtn = buttons.find((b) => b.style !== 'cancel');
+      const cancelBtn = buttons.find((b) => b.style === 'cancel');
+      if (confirmBtn && cancelBtn) {
+        if (window.confirm(text)) {
+          confirmBtn.onPress?.();
+        } else {
+          cancelBtn.onPress?.();
+        }
+        return;
+      }
+      window.alert(text);
+      if (typeof buttons[0]?.onPress === 'function') {
+        buttons[0].onPress();
+      }
+      return;
+    }
+    window.alert(text);
+  };
+}
 import { Provider as PaperProvider } from 'react-native-paper';
 import { Provider as ReduxProvider, useDispatch } from 'react-redux';
 import {
