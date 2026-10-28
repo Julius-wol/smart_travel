@@ -106,7 +106,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           },
         ],
         policy: homestay.policy || {
-          checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
+          checkIn: '14:00 (Nhận phòng trực tiếp với nhân viên lễ tân)',
           checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
           cancellation:
             'Miễn phí hủy phòng trước 48h trước giờ nhận phòng. Hoàn tiền 100% nếu hủy kịp thời. Sau thời gian này áp dụng chính sách hoàn trả của chủ nhà.',
@@ -180,7 +180,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           },
         ],
         policy: {
-          checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
+          checkIn: '14:00 (Nhận phòng trực tiếp với nhân viên lễ tân)',
           checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
           cancellation:
             'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00 ngày 10 Th05. Sau thời gian này áp dụng chính sách hoàn trả của chủ nhà.',
@@ -372,15 +372,58 @@ const HomeDetailsScreen = ({ navigation, route }) => {
         homestay: data,
         user,
         token,
-        checkIn: checkInDate.toISOString(),
-        checkOut: checkOutDate.toISOString(),
-        nights: nightsCount,
+        hasCustomDates,
+        checkIn: hasCustomDates ? checkInDate.toISOString() : null,
+        checkOut: hasCustomDates ? checkOutDate.toISOString() : null,
+        nights: hasCustomDates ? nightsCount : 0,
         guests: totalGuests,
         roomCount: roomsCount,
       });
     } catch (err) {
       console.error('Lỗi khi chuyển tới Checkout:', err);
       showToast('Có lỗi xảy ra khi mở trang đặt phòng. Vui lòng thử lại!', 'error');
+    }
+  };
+
+  // Ràng buộc chỉ khi đã ở (qua thời gian check-out) mới được viết đánh giá
+  const handleWriteReviewPress = async () => {
+    if (!user) {
+      showToast('Vui lòng đăng nhập để thực hiện đánh giá phòng.', 'info');
+      return;
+    }
+
+    try {
+      const userId = user._id || user.id;
+      const res = await fetch(`${API_URL}/bookings/my-bookings?userId=${userId}`);
+      const json = await res.json();
+
+      if (json.success && Array.isArray(json.data)) {
+        const roomId = data._id || data.id;
+        const now = new Date();
+        const completedBooking = json.data.find((b) => {
+          const bRoomId = b.roomId?._id || b.roomId;
+          const checkOutDate = b.checkOut ? new Date(b.checkOut) : null;
+          return String(bRoomId) === String(roomId) && checkOutDate && now > checkOutDate;
+        });
+
+        if (completedBooking) {
+          navigation.navigate('WriteReview', {
+            homestay: data,
+            bookingCode: completedBooking.bookingCode,
+            bookingId: completedBooking._id,
+            user,
+            token,
+          });
+          return;
+        }
+      }
+
+      showToast(
+        'Bạn chỉ có thể đánh giá phòng sau khi đã hoàn tất kỳ nghỉ (qua thời gian trả phòng)!',
+        'error'
+      );
+    } catch (err) {
+      showToast('Bạn chỉ có thể đánh giá phòng sau khi đã hoàn tất kỳ nghỉ!', 'error');
     }
   };
 
@@ -578,12 +621,17 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           </View>
 
           <View style={styles.amenitiesGrid}>
-            {data.amenities.map((amenity) => (
-              <View key={amenity.id} style={styles.amenityItem}>
-                <Ionicons name={amenity.icon} size={18} color="#00796B" style={{ marginRight: 8 }} />
-                <Text style={styles.amenityText}>{amenity.name}</Text>
-              </View>
-            ))}
+            {data.amenities.map((amenity, index) => {
+              const name = typeof amenity === 'string' ? amenity : (amenity?.name || 'Tiện nghi');
+              const icon = (typeof amenity === 'object' && amenity?.icon) ? amenity.icon : 'checkmark-circle-outline';
+              const itemKey = (typeof amenity === 'object' && amenity?.id) ? amenity.id : `amenity-${index}`;
+              return (
+                <View key={itemKey} style={styles.amenityItem}>
+                  <Ionicons name={icon} size={18} color="#00796B" style={{ marginRight: 8 }} />
+                  <Text style={styles.amenityText}>{name}</Text>
+                </View>
+              );
+            })}
           </View>
 
           {/* Section 11: Review Summary (Score & 5 bars) */}
@@ -600,9 +648,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             </View>
             <TouchableOpacity
               style={styles.writeReviewHeaderBtn}
-              onPress={() =>
-                navigation.navigate('WriteReview', { homestay: data, user, token })
-              }
+              onPress={handleWriteReviewPress}
               activeOpacity={0.8}
             >
               <Ionicons name="create-outline" size={15} color="#00796B" style={{ marginRight: 4 }} />
@@ -761,38 +807,41 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               <Text style={styles.emptyReviewsText}>Chưa có đánh giá nào phù hợp bộ lọc.</Text>
             </View>
           ) : (
-            filteredReviews.map((rev) => (
-              <View key={rev.id} style={styles.reviewCard}>
-                <View style={styles.reviewAuthorRow}>
-                  <Image source={{ uri: rev.avatar }} style={styles.reviewerAvatar} />
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={styles.reviewerName}>{rev.author}</Text>
-                      {rev.bookingCode ? (
-                        <View style={styles.verifiedBookingBadge}>
-                          <Ionicons name="checkmark-circle" size={12} color="#00796B" />
-                          <Text style={styles.verifiedBookingText}>Đã ở</Text>
-                        </View>
-                      ) : null}
+            filteredReviews.map((rev, index) => {
+              const revKey = rev.id || rev._id || `review-${index}`;
+              return (
+                <View key={revKey} style={styles.reviewCard}>
+                  <View style={styles.reviewAuthorRow}>
+                    <Image source={{ uri: rev.avatar }} style={styles.reviewerAvatar} />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.reviewerName}>{rev.author}</Text>
+                        {rev.bookingCode ? (
+                          <View style={styles.verifiedBookingBadge}>
+                            <Ionicons name="checkmark-circle" size={12} color="#00796B" />
+                            <Text style={styles.verifiedBookingText}>Đã ở</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={styles.reviewerDate}>{rev.date}</Text>
                     </View>
-                    <Text style={styles.reviewerDate}>{rev.date}</Text>
+                    <View style={styles.ratingBadge}>
+                      <Ionicons name="star" size={12} color="#ECC94B" />
+                      <Text style={styles.ratingBadgeText}>{rev.rating}</Text>
+                    </View>
                   </View>
-                  <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={12} color="#ECC94B" />
-                    <Text style={styles.ratingBadgeText}>{rev.rating}</Text>
-                  </View>
-                </View>
-                <Text style={styles.reviewComment}>{rev.comment}</Text>
+                  <Text style={styles.reviewComment}>{rev.comment}</Text>
 
-                {rev.images && rev.images.length > 0 && (
-                  <View style={styles.reviewThumbnailsRow}>
-                    {rev.images.map((img, i) => (
-                      <Image key={i} source={{ uri: img }} style={styles.reviewThumbImg} />
-                    ))}
-                  </View>
-                )}
-              </View>
-            ))
+                  {rev.images && rev.images.length > 0 && (
+                    <View style={styles.reviewThumbnailsRow}>
+                      {rev.images.map((img, i) => (
+                        <Image key={i} source={{ uri: img }} style={styles.reviewThumbImg} />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })
           )}
 
           {/* Section 14 & 15: Booking Policy */}
@@ -805,7 +854,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               <Ionicons name="log-in-outline" size={20} color="#00796B" />
               <Text style={styles.checkLabel}>Nhận phòng</Text>
               <Text style={styles.checkTime}>14:00</Text>
-              <Text style={styles.checkNote}>Khóa thông minh Smart Lock</Text>
+              <Text style={styles.checkNote}>Gặp nhân viên lễ tân</Text>
             </View>
             <View style={styles.checkDividerVertical} />
             <View style={styles.checkCol}>
@@ -859,12 +908,17 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 400 }}>
-              {data.amenities.map((am) => (
-                <View key={am.id} style={styles.modalAmenityRow}>
-                  <Ionicons name={am.icon} size={20} color="#00796B" style={{ marginRight: 12 }} />
-                  <Text style={styles.modalAmenityText}>{am.name}</Text>
-                </View>
-              ))}
+              {data.amenities.map((am, index) => {
+                const name = typeof am === 'string' ? am : (am?.name || 'Tiện nghi');
+                const icon = (typeof am === 'object' && am?.icon) ? am.icon : 'checkmark-circle-outline';
+                const itemKey = (typeof am === 'object' && am?.id) ? am.id : `modal-am-${index}`;
+                return (
+                  <View key={itemKey} style={styles.modalAmenityRow}>
+                    <Ionicons name={icon} size={20} color="#00796B" style={{ marginRight: 12 }} />
+                    <Text style={styles.modalAmenityText}>{name}</Text>
+                  </View>
+                );
+              })}
             </ScrollView>
           </View>
         </View>

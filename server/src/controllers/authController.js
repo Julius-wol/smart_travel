@@ -1,3 +1,4 @@
+import { sendResponse } from '../utils/apiResponse.js';
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
@@ -10,19 +11,27 @@ const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
 export const signUp = async (req, res) =>{
     try {
-        const { username, password, email, phone, firstName, lastName, role } = req.body;
+        const { password, role } = req.body;
+        const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+        const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+        const firstName = typeof req.body.firstName === 'string' ? req.body.firstName.trim() : '';
+        const lastName = typeof req.body.lastName === 'string' ? req.body.lastName.trim() : '';
+        const phone = typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
         if (!username || !password || !email || !firstName || !lastName) {
-            return res.status(400).json({ message: "Không thể thiếu username, password, email, firstName, lastName" });
+            return sendResponse(res, 400, "Không thể thiếu username, password, email, firstName, lastName");
         }
 
-        if (password.length < 6) {
-            return res.status(400).json({ message: "Mật khẩu phải có tối thiểu 6 ký tự" });
+        if (typeof password !== 'string' || password.length < 6) {
+            return sendResponse(res, 400, "Mật khẩu phải có tối thiểu 6 ký tự");
         }
     
         //kiem tra user ton tai chua
 const duplicate = await User.findOne({ $or: [{ username }, { email }] });
 if (duplicate) {
-    return res.status(400).json({ message: "Username hoac email da ton tai" });
+    const field = duplicate.username === username ? 'username' : 'email';
+    return sendResponse(res, 400, field === 'username'
+            ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
+            : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', { field });
 }
 
         //ma hoa pass
@@ -35,17 +44,26 @@ await User.create({
     password: hashedPassword,
     email,
     phone,
+    fullName: (req.body.fullName || `${firstName} ${lastName}`).trim(),
     firstName,
     lastName,
     role: (role === 'HOST') ? 'HOST' : 'USER',
+    status: 'ACTIVE',
+    wishlist: [],
 });
 
         //return
 
-    return res.status(201).json({ message: "Đăng ký thành công" });
+    return sendResponse(res, 201, "Đăng ký thành công");
     } catch (error) {
+        if (error.code === 11000) {
+            const field = error.keyPattern?.username ? 'username' : 'email';
+            return sendResponse(res, 400, field === 'username'
+                    ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
+                    : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', { field });
+        }
         console.error("Lỗi khi gọi signUp", error)
-        return res.status(500).json ({message:"Lỗi hệ thống"});
+        return sendResponse(res, 500, "Lỗi hệ thống");
         
     }
 
@@ -58,7 +76,7 @@ export const signIn = async (req,res) => {
         const {username, password } = req.body;
 
         if (!username || !password) {
-            return res.status(400).json({ message: "Không thể thiếu username, password" });
+            return sendResponse(res, 400, "Không thể thiếu username, password");
         }
 
 
@@ -73,12 +91,12 @@ export const signIn = async (req,res) => {
         });
 
         if (!user) {
-            return res.status(401).json({ message: "Tài khoản hoặc mật khẩu không đúng" });
+            return sendResponse(res, 401, "Tài khoản hoặc mật khẩu không đúng");
         }
 
         const passwordCorrect = await bcrypt.compare(password, user.password);
         if (!passwordCorrect) {
-            return res.status(401).json({ message: "Tài khoản hoặc mật khẩu không đúng" });
+            return sendResponse(res, 401, "Tài khoản hoặc mật khẩu không đúng");
         }
 
         // Chặn tài khoản HOST đăng nhập vào ứng dụng mobile dành cho khách du lịch
@@ -120,13 +138,11 @@ res.cookie("refreshToken", refreshToken,{
         
 
         // tra access token ve trong res
-        return res.status(200).json({ message:"Đăng nhập thành công" ,
-            accessToken,
-        });
+        return sendResponse(res, 200, "Đăng nhập thành công", { accessToken });
         
     } catch (error) {
         console.error("Lỗi khi gọi signIn", error)
-        return res.status(500).json ({message: "Lỗi hệ thống"});
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
 };
 
@@ -143,31 +159,32 @@ export const signOut = async (req,res) => {
         
         };
         // trả về
-        return res.status(200).json({ message: "Đăng xuất thành công" });
+        return sendResponse(res, 200, "Đăng xuất thành công");
     } catch (error) {
         console.error("Lỗi khi gọi signOut", error)
-        return res.status(500).json ({message: "Lỗi hệ thống"});
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
 }
 
 export const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
-        if (!email) return res.status(400).json({ message: "Vui lòng cung cấp email" });
+        if (!email) return sendResponse(res, 400, "Vui lòng cung cấp email");
 
         const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "Email không tồn tại" });
+        if (!user) return sendResponse(res, 404, "Email không tồn tại");
 
         // Chống spam OTP: Nếu mã trước đó được tạo chưa quá 60 giây, yêu cầu chờ
         if (user.resetPasswordExpires && (user.resetPasswordExpires - Date.now() > 14 * 60 * 1000)) {
             const waitSeconds = Math.ceil((user.resetPasswordExpires - (Date.now() + 14 * 60 * 1000)) / 1000);
-            return res.status(429).json({ 
-                message: `Vui lòng đợi ${waitSeconds > 0 ? waitSeconds : 60} giây trước khi yêu cầu gửi lại mã!` 
-            });
+            return sendResponse(res, 429, `Vui lòng đợi ${waitSeconds > 0 ? waitSeconds : 60} giây trước khi yêu cầu gửi lại mã!`);
         }
 
         // Tạo mã OTP 6 số
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        if (!user.fullName) {
+            user.fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User';
+        }
         user.resetPasswordToken = otp;
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 phút
         await user.save();
@@ -235,37 +252,63 @@ export const forgotPassword = async (req, res) => {
         console.log("Hãy lấy mã này nhập vào App để test nhé!");
         console.log("=========================================");
 
-        return res.status(200).json({ 
-            message: "Mã OTP đã được gửi đến email của bạn"
-        });
+        return sendResponse(res, 200, "Mã OTP đã được gửi đến email của bạn");
     } catch (error) {
         console.error("Lỗi forgotPassword:", error);
-        return res.status(500).json({ message: "Lỗi hệ thống" });
+        return sendResponse(res, 500, "Lỗi hệ thống");
+    }
+};
+
+export const verifyOtp = async (req, res) => {
+    try {
+        const token = (req.body.otp || req.body.token || '').toString().trim();
+        const email = (req.body.email || '').toString().trim().toLowerCase();
+        if (!token) return sendResponse(res, 400, "Vui lòng nhập mã OTP");
+
+        const query = {
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        };
+        if (email) {
+            query.email = email;
+        }
+
+        const user = await User.findOne(query);
+
+        if (!user) return sendResponse(res, 400, "Mã OTP không đúng hoặc đã hết hạn");
+
+        return sendResponse(res, 200, "Xác thực mã OTP thành công", { valid: true });
+    } catch (error) {
+        console.error("Lỗi verifyOtp:", error);
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
 };
 
 export const resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
-        if (!token || !newPassword) return res.status(400).json({ message: "Vui lòng cung cấp token và mật khẩu mới" });
-        if (newPassword.length < 6) return res.status(400).json({ message: "Mật khẩu mới phải có tối thiểu 6 ký tự" });
+        if (!token || !newPassword) return sendResponse(res, 400, "Vui lòng cung cấp token và mật khẩu mới");
+        if (newPassword.length < 6) return sendResponse(res, 400, "Mật khẩu mới phải có tối thiểu 6 ký tự");
 
         const user = await User.findOne({
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: Date.now() } // Token phải còn hạn
         });
 
-        if (!user) return res.status(400).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+        if (!user) return sendResponse(res, 400, "Token không hợp lệ hoặc đã hết hạn");
 
+        if (!user.fullName) {
+            user.fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User';
+        }
         user.password = await bcrypt.hash(newPassword, 10);
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
         await user.save();
 
-        return res.status(200).json({ message: "Đổi mật khẩu thành công" });
+        return sendResponse(res, 200, "Đổi mật khẩu thành công");
     } catch (error) {
         console.error("Lỗi resetPassword:", error);
-        return res.status(500).json({ message: "Lỗi hệ thống" });
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
 };
 
@@ -276,7 +319,7 @@ export const googleSignIn = async (req, res) => {
     try {
         const { accessToken } = req.body;
         if (!accessToken) {
-            return res.status(400).json({ message: "Thiếu Google access token" });
+            return sendResponse(res, 400, "Thiếu Google access token");
         }
 
         // Xác minh token với Google & lấy thông tin user
@@ -285,14 +328,14 @@ export const googleSignIn = async (req, res) => {
         );
 
         if (!googleRes.ok) {
-            return res.status(401).json({ message: "Google token không hợp lệ" });
+            return sendResponse(res, 401, "Google token không hợp lệ");
         }
 
         const googleUser = await googleRes.json();
         const { email, given_name, family_name, picture, sub: googleId } = googleUser;
 
         if (!email) {
-            return res.status(400).json({ message: "Không lấy được email từ Google" });
+            return sendResponse(res, 400, "Không lấy được email từ Google");
         }
 
         // Tìm hoặc tạo user mới (auto-register nếu chưa có)
@@ -307,8 +350,10 @@ export const googleSignIn = async (req, res) => {
                 username = `${baseUsername}${counter++}`;
             }
 
+            const fullName = `${given_name || ''} ${family_name || ''}`.trim() || username;
             user = await User.create({
                 username,
+                fullName,
                 email,
                 firstName: given_name || 'User',
                 lastName: family_name || '',
@@ -351,13 +396,10 @@ export const googleSignIn = async (req, res) => {
             maxAge: REFRESH_TOKEN_TTL_MS,
         });
 
-        return res.status(200).json({
-            message: "Đăng nhập Google thành công",
-            accessToken: jwtToken,
-        });
+        return sendResponse(res, 200, "Đăng nhập Google thành công", { accessToken: jwtToken });
 
     } catch (error) {
         console.error("Lỗi googleSignIn:", error);
-        return res.status(500).json({ message: "Lỗi hệ thống" });
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
 };

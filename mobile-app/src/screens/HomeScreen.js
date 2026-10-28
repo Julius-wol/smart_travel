@@ -72,6 +72,9 @@ const HomeScreen = ({ navigation, route }) => {
     type: 'info',
   });
 
+  // State Tab đang chọn (Mặc định 'booking' - Đặt phòng theo Figma)
+  const [activeTab, setActiveTab] = useState('booking');
+
   // Format ngày kiểu VN
   const formatDateVN = (date) => {
     if (!date) return '';
@@ -129,47 +132,60 @@ const HomeScreen = ({ navigation, route }) => {
       const json = await res.json();
 
       if (json.success && json.data && json.data.length > 0) {
-        const bookingNotifs = json.data.slice(0, 5).map((b, idx) => {
+        const now = new Date();
+        const bookingNotifs = [];
+
+        json.data.slice(0, 5).forEach((b, idx) => {
           const roomObj = b.roomId || {};
           const roomName = roomObj.title || roomObj.name || 'Villa Sơn Trà Đà Nẵng';
-          const roomNum = roomObj.roomNumber || '402';
+          const checkOutDate = b.checkOut ? new Date(b.checkOut) : null;
+          const isPastCheckOut = checkOutDate && now > checkOutDate;
 
-          const lockCode = b.bookingCode ? b.bookingCode.replace('ST-', '82') : '829411';
+          // 1. Thông báo đặt phòng thành công
+          bookingNotifs.push({
+            id: `booking-${b._id || b.bookingCode}`,
+            type: 'booking',
+            title: `Đặt phòng thành công #${b.bookingCode}`,
+            message: `Chuyến nghỉ dưỡng tại ${roomName} đã được xác nhận (${b.nights || b.totalNights || 2} đêm). Quý khách xuất trình mã đặt phòng tại quầy lễ tân để nhận phòng!`,
+            time: idx === 0 ? 'Vừa xong' : `${idx + 1} ngày trước`,
+            read: idx !== 0,
+            badgeText: 'ĐẶT PHÒNG',
+            badgeColor: '#E6FFFA',
+            badgeTextColor: '#00796B',
+            icon: 'checkmark-circle',
+            iconColor: '#00796B',
+            actionType: 'view_booking',
+            bookingCode: b.bookingCode,
+            rawBooking: b,
+          });
 
-          return [
-            {
-              id: `booking-${b._id || b.bookingCode}`,
-              type: 'booking',
-              title: `Đặt phòng thành công #${b.bookingCode}`,
-              message: `Chuyến nghỉ dưỡng tại ${roomName} đã được xác nhận (${b.nights || 2} đêm). Bấm để xem vé e-Pass!`,
-              time: idx === 0 ? 'Vừa xong' : `${idx + 1} ngày trước`,
-              read: idx !== 0, // Đơn mới nhất luôn là CHƯA ĐỌC để chuông hiện chấm đỏ
-              badgeText: 'ĐẶT PHÒNG',
-              badgeColor: '#E6FFFA',
-              badgeTextColor: '#00796B',
-              icon: 'checkmark-circle',
-              iconColor: '#00796B',
-              actionType: 'view_booking',
-              bookingCode: b.bookingCode,
-              rawBooking: b,
-            },
-            {
-              id: `lock-${b._id || b.bookingCode}`,
-              type: 'smart_lock',
-              title: `Mã mở khóa phòng Smart Lock #${roomNum}`,
-              message: `Mã số tự động cho đơn ${b.bookingCode} là ${lockCode} (Có hiệu lực từ 14:00 ngày nhận phòng).`,
-              time: idx === 0 ? 'Vừa xong' : `${idx + 1} ngày trước`,
-              read: idx !== 0,
-              badgeText: 'MÃ KHÓA',
+          // 2. CHỈ KHI ĐÃ QUA THỜI GIAN CHECK-OUT (ĐÃ Ở RỒI) THÌ MỚI GỬI THÔNG BÁO ĐÁNH GIÁ PHÒNG
+          if (isPastCheckOut) {
+            const d = checkOutDate.getDate();
+            const m = checkOutDate.getMonth() + 1;
+            const y = checkOutDate.getFullYear();
+            const checkOutStr = `${d < 10 ? '0' + d : d}/${m < 10 ? '0' + m : m}/${y}`;
+
+            bookingNotifs.push({
+              id: `review-invite-${b._id || b.bookingCode}`,
+              type: 'review_invite',
+              title: `⭐ Đánh giá kỳ nghỉ tại ${roomName}`,
+              message: `Bạn đã hoàn tất kỳ nghỉ vào ngày ${checkOutStr}. Hãy chia sẻ trải nghiệm để giúp cộng đồng du lịch nhé!`,
+              time: 'Gần đây',
+              read: false,
+              badgeText: 'ĐÁNH GIÁ',
               badgeColor: '#FEF3C7',
               badgeTextColor: '#D97706',
-              icon: 'key',
+              icon: 'star',
               iconColor: '#D97706',
-              actionType: 'copy_lock',
-              lockCode: lockCode,
-            },
-          ];
-        }).flat();
+              actionType: 'write_review',
+              bookingCode: b.bookingCode,
+              bookingId: b._id,
+              homestay: roomObj,
+              rawBooking: b,
+            });
+          }
+        });
 
         const defaultPromos = [
           {
@@ -221,13 +237,12 @@ const HomeScreen = ({ navigation, route }) => {
       const rb = route.params.recentBooking;
       const bCode = rb.bookingCode || 'ST-5894';
       const rName = rb.homestay?.title || rb.homestay?.name || 'Villa Sơn Trà Đà Nẵng';
-      const lockCode = bCode.replace('ST-', '82');
 
       const newBookingNotif = {
         id: `recent-book-${bCode}`,
         type: 'booking',
         title: `Đặt phòng thành công #${bCode}`,
-        message: `Chuyến nghỉ dưỡng tại ${rName} đã được xác nhận. Bấm để xem vé e-Pass ngay!`,
+        message: `Chuyến nghỉ dưỡng tại ${rName} đã được xác nhận. Quý khách vui lòng xuất trình mã đơn tại quầy lễ tân khi nhận phòng. Bấm để xem vé e-Pass!`,
         time: 'Vừa xong',
         read: false,
         badgeText: 'ĐẶT PHÒNG',
@@ -253,27 +268,11 @@ const HomeScreen = ({ navigation, route }) => {
         },
       };
 
-      const newLockNotif = {
-        id: `recent-lock-${bCode}`,
-        type: 'smart_lock',
-        title: `Mã mở khóa phòng Smart Lock #${rb.homestay?.roomNumber || '402'}`,
-        message: `Mã số vào cửa tự động cho đơn ${bCode} là ${lockCode} (Có hiệu lực từ 14:00).`,
-        time: 'Vừa xong',
-        read: false,
-        badgeText: 'MÃ KHÓA',
-        badgeColor: '#FEF3C7',
-        badgeTextColor: '#D97706',
-        icon: 'key',
-        iconColor: '#D97706',
-        actionType: 'copy_lock',
-        lockCode: lockCode,
-      };
-
       setNotifications((prev) => {
         const filtered = prev.filter(
-          (item) => item.bookingCode !== bCode && item.id !== `recent-book-${bCode}`
+          (item) => item.bookingCode !== bCode && item.id !== `recent-book-${bCode}` && !item.id.includes('lock')
         );
-        return [newBookingNotif, newLockNotif, ...filtered];
+        return [newBookingNotif, ...filtered];
       });
 
       showToast(`Đã nhận thông báo mới cho đơn đặt phòng #${bCode}!`, 'success');
@@ -288,9 +287,7 @@ const HomeScreen = ({ navigation, route }) => {
       prev.map((item) => (item.id === notif.id ? { ...item, read: true } : item))
     );
 
-    if (notif.actionType === 'copy_lock') {
-      showToast(`Mã Smart Lock ${notif.lockCode} đã sẵn sàng sử dụng`, 'success');
-    } else if (notif.actionType === 'copy_voucher') {
+    if (notif.actionType === 'copy_voucher') {
       showToast(`Đã lưu mã ưu đãi ${notif.voucherCode} (Giảm 500.000đ)!`, 'success');
     } else if (notif.actionType === 'view_booking') {
       setShowNotificationModal(false);
@@ -331,6 +328,20 @@ const HomeScreen = ({ navigation, route }) => {
           dates: b.dates || `${checkInStr} - ${checkOutStr} (${b.nights || 2} đêm)`,
           bookingTime: b.bookingTime || (b.createdAt ? formatDateVN(b.createdAt) : 'Hôm nay'),
         },
+      });
+    } else if (notif.actionType === 'write_review') {
+      setShowNotificationModal(false);
+      const targetHomestay = notif.homestay || notif.rawBooking?.roomId || rooms[0] || {
+        _id: '6ace59ef30cddf9c0815f9bc',
+        title: 'An Nhiên Eco Retreat Đà Nẵng',
+        name: 'An Nhiên Eco Retreat Đà Nẵng',
+      };
+      navigation.navigate('WriteReview', {
+        homestay: targetHomestay,
+        bookingCode: notif.bookingCode,
+        bookingId: notif.bookingId,
+        user,
+        token,
       });
     } else if (notif.actionType === 'ai_trip') {
       showToast('Lịch trình du lịch AI đã được đồng bộ với chuyến đi!', 'info');
@@ -386,7 +397,8 @@ const HomeScreen = ({ navigation, route }) => {
       const json = await res.json();
 
       if (json.success && json.data) {
-        setRooms(json.data);
+        const roomList = Array.isArray(json.data) ? json.data : (json.data?.rooms || []);
+        setRooms(roomList);
       } else {
         showToast('Không tải được danh sách phòng từ máy chủ', 'error');
       }
@@ -944,35 +956,75 @@ const HomeScreen = ({ navigation, route }) => {
         />
       )}
 
-      {/* 6. Bottom Navigation Bar */}
+      {/* 6. Bottom Navigation Bar (Chuẩn Figma Node 29:1190) */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="compass" size={24} color="#00796B" />
-          <Text style={[styles.navText, { color: '#00796B' }]}>Khám phá</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navItem}
-          onPress={() => showToast('Chức năng danh sách đặt chỗ đang kết nối', 'info')}
+          onPress={() => {
+            setActiveTab('discovery');
+            handleResetAllFilters();
+          }}
+          activeOpacity={0.7}
         >
-          <Ionicons name="bookmark-outline" size={24} color="#A0AEC0" />
-          <Text style={styles.navText}>Đặt chỗ</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => showToast('Chức năng tin nhắn đang kết nối', 'info')}
-        >
-          <Ionicons name="chatbubble-ellipses-outline" size={24} color="#A0AEC0" />
-          <Text style={styles.navText}>Tin nhắn</Text>
+          <Ionicons
+            name={activeTab === 'discovery' ? 'compass' : 'compass-outline'}
+            size={24}
+            color={activeTab === 'discovery' ? '#00685F' : '#334155'}
+          />
+          <Text style={[styles.navText, activeTab === 'discovery' && styles.navTextActive]}>
+            Khám phá
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => navigation.navigate('Profile', { user, token })}
+          onPress={() => setActiveTab('booking')}
+          activeOpacity={0.7}
         >
-          <Ionicons name="person-outline" size={24} color="#A0AEC0" />
-          <Text style={styles.navText}>Tài khoản</Text>
+          <Ionicons
+            name={activeTab === 'booking' ? 'bed' : 'bed-outline'}
+            size={24}
+            color={activeTab === 'booking' ? '#00685F' : '#334155'}
+          />
+          <Text style={[styles.navText, activeTab === 'booking' && styles.navTextActive]}>
+            Đặt phòng
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => {
+            setActiveTab('itinerary');
+            showToast('Tính năng Lịch trình du lịch AI đang được phát triển', 'info');
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={activeTab === 'itinerary' ? 'calendar' : 'calendar-outline'}
+            size={23}
+            color={activeTab === 'itinerary' ? '#00685F' : '#334155'}
+          />
+          <Text style={[styles.navText, activeTab === 'itinerary' && styles.navTextActive]}>
+            Lịch trình
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => {
+            setActiveTab('account');
+            navigation.navigate('Profile', { user, token });
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={activeTab === 'account' ? 'person-circle' : 'person-circle-outline'}
+            size={24}
+            color={activeTab === 'account' ? '#00685F' : '#334155'}
+          />
+          <Text style={[styles.navText, activeTab === 'account' && styles.navTextActive]}>
+            Tài khoản
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -1830,23 +1882,36 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 65,
+    height: 64,
     backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#EDF2F7',
+    borderTopColor: '#E2E8F0',
+    paddingBottom: 6,
+    paddingTop: 6,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 6,
   },
   navItem: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 2,
   },
   navText: {
-    fontSize: 10,
-    color: '#A0AEC0',
+    fontSize: 11,
+    color: '#475569',
     marginTop: 3,
     fontWeight: '600',
+  },
+  navTextActive: {
+    color: '#00685F',
+    fontWeight: '700',
   },
 
   // Reset Filter Button in Empty state

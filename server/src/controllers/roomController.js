@@ -1,15 +1,30 @@
+import mongoose from 'mongoose';
 import Room from '../models/Room.js';
 
-// Danh sách dữ liệu mẫu chuẩn thực tế tại Đà Nẵng
-const SEED_DATA = [
+// Host mặc định cho dữ liệu mẫu
+const DEFAULT_HOST_ID = new mongoose.Types.ObjectId('664c1234567890abcdef1001');
+
+// Danh sách dữ liệu mẫu chuẩn Schema v2.0 tại Đà Nẵng
+export const SEED_DATA = [
   {
+    roomCode: 'MP-0101',
+    ownerId: DEFAULT_HOST_ID,
+    roomType: 'HOMESTAY',
     title: 'An Nhiên Eco Retreat Đà Nẵng',
     description: 'Nằm nép mình bên bán đảo Sơn Trà thơ mộng, An Nhiên Eco Retreat mang đến không gian nghỉ dưỡng xanh mát, ban công hướng trọn bình minh biển Mỹ Khê.',
     address: 'Đường Hoàng Sa, Bán đảo Sơn Trà, TP. Đà Nẵng',
     city: 'Đà Nẵng',
+    district: 'Sơn Trà',
     distance: 'Cách bãi biển Mỹ Khê 150m • Gần chùa Linh Ứng',
+    regularPrice: 1450000,
+    weekendPrice: 1650000,
     pricePerNight: 1450000,
+    freeCancellationBeforeHours: 48,
+    checkInTime: '14:00',
+    checkOutTime: '12:00',
     maxGuests: 4,
+    numBedrooms: 2,
+    numBeds: 2,
     badge: 'TOP 1% SƠN TRÀ',
     tags: ['Tất cả', 'Homestay', 'Eco Living', 'Gần biển'],
     images: [
@@ -36,6 +51,7 @@ const SEED_DATA = [
       { id: '8', name: 'Chỗ đỗ xe ô tô', icon: 'car' },
     ],
     rating: 4.9,
+    numReviews: 128,
     reviewCount: 128,
     ratingBreakdown: {
       overall: 4.9,
@@ -46,21 +62,32 @@ const SEED_DATA = [
       value: 4.9,
     },
     policy: {
-      checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
+      checkIn: '14:00 (Nhận phòng trực tiếp bằng mã vé điện tử e-Pass hoặc chìa khóa trao tay)',
       checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
-      cancellation: 'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00. Sau thời gian này áp dụng chính sách của chủ nhà.',
+      cancellation: 'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00.',
     },
     location: { type: 'Point', coordinates: [108.2435, 16.0825] },
     status: 'ACTIVE',
   },
   {
+    roomCode: 'MP-0102',
+    ownerId: DEFAULT_HOST_ID,
+    roomType: 'APARTMENT',
     title: 'The Muse Bohemian Studio',
     description: 'Studio phong cách Bohemian mộc mạc và cá tính ngay khu phố Tây An Thượng nhộn nhịp, chỉ cách bãi tắm Mỹ Khê 3 phút đi bộ.',
     address: 'Đường An Thượng 24, Ngũ Hành Sơn, TP. Đà Nẵng',
     city: 'Đà Nẵng',
+    district: 'Ngũ Hành Sơn',
     distance: 'Cách bãi tắm Mỹ Khê 200m • Khu phố ẩm thực An Thượng',
+    regularPrice: 750000,
+    weekendPrice: 850000,
     pricePerNight: 750000,
+    freeCancellationBeforeHours: 48,
+    checkInTime: '14:00',
+    checkOutTime: '12:00',
     maxGuests: 2,
+    numBedrooms: 1,
+    numBeds: 1,
     badge: 'YÊU THÍCH NHẤT',
     tags: ['Tất cả', 'Căn hộ', 'Boho Chic', 'Gần biển'],
     images: [
@@ -81,18 +108,30 @@ const SEED_DATA = [
       { id: '4', name: 'Điều hòa 2 chiều', icon: 'snow' },
     ],
     rating: 4.85,
+    numReviews: 94,
     reviewCount: 94,
     location: { type: 'Point', coordinates: [108.2418, 16.0503] },
     status: 'ACTIVE',
   },
   {
+    roomCode: 'MP-0103',
+    ownerId: DEFAULT_HOST_ID,
+    roomType: 'VILLA',
     title: 'Mộc Garden Villa & Coffee',
     description: 'Biệt thự sân vườn biệt lập với hồ bơi riêng và khu tiệc nướng BBQ ngoài trời, lý tưởng cho gia đình hoặc nhóm bạn khám phá Đà Nẵng.',
     address: 'Đường Hà Bổng, Phước Mỹ, Sơn Trà, TP. Đà Nẵng',
     city: 'Đà Nẵng',
+    district: 'Sơn Trà',
     distance: 'Cách cầu Rồng 2km • Sát chợ đêm Sơn Trà',
+    regularPrice: 920000,
+    weekendPrice: 1100000,
     pricePerNight: 920000,
+    freeCancellationBeforeHours: 48,
+    checkInTime: '14:00',
+    checkOutTime: '12:00',
     maxGuests: 8,
+    numBedrooms: 3,
+    numBeds: 4,
     badge: 'GIẢM 20% HÔM NAY',
     tags: ['Tất cả', 'Biệt thự / Villa', 'Hồ bơi riêng', 'Sân vườn BBQ'],
     images: [
@@ -113,93 +152,230 @@ const SEED_DATA = [
       { id: '4', name: 'Chỗ đỗ xe ô tô 7 chỗ', icon: 'car' },
     ],
     rating: 4.95,
+    numReviews: 156,
     reviewCount: 156,
     location: { type: 'Point', coordinates: [108.2452, 16.0667] },
     status: 'ACTIVE',
   },
 ];
 
-// 1. Lấy danh sách tất cả các phòng (hỗ trợ lọc theo keyword, category, city)
+/**
+ * 1. Lấy danh sách homestay hỗ trợ tìm kiếm và lọc đa tiêu chí
+ * GET /api/rooms hoặc GET /api/v1/rooms
+ */
 export const getAllRooms = async (req, res) => {
   try {
-    const { category, search, city, guests } = req.query;
+    const {
+      city,
+      category,
+      search,
+      minPrice,
+      maxPrice,
+      guests,
+      roomsCount,
+      minRating,
+      amenities,
+      page = 1,
+      limit = 10,
+    } = req.query;
 
-    // Tự động kiểm tra và khởi tạo dữ liệu mẫu nếu DB trống
-    const count = await Room.countDocuments();
-    if (count === 0) {
-      await Room.insertMany(SEED_DATA);
-      console.log('✅ Đã nạp thành công dữ liệu homestay mẫu vào MongoDB!');
+    // Tự động nạp dữ liệu mẫu nếu DB trống
+    try {
+      const count = await Room.countDocuments();
+      if (count === 0) {
+        await Room.insertMany(SEED_DATA);
+        console.log('✅ Đã nạp thành công dữ liệu homestay mẫu chuẩn Schema v2.0 vào MongoDB!');
+      }
+    } catch (seedErr) {
+      console.warn('Bỏ qua auto-seed:', seedErr.message);
     }
 
     const conditions = [{ status: { $in: ['ACTIVE', 'Published'] } }];
 
-    if (city && city.trim()) {
-      conditions.push({ city: { $regex: city.trim(), $options: 'i' } });
-    }
+    // Xây dựng điều kiện lọc (hỗ trợ cả PUBLISHED và ACTIVE tương thích ngược)
+    const andConditions = [{ status: { $in: ['PUBLISHED', 'ACTIVE'] } }];
 
+    // 1. Lọc theo danh mục (category)
     if (category && category !== 'Tất cả') {
-      conditions.push({
+      andConditions.push({
         $or: [
           { tags: { $in: [category] } },
-          { 'specs.type': { $regex: category, $options: 'i' } }
-        ]
+          { roomType: { $regex: category, $options: 'i' } },
+          { 'specs.type': { $regex: category, $options: 'i' } },
+        ],
       });
     }
 
+    // 2. Lọc theo từ khóa tìm kiếm tổng quát (search)
     if (search && search.trim()) {
       const s = search.trim();
-      conditions.push({
+      andConditions.push({
         $or: [
           { title: { $regex: s, $options: 'i' } },
+          { roomCode: { $regex: s, $options: 'i' } },
           { address: { $regex: s, $options: 'i' } },
           { city: { $regex: s, $options: 'i' } },
+          { district: { $regex: s, $options: 'i' } },
           { description: { $regex: s, $options: 'i' } },
-          { tags: { $elemMatch: { $regex: s, $options: 'i' } } }
-        ]
+          { tags: { $elemMatch: { $regex: s, $options: 'i' } } },
+        ],
       });
     }
 
-    if (guests && Number(guests) > 0) {
-      conditions.push({
-        maxGuests: { $gte: Number(guests) }
+    // 3. Lọc theo địa điểm / thành phố (city)
+    if (city && city.trim() !== '') {
+      const cleanCity = city.trim();
+      const cityKeywords = cleanCity.split(',').map((c) => c.trim()).filter(Boolean);
+      if (cityKeywords.length > 0) {
+        andConditions.push({
+          $or: cityKeywords.map((kw) => ({
+            $or: [
+              { city: { $regex: new RegExp(kw, 'i') } },
+              { district: { $regex: new RegExp(kw, 'i') } },
+              { address: { $regex: new RegExp(kw, 'i') } },
+              { title: { $regex: new RegExp(kw, 'i') } },
+            ],
+          })),
+        });
+      }
+    }
+
+    // 4. Lọc theo khoảng giá (regularPrice hoặc pricePerNight)
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      const priceFilter = {};
+      if (minPrice !== undefined && minPrice !== '') {
+        const min = Number(minPrice);
+        if (!isNaN(min)) priceFilter.$gte = min;
+      }
+      if (maxPrice !== undefined && maxPrice !== '') {
+        const max = Number(maxPrice);
+        if (!isNaN(max)) priceFilter.$lte = max;
+      }
+      if (Object.keys(priceFilter).length > 0) {
+        andConditions.push({
+          $or: [
+            { regularPrice: priceFilter },
+            { pricePerNight: priceFilter },
+          ],
+        });
+      }
+    }
+
+    // 5. Lọc theo số lượng khách (guests)
+    if (guests && !isNaN(Number(guests)) && Number(guests) > 0) {
+      andConditions.push({ maxGuests: { $gte: Number(guests) } });
+    }
+
+    // 6. Lọc theo số lượng phòng (roomsCount / numBedrooms)
+    if (roomsCount && !isNaN(Number(roomsCount)) && Number(roomsCount) > 1) {
+      const minRooms = Number(roomsCount);
+      andConditions.push({
+        $or: [
+          { numBedrooms: { $gte: minRooms } },
+          { bedrooms: { $gte: minRooms } },
+          { 'specs.bedroom': { $regex: new RegExp(`([${minRooms}-9]|\\d{2,})\\s*PN`, 'i') } },
+        ],
       });
     }
 
-    const query = conditions.length === 1 ? conditions[0] : { $and: conditions };
-    const rooms = await Room.find(query).sort({ rating: -1, createdAt: -1 });
+    // 7. Lọc theo điểm đánh giá tối thiểu (minRating)
+    if (minRating && !isNaN(Number(minRating))) {
+      andConditions.push({ rating: { $gte: Number(minRating) } });
+    }
+
+    // 8. Lọc theo danh sách tiện ích mong muốn (amenities)
+    if (amenities) {
+      let amenityList = [];
+      if (Array.isArray(amenities)) {
+        amenityList = amenities;
+      } else if (typeof amenities === 'string') {
+        amenityList = amenities.split(',').map((a) => a.trim()).filter(Boolean);
+      }
+      if (amenityList.length > 0) {
+        andConditions.push({
+          $or: [
+            { amenities: { $all: amenityList } },
+            { 'amenities.name': { $all: amenityList } },
+          ],
+        });
+      }
+    }
+
+    const query = andConditions.length === 1 ? andConditions[0] : { $and: andConditions };
+
+    const [rooms, totalCount] = await Promise.all([
+      Room.find(query)
+        .populate('ownerId', 'fullName name avatar phone email hostProfile')
+        .sort({ rating: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean({ virtuals: true }),
+      Room.countDocuments(query),
+    ]);
+
+    const totalPages = Math.ceil(totalCount / limitNum) || 1;
+    const hasMore = pageNum < totalPages;
 
     return res.status(200).json({
       success: true,
+      message: 'Lấy danh sách homestay thành công',
       count: rooms.length,
-      data: rooms,
+      data: {
+        rooms,
+        totalCount,
+        page: pageNum,
+        totalPages,
+        hasMore,
+      },
     });
   } catch (error) {
-    console.error('Lỗi khi lấy danh sách phòng:', error);
-    return res.status(500).json({ success: false, message: 'Lỗi máy chủ khi lấy danh sách phòng' });
+    console.error('Lỗi khi lấy danh sách homestay:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi máy chủ khi lấy danh sách homestay',
+      error: error.message,
+    });
   }
 };
 
-// 2. Lấy chi tiết 1 phòng theo ID
+/**
+ * 2. Lấy chi tiết homestay theo ID
+ * GET /api/rooms/:id
+ */
 export const getRoomById = async (req, res) => {
   try {
     const { id } = req.params;
-    const room = await Room.findById(id);
+
+    const room = await Room.findById(id)
+      .populate('ownerId', 'fullName name avatar phone email hostProfile')
+      .lean({ virtuals: true });
 
     if (!room) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy nơi lưu trú này' });
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy nơi lưu trú này',
+      });
     }
 
     return res.status(200).json({
       success: true,
+      message: 'Lấy chi tiết phòng thành công',
       data: room,
     });
   } catch (error) {
     console.error('Lỗi khi lấy chi tiết phòng:', error);
-    return res.status(500).json({ success: false, message: 'Lỗi máy chủ khi lấy chi tiết phòng' });
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi máy chủ khi lấy chi tiết phòng',
+      error: error.message,
+    });
   }
 };
 
-// 3. API Reset/Seed lại dữ liệu mẫu
+/**
+ * 3. Khởi tạo / nạp lại dữ liệu mẫu
+ * GET /api/rooms/seed
+ */
 export const seedRooms = async (req, res) => {
   try {
     await Room.deleteMany({});
@@ -212,6 +388,19 @@ export const seedRooms = async (req, res) => {
     });
   } catch (error) {
     console.error('Lỗi seed phòng:', error);
-    return res.status(500).json({ success: false, message: 'Lỗi khi seed dữ liệu' });
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi khi seed dữ liệu',
+      error: error.message,
+    });
   }
+};
+
+export const getRooms = getAllRooms;
+
+export default {
+  getAllRooms,
+  getRooms,
+  getRoomById,
+  seedRooms,
 };

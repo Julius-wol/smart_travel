@@ -1,8 +1,19 @@
 import mongoose from 'mongoose';
 import Booking from '../models/Booking.js';
 import Room from '../models/Room.js';
+import RoomAvailability from '../models/RoomAvailability.js';
 
-// 1. Tạo đơn đặt phòng mới (Lưu vào MongoDB)
+// Helper chuẩn hóa phương thức thanh toán
+const normalizePaymentMethod = (method) => {
+  if (!method) return 'VIETQR';
+  const upper = String(method).toUpperCase().trim();
+  const validMethods = ['VIETQR', 'MOMO', 'ZALOPAY', 'CREDIT_CARD', 'APPLE_PAY'];
+  if (validMethods.includes(upper)) return upper;
+  if (upper === 'CARD') return 'CREDIT_CARD';
+  return 'VIETQR';
+};
+
+// 1. Tạo đơn đặt phòng mới (Lưu vào MongoDB & Khóa lịch RoomAvailability)
 export const createBooking = async (req, res) => {
   try {
     const {
@@ -14,26 +25,35 @@ export const createBooking = async (req, res) => {
       checkIn,
       checkOut,
       guests,
+      guestDetails,
+      guestContact,
       paymentMethod,
       totalPrice,
+      notes,
     } = req.body;
 
+    // Lấy thông tin liên hệ ưu tiên từ nested guestContact hoặc flat fields
+    const contactName = (guestContact?.fullName || fullName || '').trim();
+    const contactPhone = (guestContact?.phone || phoneNumber || '').trim();
+    const contactEmail = (guestContact?.email || email || '').trim();
+    const contactNote = (guestContact?.guestNote || notes || '').trim();
+
     // Validate dữ liệu cơ bản từ khách hàng
-    if (!fullName || !fullName.trim() || !phoneNumber || !phoneNumber.trim() || !email || !email.trim()) {
+    if (!contactName || !contactPhone || !contactEmail) {
       return res.status(400).json({
         success: false,
-        message: 'Vui lòng điền đầy đủ và chính xác thông tin liên hệ.',
+        message: 'Vui lòng điền đầy đủ và chính xác thông tin liên hệ (Họ tên, SĐT, Email).',
       });
     }
 
-    // Kiểm tra phòng có tồn tại không (hỗ trợ cả valid ObjectId và fallback phòng mẫu active)
+    // Kiểm tra phòng có tồn tại không
     let targetRoomId = roomId;
     let room = null;
     if (roomId && mongoose.isValidObjectId(roomId)) {
       room = await Room.findById(roomId);
     }
     if (!room) {
-      room = await Room.findOne({ status: 'ACTIVE' });
+      room = await Room.findOne({ status: { $in: ['PUBLISHED', 'ACTIVE'] } });
       if (room) {
         targetRoomId = room._id;
       }
@@ -54,26 +74,33 @@ export const createBooking = async (req, res) => {
     const diffTime = endDate.getTime() - startDate.getTime();
     const actualNights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-    // CR_BOOK_07: Kiểm tra xem phòng này trong khoảng thời gian đã có người đặt chưa
+    // 1. Kiểm tra xung đột qua Booking
     const existingConflict = await Booking.findOne({
       roomId: targetRoomId,
-      status: 'CONFIRMED',
+      status: { $in: ['CONFIRMED', 'PENDING'] },
       $and: [
         { checkIn: { $lt: endDate } },
         { checkOut: { $gt: startDate } }
       ]
     });
 
-    if (existingConflict) {
+    // 2. Kiểm tra xung đột qua RoomAvailability (chặn phòng bị khóa bảo trì hoặc đã book)
+    const availabilityConflict = await RoomAvailability.findOne({
+      roomId: targetRoomId,
+      status: { $in: ['BOOKED', 'BLOCKED'] },
+      date: { $gte: startDate, $lt: endDate }
+    });
+
+    if (existingConflict || availabilityConflict) {
       return res.status(409).json({
         success: false,
         conflict: true,
         code: 'CR_BOOK_07',
-        message: 'Rất tiếc, phòng này vừa được khách khác đặt trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác hoặc phòng tương đương.',
+        message: 'Rất tiếc, phòng này vừa được khách khác đặt hoặc chủ nhà đã khóa lịch trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác hoặc phòng tương đương.',
       });
     }
 
-    // Tạo mã đặt phòng duy nhất dạng ST-XXXX (ví dụ: ST-5894)
+    // Tạo mã đặt phòng duy nhất dạng ST-XXXX (ví dụ: ST-5894 hoặc BK-9821)
     let bookingCode;
     let isUnique = false;
     while (!isUnique) {
@@ -83,7 +110,7 @@ export const createBooking = async (req, res) => {
       if (!existing) isUnique = true;
     }
 
-    // Sanitize userId: chỉ lưu nếu đúng định dạng ObjectId MongoDB
+    // Sanitize userId
     const validUserId = (userId && typeof userId === 'string' && mongoose.isValidObjectId(userId))
       ? userId
       : undefined;
@@ -91,7 +118,6 @@ export const createBooking = async (req, res) => {
     // Tạo bản ghi đặt phòng mới với trạng thái PENDING để Host xét duyệt
     const newBooking = await Booking.create({
       bookingCode,
-      roomId: targetRoomId,
       userId: validUserId,
       fullName: fullName.trim(),
       phoneNumber: phoneNumber.trim(),
@@ -110,7 +136,34 @@ export const createBooking = async (req, res) => {
       status: 'PENDING',
     });
 
-    console.log(`✅ Đã tạo đơn đặt phòng thành công: ${bookingCode} cho khách: ${fullName} (${actualNights} đêm)`);
+    // Tự động khóa lịch phòng trong RoomAvailability cho từng ngày lưu trú
+    try {
+      const currentDate = new Date(startDate);
+      const datesToBlock = [];
+      while (currentDate < endDate) {
+        datesToBlock.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      await Promise.all(
+        datesToBlock.map((d) =>
+          RoomAvailability.findOneAndUpdate(
+            { roomId: targetRoomId, date: d },
+            {
+              $set: {
+                status: 'BOOKED',
+                bookingId: newBooking._id,
+              },
+            },
+            { upsert: true, returnDocument: 'after' }
+          )
+        )
+      );
+    } catch (availErr) {
+      console.warn('⚠️ Lỗi khi cập nhật RoomAvailability:', availErr.message);
+    }
+
+    console.log(`✅ Đã tạo đơn đặt phòng thành công: ${bookingCode} cho khách: ${contactName} (${actualNights} đêm)`);
 
     return res.status(201).json({
       success: true,
@@ -141,18 +194,28 @@ export const checkAvailability = async (req, res) => {
     const startDate = new Date(checkIn);
     const endDate = new Date(checkOut);
 
+    // Kiểm tra đơn Booking hiện hữu
     const conflictingBooking = await Booking.findOne({
       roomId,
-      status: 'CONFIRMED',
+      status: { $in: ['CONFIRMED', 'PENDING'] },
       $and: [
         { checkIn: { $lt: endDate } },
         { checkOut: { $gt: startDate } }
       ]
     });
 
+    // Kiểm tra RoomAvailability (Blocked / Booked)
+    const availabilityConflict = await RoomAvailability.findOne({
+      roomId,
+      status: { $in: ['BOOKED', 'BLOCKED'] },
+      date: { $gte: startDate, $lt: endDate }
+    });
+
+    const isAvailable = !conflictingBooking && !availabilityConflict;
+
     return res.status(200).json({
       success: true,
-      available: !conflictingBooking,
+      available: isAvailable,
       conflictBooking: conflictingBooking
         ? {
             bookingCode: conflictingBooking.bookingCode,
@@ -174,7 +237,9 @@ export const checkAvailability = async (req, res) => {
 export const getBookingByCode = async (req, res) => {
   try {
     const { code } = req.params;
-    const booking = await Booking.findOne({ bookingCode: code.toUpperCase() }).populate('roomId');
+    const booking = await Booking.findOne({ bookingCode: code.toUpperCase() })
+      .populate('roomId')
+      .populate('hostId', 'fullName name phone email hostProfile');
 
     if (!booking) {
       return res.status(404).json({
@@ -200,8 +265,19 @@ export const getBookingByCode = async (req, res) => {
 export const getMyBookings = async (req, res) => {
   try {
     const { email } = req.query;
-    const query = email ? { email } : {};
-    const bookings = await Booking.find(query).populate('roomId').sort({ createdAt: -1 });
+    const query = email
+      ? {
+          $or: [
+            { email },
+            { 'guestContact.email': email },
+          ],
+        }
+      : {};
+
+    const bookings = await Booking.find(query)
+      .populate('roomId')
+      .populate('hostId', 'fullName name phone email hostProfile')
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -215,4 +291,11 @@ export const getMyBookings = async (req, res) => {
       message: 'Lỗi máy chủ',
     });
   }
+};
+
+export default {
+  createBooking,
+  checkAvailability,
+  getBookingByCode,
+  getMyBookings,
 };

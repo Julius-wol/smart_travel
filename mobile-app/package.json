@@ -6,10 +6,32 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "test": "jest --watchAll=false --runInBand --forceExit",
+    "test:unit": "jest __tests__ --watchAll=false",
+    "test:e2e": "jest e2e --watchAll=false --runInBand --forceExit",
+    "test:all": "jest --watchAll=false --forceExit"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|react-native-paper)"
+    ],
+    "moduleNameMapper": {
+      "^react$": "<rootDir>/../node_modules/react",
+      "^react/(.*)$": "<rootDir>/../node_modules/react/$1",
+      "^react-dom$": "<rootDir>/../node_modules/react-dom",
+      "^react-dom/(.*)$": "<rootDir>/../node_modules/react-dom/$1",
+      "^immer$": "<rootDir>/../node_modules/immer/dist/cjs/index.js",
+      "^react-redux$": "<rootDir>/../node_modules/react-redux/dist/cjs/index.js"
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ]
   },
   "dependencies": {
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@expo/vector-icons": "^15.1.1",
+    "@react-navigation/bottom-tabs": "^7.21.0",
     "@react-navigation/native": "^7.5.0",
     "@react-navigation/native-stack": "^7.20.0",
     "@reduxjs/toolkit": "^2.13.0",

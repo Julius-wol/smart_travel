@@ -38,6 +38,8 @@ const roomSchema = new mongoose.Schema({
   images: [{ type: String }],
   badge: { type: String, default: '' },
   tags: [{ type: String }],
+  distance: { type: String, default: '' },
+  distanceInfo: { type: String },
   specs: {
     type: { type: String, default: 'Nhà nguyên căn' },
     capacity: { type: String, default: 'Tối đa 2 khách' },
@@ -48,12 +50,12 @@ const roomSchema = new mongoose.Schema({
   rating: { type: Number, default: 4.9, min: 0, max: 5 },
   reviewCount: { type: Number, default: 0 },
   ratingBreakdown: {
-    overall: { type: Number, default: 4.9 },
+    overall: { type: Number, default: 5.0 },
     cleanliness: { type: Number, default: 5.0 },
-    location: { type: Number, default: 4.9 },
-    service: { type: Number, default: 4.9 },
-    amenities: { type: Number, default: 4.8 },
-    value: { type: Number, default: 4.9 },
+    location: { type: Number, default: 5.0 },
+    service: { type: Number, default: 5.0 },
+    amenities: { type: Number, default: 5.0 },
+    value: { type: Number, default: 5.0 },
   },
   policy: {
     checkIn: { type: String, default: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)' },
@@ -87,6 +89,20 @@ roomSchema.pre('save', function() {
   }
 });
 
-const Room = mongoose.model('Room', roomSchema);
+// Virtuals tương thích ngược cho Mobile App & API Client cũ
+RoomSchema.virtual('pricePerNight')
+  .get(function() { return this.regularPrice; })
+  .set(function(v) { this.regularPrice = v; });
+
+RoomSchema.virtual('reviewCount')
+  .get(function() { return this.numReviews; })
+  .set(function(v) { this.numReviews = v; });
+
+// Indexes hỗ trợ GeoJSON và truy vấn hiệu năng cao
+RoomSchema.index({ location: '2dsphere' });
+RoomSchema.index({ ownerId: 1, status: 1 });
+RoomSchema.index({ title: 'text', city: 'text' });
+
+const Room = mongoose.model('Room', RoomSchema);
 export default Room;
 

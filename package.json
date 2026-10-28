@@ -11,7 +11,13 @@
     "install:all": "npm install",
     "dev:server": "npm run dev --workspace=server",
     "dev:mobile": "npm run start --workspace=mobile-app",
-    "dev:all": "concurrently -c \"blue,magenta\" -n \"SERVER,MOBILE\" \"npm run dev:server\" \"npm run dev:mobile\""
+    "dev:all": "concurrently -c \"blue,magenta\" -n \"SERVER,MOBILE\" \"npm run dev:server\" \"npm run dev:mobile\"",
+    "test:server": "npm run test --workspace=server",
+    "test:mobile": "npm run test --workspace=mobile-app",
+    "test:mobile:e2e": "npm --prefix mobile-app run test:e2e",
+    "test:e2e": "npm run test:mobile:e2e",
+    "test": "npm run test:server && npm run test:mobile",
+    "seed": "npm run seed --workspace=server"
   },
   "devDependencies": {
     "concurrently": "^10.0.6"
