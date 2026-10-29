@@ -191,3 +191,11 @@ sequenceDiagram
 3. **Cơ chế chống brute-force / spam mã OTP:**
    - Tại API `/api/auth/forgot-password`, hệ thống kiểm tra thời gian gửi mã trước đó. Nếu chưa qua 60 giây, trả về HTTP status `429 Too Many Requests`.
    - Mã OTP tự động vô hiệu hóa sau 15 phút.
+
+
+| `POST` | `/api/auth/refresh` | Public / Cookie | Làm mới Access Token qua Refresh Token | `{ refreshToken? }` hoặc gửi qua Cookie |
+| `POST` | `/api/auth/host/signin` | Public (Host) | Đăng nhập dành riêng cho Host qua REST API | `{ emailOrPhone, password }` |
+| `POST` | `/api/auth/host/signup` | Public (Host) | Đăng ký tài khoản Đối tác Chủ phòng | `{ username, email, phone, firstName, lastName, password }` |
+
+---
+

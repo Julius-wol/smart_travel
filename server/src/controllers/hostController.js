@@ -1,3 +1,10 @@
+import {
+  createSessionAndTokens,
+  revokeSession,
+  verifyGoogleToken,
+  authenticateHostCredentials,
+  registerHostUser
+} from '../services/authService.js';
 import mongoose from 'mongoose';
 import * as xlsx from 'xlsx';
 import Room from '../models/Room.js';
@@ -928,33 +935,18 @@ export const updateBookingStatus = async (req, res) => {
 export const quickAuth = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'Tài khoản hoặc mật khẩu không đúng' });
-    }
-
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return res.status(401).json({ success: false, message: 'Mật khẩu không chính xác' });
-    }
-
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.ACCES_TOKEN_SECRET || 'secret_key',
-      { expiresIn: '7d' }
-    );
-
-    res.cookie('hostToken', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
+    const user = await authenticateHostCredentials(email, password);
+    await createSessionAndTokens(user, res, { isHost: true });
     return res.status(200).json({ success: true, message: 'Xác thực thành công!' });
   } catch (error) {
+    if (error.code === 'USER_NOT_FOUND' || error.code === 'INVALID_PASSWORD') {
+      return res.status(401).json({ success: false, message: error.message });
+    }
+    if (error.code === 'NOT_HOST') {
+      return res.status(403).json({ success: false, message: error.message });
+    }
     console.error('Lỗi quickAuth:', error);
-    return res.status(500).json({ success: false, message: 'Lỗi server' });
+    return res.status(500).json({ success: false, message: 'Lỗi server khi xác thực' });
   }
 };
 
@@ -981,73 +973,17 @@ export const postLogin = async (req, res) => {
   const googleClientId = process.env.OAUTH_CLIENT_ID || '539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com';
   try {
     const { emailOrPhone, password } = req.body;
-    const query = emailOrPhone ? emailOrPhone.trim() : '';
+    const user = await authenticateHostCredentials(emailOrPhone, password);
 
-    if (!query || !password) {
-      return res.render('host/login', {
-        title: 'Đăng nhập Host Portal - Smart Travel',
-        error: 'Vui lòng nhập Email hoặc Số điện thoại và Mật khẩu',
-        emailOrPhone,
-        googleClientId
-      });
-    }
-
-    const user = await User.findOne({
-      $or: [
-        { username: query },
-        { email: query.toLowerCase() },
-        { phone: query }
-      ]
-    });
-
-    if (!user) {
-      return res.render('host/login', {
-        title: 'Đăng nhập Host Portal - Smart Travel',
-        error: 'Tài khoản không tồn tại trên hệ thống Smart Travel',
-        emailOrPhone,
-        googleClientId
-      });
-    }
-
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      return res.render('host/login', {
-        title: 'Đăng nhập Host Portal - Smart Travel',
-        error: 'Mật khẩu không chính xác',
-        emailOrPhone,
-        googleClientId
-      });
-    }
-
-    // Check role: must be HOST
-    if (user.role !== 'HOST') {
-      return res.render('host/login', {
-        title: 'Đăng nhập Host Portal - Smart Travel',
-        error: 'Tài khoản của bạn là Khách du lịch (USER). Cổng web này chỉ dành riêng cho Đối tác cho thuê phòng (HOST). Vui lòng đăng nhập bằng tài khoản Chủ phòng!',
-        emailOrPhone,
-        googleClientId
-      });
-    }
-
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.ACCES_TOKEN_SECRET || 'secret_key',
-      { expiresIn: '7d' }
-    );
-
-    res.cookie('hostToken', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    // Lưu session vào Database & cấp token đồng bộ chuẩn JWT
+    await createSessionAndTokens(user, res, { isHost: true });
 
     res.redirect('/host/rooms');
   } catch (error) {
-    console.error('Lỗi postLogin:', error);
+    console.error('Lỗi postLogin:', error.message);
     res.render('host/login', {
       title: 'Đăng nhập Host Portal - Smart Travel',
-      error: 'Lỗi máy chủ khi đăng nhập',
+      error: error.message || 'Lỗi máy chủ khi đăng nhập',
       emailOrPhone: req.body.emailOrPhone || '',
       googleClientId
     });
@@ -1064,16 +1000,8 @@ export const postGoogleLogin = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Thiếu Google access token' });
     }
 
-    // Call Google userinfo API
-    const googleRes = await fetch(
-      `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
-    );
-
-    if (!googleRes.ok) {
-      return res.status(401).json({ success: false, message: 'Google access token không hợp lệ hoặc đã hết hạn.' });
-    }
-
-    const googleUser = await googleRes.json();
+    // Call Google userinfo API qua core authService
+    const googleUser = await verifyGoogleToken(accessToken);
     const { email, given_name, family_name, picture } = googleUser;
 
     if (!email) {
@@ -1099,9 +1027,12 @@ export const postGoogleLogin = async (req, res) => {
         email: email.toLowerCase(),
         firstName: given_name || 'Chủ phòng',
         lastName: family_name || '',
+        fullName: `${given_name || ''} ${family_name || ''}`.trim() || username,
         password: hashedPassword,
         avatar: picture || '',
         role: 'HOST',
+        status: 'ACTIVE',
+        wishlist: []
       });
       console.log(`✅ [Host Google Login] Tự động tạo tài khoản Host mới: ${email}`);
     } else {
@@ -1114,18 +1045,8 @@ export const postGoogleLogin = async (req, res) => {
       }
     }
 
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.ACCES_TOKEN_SECRET || 'secret_key',
-      { expiresIn: '7d' }
-    );
-
-    res.cookie('hostToken', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    // Lưu session vào Database & cấp token đồng bộ chuẩn JWT
+    await createSessionAndTokens(user, res, { isHost: true });
 
     return res.status(200).json({
       success: true,
@@ -1136,7 +1057,7 @@ export const postGoogleLogin = async (req, res) => {
     console.error('Lỗi postGoogleLogin:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi hệ thống khi đăng nhập với Google'
+      message: error.message || 'Lỗi hệ thống khi đăng nhập với Google'
     });
   }
 };
@@ -1153,22 +1074,6 @@ export const postRegister = async (req, res) => {
   try {
     const { username, email, phone, firstName, lastName, password, confirmPassword } = req.body;
 
-    if (!username || !email || !password || !firstName || !lastName) {
-      return res.render('host/register', {
-        title: 'Đăng ký Đối tác Chủ phòng - Smart Travel',
-        error: 'Vui lòng điền đầy đủ tất cả các trường bắt buộc (*)',
-        values: req.body
-      });
-    }
-
-    if (password.length < 6) {
-      return res.render('host/register', {
-        title: 'Đăng ký Đối tác Chủ phòng - Smart Travel',
-        error: 'Mật khẩu phải có tối thiểu 6 ký tự',
-        values: req.body
-      });
-    }
-
     if (confirmPassword && password !== confirmPassword) {
       return res.render('host/register', {
         title: 'Đăng ký Đối tác Chủ phòng - Smart Travel',
@@ -1177,59 +1082,24 @@ export const postRegister = async (req, res) => {
       });
     }
 
-    const duplicate = await User.findOne({
-      $or: [
-        { username: username.trim() },
-        { email: email.trim().toLowerCase() }
-      ]
-    });
+    // Đăng ký tài khoản Host qua core service
+    const newUser = await registerHostUser(req.body);
 
-    if (duplicate) {
-      return res.render('host/register', {
-        title: 'Đăng ký Đối tác Chủ phòng - Smart Travel',
-        error: 'Tên đăng nhập hoặc Email này đã được sử dụng',
-        values: req.body
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await User.create({
-      username: username.trim(),
-      email: email.trim().toLowerCase(),
-      phone: phone ? phone.trim() : '',
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      password: hashedPassword,
-      role: 'HOST',
-    });
-
-    const token = jwt.sign(
-      { userId: newUser._id, role: newUser.role },
-      process.env.ACCES_TOKEN_SECRET || 'secret_key',
-      { expiresIn: '7d' }
-    );
-
-    res.cookie('hostToken', token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    // Lưu session vào Database & cấp token đồng bộ chuẩn JWT
+    await createSessionAndTokens(newUser, res, { isHost: true });
 
     res.redirect('/host/rooms');
   } catch (error) {
-    console.error('Lỗi postRegister:', error);
+    console.error('Lỗi postRegister:', error.message);
     res.render('host/register', {
       title: 'Đăng ký Đối tác Chủ phòng - Smart Travel',
-      error: 'Lỗi hệ thống khi đăng ký tài khoản Host',
+      error: error.message || 'Lỗi hệ thống khi đăng ký tài khoản Host',
       values: req.body
     });
   }
 };
 
-export const logout = (req, res) => {
-  res.clearCookie('hostToken');
-  res.clearCookie('token');
+export const logout = async (req, res) => {
+  await revokeSession(req, res);
   res.redirect('/host/login');
 };
