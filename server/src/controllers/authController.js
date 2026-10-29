@@ -5,11 +5,19 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import Session from '../models/Session.js';
+import {
+    createSessionAndTokens,
+    revokeSession,
+    refreshSession,
+    verifyGoogleToken,
+    registerHostUser,
+    authenticateHostCredentials
+} from '../services/authService.js';
 
 const ACCES_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
-export const signUp = async (req, res) =>{
+export const signUp = async (req, res) => {
     try {
         const { password, role } = req.body;
         const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
@@ -26,62 +34,53 @@ export const signUp = async (req, res) =>{
         }
     
         //kiem tra user ton tai chua
-const duplicate = await User.findOne({ $or: [{ username }, { email }] });
-if (duplicate) {
-    const field = duplicate.username === username ? 'username' : 'email';
-    return sendResponse(res, 400, field === 'username'
-            ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
-            : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', { field });
-}
+        const duplicate = await User.findOne({ $or: [{ username }, { email }] });
+        if (duplicate) {
+            const field = duplicate.username === username ? 'username' : 'email';
+            return sendResponse(res, 400, field === 'username'
+                ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
+                : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', { field });
+        }
 
         //ma hoa pass
-
-const hashedPassword = await bcrypt.hash(password, 10); // số 10 là 2 mũ 10 số lần mã hóa, số càng lớn thì càng an toàn nhưng tốn tài nguyên cua hacker
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         // tao user moi
-await User.create({
-    username,
-    password: hashedPassword,
-    email,
-    phone,
-    fullName: (req.body.fullName || `${firstName} ${lastName}`).trim(),
-    firstName,
-    lastName,
-    role: (role === 'HOST') ? 'HOST' : 'USER',
-    status: 'ACTIVE',
-    wishlist: [],
-});
+        await User.create({
+            username,
+            password: hashedPassword,
+            email,
+            phone,
+            fullName: (req.body.fullName || `${firstName} ${lastName}`).trim(),
+            firstName,
+            lastName,
+            role: (role === 'HOST') ? 'HOST' : 'USER',
+            status: 'ACTIVE',
+            wishlist: [],
+        });
 
-        //return
-
-    return sendResponse(res, 201, "Đăng ký thành công");
+        return sendResponse(res, 201, "Đăng ký thành công");
     } catch (error) {
         if (error.code === 11000) {
             const field = error.keyPattern?.username ? 'username' : 'email';
             return sendResponse(res, 400, field === 'username'
-                    ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
-                    : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', { field });
+                ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
+                : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', { field });
         }
-        console.error("Lỗi khi gọi signUp", error)
+        console.error("Lỗi khi gọi signUp", error);
         return sendResponse(res, 500, "Lỗi hệ thống");
-        
     }
-
 };
 
-export const signIn = async (req,res) => {
+export const signIn = async (req, res) => {
     try {
-
-        //lấy inputs
-        const {username, password } = req.body;
+        const { username, password, clientType, role: requestedRole } = req.body;
 
         if (!username || !password) {
             return sendResponse(res, 400, "Không thể thiếu username, password");
         }
 
-
-
-        //lấy hashed password trong db so với pass input
+        // Tìm user theo username, email hoặc phone
         const user = await User.findOne({
             $or: [
                 { username: username },
@@ -99,72 +98,46 @@ export const signIn = async (req,res) => {
             return sendResponse(res, 401, "Tài khoản hoặc mật khẩu không đúng");
         }
 
-        // Chặn tài khoản HOST đăng nhập vào ứng dụng mobile dành cho khách du lịch
-        if (user.role === 'HOST') {
-            return res.status(403).json({
-                message: "Tài khoản của bạn là Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!",
-                code: "ROLE_NOT_PERMITTED_ON_MOBILE",
-                role: user.role
-            });
+        const isHostClient = clientType === 'host' || requestedRole === 'HOST' || req.query?.clientType === 'host';
+
+        if (isHostClient) {
+            if (user.role !== 'HOST') {
+                return res.status(403).json({
+                    message: "Tài khoản của bạn là Khách du lịch (USER). Cổng này chỉ dành riêng cho Đối tác Chủ phòng (HOST). Vui lòng đăng nhập bằng tài khoản Chủ phòng!",
+                    code: "NOT_HOST",
+                    role: user.role
+                });
+            }
+        } else {
+            // Chặn tài khoản HOST đăng nhập vào ứng dụng mobile dành cho khách du lịch
+            if (user.role === 'HOST') {
+                return res.status(403).json({
+                    message: "Tài khoản của bạn là Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!",
+                    code: "ROLE_NOT_PERMITTED_ON_MOBILE",
+                    role: user.role
+                });
+            }
         }
-        
-        //neu khop, tạo accesToken với JWT
-        const accessToken = jwt.sign({ userId: user._id }, process.env.ACCES_TOKEN_SECRET || 'secret_key', { expiresIn: ACCES_TOKEN_TTL  });
 
-        // Tạo  refreshtoken
-        const refreshToken = crypto.randomBytes(64).toString("hex")
+        // Tạo access token & refresh token session thống nhất qua Core Auth Service
+        const { accessToken } = await createSessionAndTokens(user, res, { isHost: isHostClient });
 
-       //tạo session mới để lưu refresh token
-await Session.create({
-    userId: user._id,
-    refreshToken,
-    expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-})
-
-
-
-       // trả refresh token về trong cookie
-
-res.cookie("refreshToken", refreshToken,{
-    httpOnly: true,
-    secure: true,
-    sameSite: "none", 
-    maxAge: REFRESH_TOKEN_TTL_MS,
-    
-})
-
-
-
-        
-
-        // tra access token ve trong res
         return sendResponse(res, 200, "Đăng nhập thành công", { accessToken });
-        
     } catch (error) {
-        console.error("Lỗi khi gọi signIn", error)
+        console.error("Lỗi khi gọi signIn", error);
         return sendResponse(res, 500, "Lỗi hệ thống");
     }
 };
 
-export const signOut = async (req,res) => {
-    try{
-        // lấy refreshtoken từ cookie
-        const token = req.cookies?.refreshToken;
-        if (token) {
-            //xoa refresh token khoi session
-            await Session.deleteOne({ refreshToken: token });
-            
-            //xoa cookie
-            res.clearCookie("refreshToken");
-        
-        };
-        // trả về
+export const signOut = async (req, res) => {
+    try {
+        await revokeSession(req, res);
         return sendResponse(res, 200, "Đăng xuất thành công");
     } catch (error) {
-        console.error("Lỗi khi gọi signOut", error)
+        console.error("Lỗi khi gọi signOut", error);
         return sendResponse(res, 500, "Lỗi hệ thống");
     }
-}
+};
 
 export const forgotPassword = async (req, res) => {
     try {
@@ -317,32 +290,27 @@ export const resetPassword = async (req, res) => {
 // ==========================================
 export const googleSignIn = async (req, res) => {
     try {
-        const { accessToken } = req.body;
+        const { accessToken, clientType, role: requestedRole } = req.body;
         if (!accessToken) {
             return sendResponse(res, 400, "Thiếu Google access token");
         }
 
-        // Xác minh token với Google & lấy thông tin user
-        const googleRes = await fetch(
-            `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
-        );
-
-        if (!googleRes.ok) {
-            return sendResponse(res, 401, "Google token không hợp lệ");
+        let googleUser;
+        try {
+            googleUser = await verifyGoogleToken(accessToken);
+        } catch (err) {
+            return sendResponse(res, 401, err.message || "Google token không hợp lệ");
         }
 
-        const googleUser = await googleRes.json();
-        const { email, given_name, family_name, picture, sub: googleId } = googleUser;
-
+        const { email, given_name, family_name, picture } = googleUser;
         if (!email) {
             return sendResponse(res, 400, "Không lấy được email từ Google");
         }
 
-        // Tìm hoặc tạo user mới (auto-register nếu chưa có)
-        let user = await User.findOne({ email });
+        const isHostClient = clientType === 'host' || requestedRole === 'HOST' || req.query?.clientType === 'host';
+        let user = await User.findOne({ email: email.toLowerCase() });
 
         if (!user) {
-            // Tạo username từ email (bỏ phần @...)
             const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
             let username = baseUsername;
             let counter = 1;
@@ -354,52 +322,95 @@ export const googleSignIn = async (req, res) => {
             user = await User.create({
                 username,
                 fullName,
-                email,
-                firstName: given_name || 'User',
+                email: email.toLowerCase(),
+                firstName: given_name || (isHostClient ? 'Chủ phòng' : 'User'),
                 lastName: family_name || '',
-                password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10), // random pass
+                password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10),
                 avatar: picture || '',
-                role: 'USER',
+                role: isHostClient ? 'HOST' : 'USER',
+                status: 'ACTIVE',
+                wishlist: []
             });
-
-            console.log(`✅ Tạo tài khoản Google mới: ${email}`);
         } else {
-            // Chặn tài khoản HOST đăng nhập vào ứng dụng mobile dành cho khách du lịch
-            if (user.role === 'HOST') {
-                return res.status(403).json({
-                    message: "Tài khoản của bạn là Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!",
-                    code: "ROLE_NOT_PERMITTED_ON_MOBILE",
-                    role: user.role
-                });
+            if (isHostClient) {
+                if (user.role !== 'HOST') {
+                    return res.status(403).json({
+                        success: false,
+                        message: `Tài khoản (${email}) hiện đang là Khách du lịch (USER). Cổng này chỉ dành riêng cho Đối tác Chủ phòng (HOST).`,
+                        code: "NOT_HOST"
+                    });
+                }
+            } else {
+                if (user.role === 'HOST') {
+                    return res.status(403).json({
+                        message: "Tài khoản của bạn là Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!",
+                        code: "ROLE_NOT_PERMITTED_ON_MOBILE",
+                        role: user.role
+                    });
+                }
             }
         }
 
-        // Tạo JWT access token
-        const jwtToken = jwt.sign(
-            { userId: user._id },
-            process.env.ACCES_TOKEN_SECRET || 'secret_key',
-            { expiresIn: ACCES_TOKEN_TTL }
-        );
-
-        // Tạo refresh token session
-        const refreshToken = crypto.randomBytes(64).toString('hex');
-        await Session.create({
-            userId: user._id,
-            refreshToken,
-            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-        });
-
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: REFRESH_TOKEN_TTL_MS,
-        });
-
+        const { accessToken: jwtToken } = await createSessionAndTokens(user, res, { isHost: isHostClient });
         return sendResponse(res, 200, "Đăng nhập Google thành công", { accessToken: jwtToken });
-
     } catch (error) {
         console.error("Lỗi googleSignIn:", error);
         return sendResponse(res, 500, "Lỗi hệ thống");
+    }
+};
+
+// ==========================================
+// DEDICATED HOST REST APIs
+// ==========================================
+export const hostSignInApi = async (req, res) => {
+    try {
+        const { emailOrPhone, username, password } = req.body;
+        const query = emailOrPhone || username;
+        const user = await authenticateHostCredentials(query, password);
+        const { accessToken } = await createSessionAndTokens(user, res, { isHost: true });
+        return sendResponse(res, 200, "Đăng nhập Host thành công", { accessToken, role: user.role });
+    } catch (error) {
+        if (error.code === 'USER_NOT_FOUND' || error.code === 'INVALID_PASSWORD') {
+            return sendResponse(res, 401, error.message);
+        }
+        if (error.code === 'NOT_HOST') {
+            return sendResponse(res, 403, error.message);
+        }
+        console.error("Lỗi hostSignInApi:", error);
+        return sendResponse(res, 500, error.message || "Lỗi hệ thống khi đăng nhập Host");
+    }
+};
+
+export const hostSignUpApi = async (req, res) => {
+    try {
+        const newUser = await registerHostUser(req.body);
+        const { accessToken } = await createSessionAndTokens(newUser, res, { isHost: true });
+        return sendResponse(res, 201, "Đăng ký tài khoản Host thành công", { accessToken, role: newUser.role });
+    } catch (error) {
+        if (error.code === 'MISSING_FIELDS' || error.code === 'PASSWORD_TOO_SHORT') {
+            return sendResponse(res, 400, error.message);
+        }
+        if (error.code === 'DUPLICATE_USER') {
+            return sendResponse(res, 400, error.message, { field: error.field });
+        }
+        console.error("Lỗi hostSignUpApi:", error);
+        return sendResponse(res, 500, "Lỗi hệ thống khi đăng ký Host");
+    }
+};
+
+export const refreshTokenApi = async (req, res) => {
+    try {
+        const token = req.cookies?.refreshToken || req.body?.refreshToken;
+        if (!token) {
+            return sendResponse(res, 401, "Thiếu refresh token");
+        }
+        const result = await refreshSession(token, res);
+        if (!result) {
+            return sendResponse(res, 401, "Phiên làm việc đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.");
+        }
+        return sendResponse(res, 200, "Làm mới token thành công", { accessToken: result.accessToken });
+    } catch (error) {
+        console.error("Lỗi refreshTokenApi:", error);
+        return sendResponse(res, 500, "Lỗi hệ thống khi làm mới token");
     }
 };
