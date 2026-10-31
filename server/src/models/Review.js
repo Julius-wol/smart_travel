@@ -44,15 +44,24 @@ const ReviewSchema = new mongoose.Schema({
     default: '' 
   },
   categories: {
-    cleanliness: { type: Number, min: 1, max: 5 },
-    location:    { type: Number, min: 1, max: 5 },
-    service:     { type: Number, min: 1, max: 5 },
-    amenities:   { type: Number, min: 1, max: 5 },
-    value:       { type: Number, min: 1, max: 5 },
+    cleanliness:   { type: Number, min: 1, max: 5 },
+    location:      { type: Number, min: 1, max: 5 },
+    service:       { type: Number, min: 1, max: 5 },
+    amenities:     { type: Number, min: 1, max: 5 },
+    value:         { type: Number, min: 1, max: 5 },
+    checkin:       { type: Number, min: 1, max: 5 },
+    accuracy:      { type: Number, min: 1, max: 5 },
+    communication: { type: Number, min: 1, max: 5 }
   },
   bookingCode: { 
     type: String, 
     default: '' 
+  },
+  stayInfo: {
+    checkIn: { type: Date },
+    checkOut: { type: Date },
+    roomTitle: { type: String },
+    bookingCode: { type: String }
   },
   helpful: { 
     type: Number, 

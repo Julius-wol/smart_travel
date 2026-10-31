@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Lỗi truy cập - Smart Travel' %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/host/css/host.css">
+  <style>
+    .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+      text-align: center;
+      padding: 24px;
+    }
+    .error-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 520px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    }
+    .error-badge {
+      display: inline-block;
+      background: #FEE2E2;
+      color: #DC2626;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .error-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 12px;
+    }
+    .error-msg {
+      font-size: 14px;
+      color: #64748B;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+<div class="host-layout">
+  <%- include('./partials/sidebar', { activeNav: '' }) %>
+  <main class="host-main-container">
+    <%- include('./partials/header', { user: (typeof user !== 'undefined' ? user : null), breadcrumbSub: 'Lỗi' }) %>
+    <div class="host-page-body">
+      <div class="error-container">
+        <div class="error-card">
+          <div class="error-badge"><%= errorCode || 'AUTH-403' %></div>
+          <h1 class="error-title"><%= title || 'Truy cập bị từ chối' %></h1>
+          <p class="error-msg"><%= message || 'Bạn không có quyền truy cập vào tài nguyên này.' %></p>
+          <a href="/host/reviews" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+            <span>« Quay lại Đánh giá & Phản hồi</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
+

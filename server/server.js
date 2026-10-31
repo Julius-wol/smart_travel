@@ -12,7 +12,7 @@ import roomRoute from './src/routes/roomRoute.js';
 import bookingRoute from './src/routes/bookingRoute.js';
 import reviewRoute from './src/routes/reviewRoute.js';
 import hostRoute from './src/routes/hostRoute.js';
-// import { ensureRobinHost } from './src/utils/seedHostData.js'; // Disabled: real DB connected
+import { ensureRobinHost } from './src/utils/seedHostData.js';
 
 dotenv.config();
 
@@ -41,19 +41,22 @@ app.use('/api/bookings', bookingRoute);// Booking & Checkout
 app.use('/api/reviews', reviewRoute);  // Reviews & Rating
 app.use('/host', hostRoute);           // Host Portal (EJS SSR)
 
-// 4. Kết nối MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_travel')
-    .then(async () => {
-        console.log('✅ Kết nối MongoDB thành công!');
-        // NOTE: Seed disabled - using real Atlas database
-        // await ensureRobinHost();
-    })
-    .catch((err) => console.error('❌ Lỗi kết nối MongoDB:', err));
+// Điều hướng trang gốc về Host Portal
+app.get('/', (req, res) => res.redirect('/host/rooms'));
 
-// 5. Khởi động Server
+// 4. Kết nối MongoDB (Chỉ auto-connect khi không phải môi trường test)
 if (process.env.NODE_ENV !== 'test') {
+  mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_travel')
+      .then(async () => {
+          console.log('✅ Kết nối MongoDB thành công!');
+          await ensureRobinHost();
+      })
+      .catch((err) => console.error('❌ Lỗi kết nối MongoDB:', err));
+
+  // 5. Khởi động Server
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server đang chạy tại http://0.0.0.0:${PORT} (Truy cập qua mạng LAN: http://${process.env.HOST_IP || '192.168.102.37'}:${PORT})`);
+    const lanIp = process.env.HOST_IP || '192.168.1.229';
+    console.log(`🚀 Server đang chạy tại http://0.0.0.0:${PORT} (Truy cập máy tính: http://localhost:${PORT} | Mạng LAN: http://${lanIp}:${PORT})`);
   });
 }
 
