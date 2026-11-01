@@ -1,0 +1,878 @@
+/* ==========================================================================
+   SMART TRAVEL - HOST REVIEWS & FEEDBACK STYLES (SCR-HOST-05)
+   Pixel-perfect implementation matching Figma/Design specifications
+   ========================================================================== */
+
+/* Page Header & Breadcrumb */
+.rev-header-wrap {
+  margin-bottom: 24px;
+}
+
+.rev-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary, #0D6E6E);
+  text-decoration: none;
+  margin-bottom: 8px;
+  transition: opacity 0.15s;
+}
+
+.rev-breadcrumb:hover {
+  opacity: 0.8;
+}
+
+.rev-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0F172A;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+}
+
+.rev-subtext {
+  font-size: 13.5px;
+  color: #64748B;
+}
+
+/* ==========================================================================
+   1. RATING HERO CARD (SCR-HOST-05 1.3 - 1.5)
+   ========================================================================== */
+.rev-hero-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: grid;
+  grid-template-columns: 280px 1fr 340px;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (max-width: 1200px) {
+  .rev-hero-card {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .rev-hero-card {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
+}
+
+/* Block 1: Điểm tổng kết */
+.rev-hero-score-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.rev-hero-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748B;
+  margin-bottom: 12px;
+}
+
+.rev-score-main {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rev-big-score {
+  font-size: 54px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1;
+}
+
+.rev-stars-cluster {
+  display: flex;
+  gap: 3px;
+  color: #F59E0B;
+  font-size: 16px;
+}
+
+.rev-hero-count-sub {
+  font-size: 13px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+/* Block 2: Phân bố xếp hạng */
+.rev-hero-distribution-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.rev-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 6px;
+  transition: background-color 0.15s;
+}
+
+.rev-dist-row:hover {
+  background-color: #F8FAFC;
+}
+
+.rev-dist-row.active {
+  background-color: #DEF7EC;
+}
+
+.rev-dist-star-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  width: 32px;
+}
+
+.rev-dist-star-icon {
+  color: #F59E0B;
+  font-size: 13px;
+}
+
+.rev-progress-track {
+  flex: 1;
+  height: 8px;
+  background-color: #F1F5F9;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.rev-progress-fill {
+  height: 100%;
+  background-color: #F59E0B;
+  border-radius: 9999px;
+  transition: width 0.4s ease;
+}
+
+.rev-dist-count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  width: 24px;
+  text-align: right;
+}
+
+.rev-dist-pct {
+  font-size: 12px;
+  color: #94A3B8;
+  width: 34px;
+  text-align: right;
+}
+
+/* Block 3: Đánh giá chất lượng dịch vụ */
+.rev-subratings-card {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.rev-subratings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+}
+
+.rev-subrating-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rev-subrating-title {
+  font-size: 12px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.rev-subrating-score {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rev-subrating-star {
+  color: #F59E0B;
+  font-size: 12px;
+}
+
+/* ==========================================================================
+   2. FILTER & SORT BAR (SCR-HOST-05 1.6 - 1.10)
+   ========================================================================== */
+.rev-toolbar {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.rev-toolbar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.rev-room-select-wrap {
+  min-width: 260px;
+}
+
+.rev-select {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #1E293B;
+  background-color: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.rev-select:focus {
+  border-color: var(--primary, #0D6E6E);
+  background-color: #FFFFFF;
+}
+
+.rev-toolbar-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* Toggle Switch "Có ảnh đính kèm" */
+.rev-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rev-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.rev-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.rev-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #CBD5E1;
+  transition: 0.25s;
+  border-radius: 24px;
+}
+
+.rev-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.rev-switch input:checked + .rev-slider {
+  background-color: #10B981;
+}
+
+.rev-switch input:checked + .rev-slider:before {
+  transform: translateX(20px);
+}
+
+.rev-toggle-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Sort Dropdown */
+.rev-sort-wrap {
+  min-width: 150px;
+}
+
+/* Bottom Bar: Chips & Count */
+.rev-toolbar-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.rev-chips-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rev-chip-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.rev-chip-btn:hover {
+  border-color: #CBD5E1;
+  background: #F8FAFC;
+}
+
+.rev-chip-btn.active {
+  background: #0D6E6E;
+  color: #FFFFFF;
+  border-color: #0D6E6E;
+  box-shadow: 0 2px 4px rgba(13, 110, 110, 0.2);
+}
+
+.rev-results-counter {
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748B;
+}
+
+/* ==========================================================================
+   3. REVIEW CARD COMPONENT (SCR-HOST-05 2.1 - 2.6)
+   ========================================================================== */
+.rev-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.rev-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.rev-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 2.1 Viền đỏ bên trái cho đánh giá <= 2 sao */
+.rev-card.rev-card-warning {
+  border-left: 4px solid #E02424;
+}
+
+/* Card Header */
+.rev-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.rev-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: #FFFFFF;
+}
+
+.rev-avatar-purple { background-color: #6366F1; }
+.rev-avatar-teal   { background-color: #0D9488; }
+.rev-avatar-coral  { background-color: #F43F5E; }
+.rev-avatar-green  { background-color: #10B981; }
+.rev-avatar-blue   { background-color: #3B82F6; }
+
+.rev-card-header-main {
+  flex: 1;
+}
+
+.rev-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.rev-author-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+/* Rating Badges */
+.rev-badge-star {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #FEF3C7;
+  color: #D97706;
+}
+
+.rev-badge-star.danger {
+  background: #FEE2E2;
+  color: #DC2626;
+}
+
+.rev-badge-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #FDE8E8;
+  color: #C81E1E;
+}
+
+/* Metadata Row */
+.rev-metadata-row {
+  font-size: 12.5px;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rev-booking-chip {
+  background: #EEF2FF;
+  color: #4F46E5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.rev-dot-sep {
+  color: #CBD5E1;
+}
+
+/* Card Body & Truncation */
+.rev-card-body {
+  margin-bottom: 16px;
+}
+
+.rev-comment-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+  word-break: break-word;
+}
+
+.rev-comment-text.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rev-expand-btn {
+  background: none;
+  border: none;
+  color: var(--primary, #0D6E6E);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+  display: inline-block;
+  font-family: inherit;
+}
+
+.rev-expand-btn:hover {
+  text-decoration: underline;
+}
+
+/* Photo Thumbnail Grid (72x72px) */
+.rev-photo-grid {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.rev-thumb-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  border: 1px solid #E2E8F0;
+  flex-shrink: 0;
+}
+
+.rev-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.rev-thumb-wrap:hover .rev-thumb-img {
+  transform: scale(1.06);
+}
+
+.rev-thumb-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(17, 24, 39, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   4. MODAL LIGHTBOX (SCR-HOST-05 3.1 - 3.5)
+   ========================================================================== */
+.rev-lightbox-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(17, 24, 39, 0.95);
+  z-index: 99999;
+  flex-direction: column;
+}
+
+.rev-lightbox-modal.open {
+  display: flex;
+}
+
+.rev-lightbox-header {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rev-lightbox-title {
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rev-lightbox-close {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #FFFFFF;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.rev-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.rev-lightbox-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 20px 80px;
+}
+
+.rev-lightbox-img {
+  max-width: 90vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  user-select: none;
+}
+
+.rev-lightbox-error {
+  display: none;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #EF4444;
+  color: #FCA5A5;
+  padding: 20px 30px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.rev-lightbox-error span {
+  display: block;
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.rev-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+  user-select: none;
+}
+
+.rev-lightbox-nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.rev-lightbox-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.rev-lightbox-nav.prev {
+  left: 20px;
+}
+
+.rev-lightbox-nav.next {
+  right: 20px;
+}
+
+.rev-lightbox-footer {
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rev-lightbox-counter {
+  color: #E2E8F0;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+/* ==========================================================================
+   5. PAGINATION & FOOTER (SCR-HOST-05 4.1 - 4.3)
+   ========================================================================== */
+.rev-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.rev-pag-info {
+  font-size: 13px;
+  color: #64748B;
+}
+
+.rev-pag-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rev-page-size-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.rev-page-size-select {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  background: #F8FAFC;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.rev-pag-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rev-pag-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #334155;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+.rev-pag-btn:hover:not(.disabled):not(.active) {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+}
+
+.rev-pag-btn.active {
+  background: #0D6E6E;
+  border-color: #0D6E6E;
+  color: #FFFFFF;
+}
+
+.rev-pag-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   6. EMPTY STATES [REV-EMPTY-FILTER] & [REV-EMPTY-ALL]
+   ========================================================================== */
+.rev-empty-state {
+  background: #FFFFFF;
+  border: 1px dashed #CBD5E1;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.rev-empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.rev-empty-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 6px;
+}
+
+.rev-empty-desc {
+  font-size: 13.5px;
+  color: #64748B;
+  max-width: 420px;
+  margin: 0 auto 20px;
+}
+
+.btn-reset-filter {
+  background: #0D6E6E;
+  color: #FFFFFF;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  font-family: inherit;
+}
+
+.btn-reset-filter:hover {
+  background: #085555;
+}
+

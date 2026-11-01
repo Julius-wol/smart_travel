@@ -38,7 +38,6 @@ const roomSchema = new mongoose.Schema({
   images: [{ type: String }],
   badge: { type: String, default: '' },
   tags: [{ type: String }],
-  distance: { type: String, default: '' },
   distanceInfo: { type: String },
   specs: {
     type: { type: String, default: 'Nhà nguyên căn' },
@@ -65,7 +64,7 @@ const roomSchema = new mongoose.Schema({
   },
   status: { 
     type: String, 
-    enum: ['Published', 'Archived', 'Draft', 'ACTIVE', 'HIDDEN'], 
+    enum: ['Published', 'Archived', 'Draft', 'ACTIVE', 'HIDDEN', 'PUBLISHED', 'ARCHIVED', 'DRAFT'], 
     default: 'Draft' 
   },
   location: {
@@ -90,19 +89,17 @@ roomSchema.pre('save', function() {
 });
 
 // Virtuals tương thích ngược cho Mobile App & API Client cũ
-RoomSchema.virtual('pricePerNight')
-  .get(function() { return this.regularPrice; })
-  .set(function(v) { this.regularPrice = v; });
+roomSchema.virtual('regularPrice')
+  .get(function() { return this.pricePerNight; })
+  .set(function(v) { this.pricePerNight = v; });
 
-RoomSchema.virtual('reviewCount')
-  .get(function() { return this.numReviews; })
-  .set(function(v) { this.numReviews = v; });
+roomSchema.virtual('numReviews')
+  .get(function() { return this.reviewCount; })
+  .set(function(v) { this.reviewCount = v; });
 
 // Indexes hỗ trợ GeoJSON và truy vấn hiệu năng cao
-RoomSchema.index({ location: '2dsphere' });
-RoomSchema.index({ ownerId: 1, status: 1 });
-RoomSchema.index({ title: 'text', city: 'text' });
+roomSchema.index({ ownerId: 1, status: 1 });
+roomSchema.index({ title: 'text', city: 'text' });
 
-const Room = mongoose.model('Room', RoomSchema);
+const Room = mongoose.model('Room', roomSchema);
 export default Room;
-

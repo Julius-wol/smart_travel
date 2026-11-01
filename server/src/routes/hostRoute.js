@@ -11,6 +11,7 @@ import {
   uploadImages,
   getHostBookings,
   updateBookingStatus,
+  getHostReviews,
   quickAuth,
   getLogin,
   postLogin,
@@ -76,5 +77,9 @@ router.post('/api/upload', (req, res, next) => {
 // Bookings approval
 router.get('/bookings', getHostBookings);
 router.post('/bookings/:id/status', updateBookingStatus);
+
+// Reviews & Feedbacks (SCR-HOST-05)
+router.get('/reviews', getHostReviews);
+router.get('/api/reviews', getHostReviews);
 
 export default router;

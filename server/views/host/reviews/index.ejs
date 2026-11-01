@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/host/css/host.css">
+  <link rel="stylesheet" href="/host/css/reviews.css">
+  <style>
+    /* Loading overlay for AJAX updates */
+    .rev-loading-indicator {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(2px);
+      z-index: 10;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+    }
+    .rev-loading-indicator.active {
+      display: flex;
+    }
+    .rev-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #E2E8F0;
+      border-top-color: #0D6E6E;
+      border-radius: 50%;
+      animation: revSpin 0.7s linear infinite;
+    }
+    @keyframes revSpin {
+      to { transform: rotate(360deg); }
+    }
+    .rev-cards-wrapper {
+      position: relative;
+      min-height: 200px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="host-layout">
+  <!-- SIDEBAR NAVIGATION -->
+  <%- include('../partials/sidebar', { activeNav: 'reviews' }) %>
+
+  <!-- MAIN CONTAINER -->
+  <main class="host-main-container">
+    <!-- TOP HEADER -->
+    <%- include('../partials/header', { user, breadcrumbSub: 'Đánh giá & Phản hồi' }) %>
+
+    <!-- PAGE BODY -->
+    <div class="host-page-body">
+
+      <!-- 1.1 & 1.2 PAGE HEADER & BREADCRUMB -->
+      <div class="rev-header-wrap">
+        <a href="/host/rooms" class="rev-breadcrumb" title="Quay lại trang Quản lý phòng">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>Đánh giá & Phản hồi</span>
+        </a>
+        <h1 class="rev-title">Đánh giá & Phản hồi</h1>
+        <p class="rev-subtext">Xem nhận xét thực tế từ khách hàng về cơ sở lưu trú của bạn trên ứng dụng di động SmartTravel</p>
+      </div>
+
+      <!-- 1.3 - 1.5 RATING HERO CARD -->
+      <div class="rev-hero-card" id="revHeroCard">
+        <!-- Block 1: Điểm tổng kết -->
+        <div class="rev-hero-score-block">
+          <div class="rev-hero-label">ĐIỂM TỔNG KẾT TÍCH LŨY</div>
+          <div class="rev-score-main">
+            <span class="rev-big-score" id="heroAvgRating"><%= stats.avgRating %></span>
+            <div class="rev-stars-cluster" id="heroStarsCluster" aria-label="Điểm sao">
+              <% const fullStars = stats.avgRating !== '--' ? Math.round(Number(stats.avgRating)) : 0; %>
+              <% for (let i = 1; i <= 5; i++) { %>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="<%= i <= fullStars ? '#F59E0B' : '#E2E8F0' %>" stroke="none">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              <% } %>
+            </div>
+          </div>
+          <div class="rev-hero-count-sub" id="heroCountSub">
+            <% if (stats.totalReviews > 0) { %>
+              Dựa trên <%= stats.totalReviews %> đánh giá thực tế
+            <% } else { %>
+              Chưa có đánh giá thực tế
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Block 2: Phân bố xếp hạng -->
+        <div class="rev-hero-distribution-block" id="heroDistBlock">
+          <div class="rev-hero-label">PHÂN BỐ XẾP HẠNG</div>
+          <% stats.starDistribution.forEach(item => { %>
+            <div class="rev-dist-row <%= (query.rating == item.star) ? 'active' : '' %>"
+                 id="distRow-<%= item.star %>"
+                 onclick="handleFilterChange('rating', '<%= (query.rating == item.star) ? '' : item.star %>')"
+                 title="Lọc theo <%= item.star %> sao">
+              <div class="rev-dist-star-label">
+                <span><%= item.star %></span>
+                <span class="rev-dist-star-icon">★</span>
+              </div>
+              <div class="rev-progress-track">
+                <div class="rev-progress-fill" id="progressFill-<%= item.star %>" style="width: <%= item.percentage %>%;"></div>
+              </div>
+              <div class="rev-dist-count" id="distCount-<%= item.star %>"><%= item.count %></div>
+              <div class="rev-dist-pct" id="distPct-<%= item.star %>"><%= item.percentage %>%</div>
+            </div>
+          <% }); %>
+        </div>
+
+        <!-- Block 3: Đánh giá chất lượng dịch vụ -->
+        <div class="rev-subratings-card">
+          <div class="rev-hero-label" style="margin-bottom: 14px;">CHỈ SỐ CHẤT LƯỢNG DỊCH VỤ</div>
+          <div class="rev-subratings-grid" id="subratingsGrid">
+            <div class="rev-subrating-item">
+              <span class="rev-subrating-title">Sạch sẽ</span>
+              <span class="rev-subrating-score" id="subCleanliness"><%= stats.subRatings.cleanliness %> <span class="rev-subrating-star">★</span></span>
+            </div>
+            <div class="rev-subrating-item">
+              <span class="rev-subrating-title">Giao tiếp host</span>
+              <span class="rev-subrating-score" id="subService"><%= stats.subRatings.service %> <span class="rev-subrating-star">★</span></span>
+            </div>
+            <div class="rev-subrating-item">
+              <span class="rev-subrating-title">Nhận phòng</span>
+              <span class="rev-subrating-score" id="subCheckin"><%= stats.subRatings.checkin %> <span class="rev-subrating-star">★</span></span>
+            </div>
+            <div class="rev-subrating-item">
+              <span class="rev-subrating-title">Độ chính xác</span>
+              <span class="rev-subrating-score" id="subAccuracy"><%= stats.subRatings.accuracy %> <span class="rev-subrating-star">★</span></span>
+            </div>
+            <div class="rev-subrating-item">
+              <span class="rev-subrating-title">Vị trí</span>
+              <span class="rev-subrating-score" id="subLocation"><%= stats.subRatings.location %> <span class="rev-subrating-star">★</span></span>
+            </div>
+            <div class="rev-subrating-item">
+              <span class="rev-subrating-title">Đáng giá tiền</span>
+              <span class="rev-subrating-score" id="subValue"><%= stats.subRatings.value %> <span class="rev-subrating-star">★</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.6 - 1.10 FILTER & SORT TOOLBAR -->
+      <div class="rev-toolbar">
+        <div class="rev-toolbar-top">
+          <!-- 1.6 Dropdown "Phòng lưu trú" -->
+          <div class="rev-room-select-wrap">
+            <select class="rev-select" id="roomSelect" onchange="handleFilterChange('roomId', this.value)">
+              <option value="" <%= (!query.roomId || query.roomId === 'ALL') ? 'selected' : '' %>>
+                Tất cả phòng lưu trú (<%= rooms.length %> phòng)
+              </option>
+              <% rooms.forEach(room => { %>
+                <option value="<%= room._id %>" <%= (query.roomId == room._id.toString()) ? 'selected' : '' %>>
+                  <%= room.title %>
+                </option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="rev-toolbar-right-controls">
+            <!-- 1.8 Toggle "Có hình ảnh" -->
+            <label class="rev-toggle-wrap">
+              <span class="rev-switch">
+                <input type="checkbox" id="hasImagesToggle" <%= (query.hasImages === 'true' || query.hasImages === '1') ? 'checked' : '' %>
+                       onchange="handleFilterChange('hasImages', this.checked ? 'true' : '')">
+                <span class="rev-slider"></span>
+              </span>
+              <span class="rev-toggle-label" id="toggleLabel">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span id="photoToggleText">Có ảnh đính kèm (<%= stats.photoCount %>)</span>
+              </span>
+            </label>
+
+            <!-- 1.9 Dropdown "Sắp xếp" -->
+            <div class="rev-sort-wrap">
+              <select class="rev-select" id="sortSelect" onchange="handleFilterChange('sort', this.value)">
+                <option value="newest" <%= (!query.sort || query.sort === 'newest') ? 'selected' : '' %>>Mới nhất</option>
+                <option value="oldest" <%= (query.sort === 'oldest') ? 'selected' : '' %>>Cũ nhất</option>
+                <option value="highest" <%= (query.sort === 'highest') ? 'selected' : '' %>>Điểm cao nhất</option>
+                <option value="lowest" <%= (query.sort === 'lowest') ? 'selected' : '' %>>Điểm thấp nhất</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1.7 BỘ LỌC THEO SỐ SAO (CHIPS) & 1.10 BỘ ĐẾM KẾT QUẢ -->
+        <div class="rev-toolbar-bottom">
+          <div class="rev-chips-group" id="chipsGroup">
+            <button type="button"
+                    class="rev-chip-btn <%= (!query.rating || query.rating === '') ? 'active' : '' %>"
+                    id="chip-all"
+                    onclick="handleFilterChange('rating', '')">
+              Tất cả (<%= stats.totalReviews %>)
+            </button>
+            <button type="button"
+                    class="rev-chip-btn <%= (query.rating === '5') ? 'active' : '' %>"
+                    id="chip-5"
+                    onclick="handleFilterChange('rating', '<%= query.rating === '5' ? '' : '5' %>')">
+              5 ★ (<%= stats.starMap[5] || 0 %>)
+            </button>
+            <button type="button"
+                    class="rev-chip-btn <%= (query.rating === '4') ? 'active' : '' %>"
+                    id="chip-4"
+                    onclick="handleFilterChange('rating', '<%= query.rating === '4' ? '' : '4' %>')">
+              4 ★ (<%= stats.starMap[4] || 0 %>)
+            </button>
+            <button type="button"
+                    class="rev-chip-btn <%= (query.rating === '3') ? 'active' : '' %>"
+                    id="chip-3"
+                    onclick="handleFilterChange('rating', '<%= query.rating === '3' ? '' : '3' %>')">
+              3 ★ (<%= stats.starMap[3] || 0 %>)
+            </button>
+            <button type="button"
+                    class="rev-chip-btn <%= (query.rating === '2') ? 'active' : '' %>"
+                    id="chip-2"
+                    onclick="handleFilterChange('rating', '<%= query.rating === '2' ? '' : '2' %>')">
+              2 ★ (<%= stats.starMap[2] || 0 %>)
+            </button>
+            <button type="button"
+                    class="rev-chip-btn <%= (query.rating === '1') ? 'active' : '' %>"
+                    id="chip-1"
+                    onclick="handleFilterChange('rating', '<%= query.rating === '1' ? '' : '1' %>')">
+              1 ★ (<%= stats.starMap[1] || 0 %>)
+            </button>
+          </div>
+
+          <div class="rev-results-counter" id="resultsCounter">
+            Hiển thị <%= pagination.totalFiltered %> đánh giá
+          </div>
+        </div>
+      </div>
+
+      <!-- II. REVIEW CARDS WRAPPER WITH LOADING OVERLAY -->
+      <div class="rev-cards-wrapper">
+        <div class="rev-loading-indicator" id="revLoadingIndicator">
+          <div class="rev-spinner"></div>
+        </div>
+
+        <div class="rev-cards-list" id="reviewCardsContainer">
+          <% if (reviews && reviews.length > 0) { %>
+            <% reviews.forEach((rev, idx) => { %>
+              <% 
+                const avatarColors = ['rev-avatar-purple', 'rev-avatar-teal', 'rev-avatar-coral', 'rev-avatar-green', 'rev-avatar-blue'];
+                const avatarClass = rev.isNegative ? 'rev-avatar-coral' : avatarColors[idx % avatarColors.length];
+              %>
+              <!-- 2.1 - 2.6 REVIEW CARD -->
+              <div class="rev-card <%= rev.isNegative ? 'rev-card-warning' : '' %>" data-review-id="<%= rev._id %>">
+                <div class="rev-card-header">
+                  <!-- 2.2 Avatar + Badges -->
+                  <div class="rev-avatar <%= avatarClass %>">
+                    <%= rev.initials %>
+                  </div>
+
+                  <div class="rev-card-header-main">
+                    <div class="rev-card-title-row">
+                      <span class="rev-author-name"><%= rev.fullName || 'Khách hàng' %></span>
+
+                      <!-- Cảnh báo đánh giá <= 2 sao -->
+                      <% if (rev.isNegative) { %>
+                        <span class="rev-badge-warning">
+                          ⚠️ Đánh giá cần lưu ý
+                        </span>
+                        <span class="rev-badge-star danger">
+                          ★ <%= Number(rev.rating).toFixed(1) %>
+                        </span>
+                      <% } else { %>
+                        <span class="rev-badge-star">
+                          ★ <%= Number(rev.rating).toFixed(1) %>
+                        </span>
+                      <% } %>
+                    </div>
+
+                    <!-- 2.3 Thông tin kỳ lưu trú -->
+                    <div class="rev-metadata-row">
+                      <span>Đã ở: <%= rev.stayDates %></span>
+                      <span class="rev-dot-sep">•</span>
+                      <span><%= rev.roomTitle %></span>
+                      <span class="rev-dot-sep">•</span>
+                      <span class="rev-booking-chip">#<%= rev.bookingCode %></span>
+                      <% if (rev.postedAt) { %>
+                        <span class="rev-dot-sep">•</span>
+                        <span>Đăng lúc: <%= rev.postedAt %></span>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2.4 Nội dung nhận xét -->
+                <div class="rev-card-body">
+                  <div class="rev-comment-text <%= (rev.comment && rev.comment.length > 180) ? 'clamped' : '' %>" id="comment-<%= rev._id %>">
+                    <%= rev.comment %>
+                  </div>
+                  <% if (rev.comment && rev.comment.length > 180) { %>
+                    <button type="button" class="rev-expand-btn" onclick="toggleExpandComment('<%= rev._id %>')">
+                      Xem thêm
+                    </button>
+                  <% } %>
+
+                  <!-- 2.5 Album ảnh đính kèm (72x72px Thumbnail Grid) -->
+                  <% if (rev.images && rev.images.length > 0) { %>
+                    <div class="rev-photo-grid">
+                      <% const maxVisible = 4; %>
+                      <% const hasMore = rev.images.length > maxVisible; %>
+                      <% const displayImgs = rev.images.slice(0, maxVisible + (hasMore ? 1 : 0)); %>
+
+                      <% displayImgs.forEach((imgUrl, imgIdx) => { %>
+                        <% const isFifth = hasMore && imgIdx === maxVisible; %>
+                        <div class="rev-thumb-wrap"
+                             onclick='openLightbox(<%= JSON.stringify(rev.images) %>, <%= imgIdx %>, "<%= rev.fullName || "Khách hàng" %>", "<%= rev.roomTitle %>")'
+                             title="Xem ảnh phóng to">
+                          <img src="<%= imgUrl %>" alt="Ảnh review" class="rev-thumb-img" onerror="this.src='https://placehold.co/72x72?text=Error'">
+                          <% if (isFifth) { %>
+                            <div class="rev-thumb-overlay">
+                              +<%= rev.images.length - maxVisible %> ẢNH
+                            </div>
+                          <% } %>
+                        </div>
+                      <% }); %>
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+            <% }); %>
+
+          <% } else if (stats.totalReviews === 0) { %>
+            <!-- [REV-EMPTY-ALL] -->
+            <div class="rev-empty-state">
+              <div class="rev-empty-icon">⭐</div>
+              <h3 class="rev-empty-title">Chưa có đánh giá nào</h3>
+              <p class="rev-empty-desc">Cơ sở lưu trú của bạn hiện chưa nhận được nhận xét nào từ khách hàng.</p>
+            </div>
+          <% } else { %>
+            <!-- [REV-EMPTY-FILTER] -->
+            <div class="rev-empty-state">
+              <div class="rev-empty-icon">🔍</div>
+              <h3 class="rev-empty-title">Không tìm thấy đánh giá nào</h3>
+              <p class="rev-empty-desc">Không có bài nhận xét nào khớp với các điều kiện lọc bạn đã chọn.</p>
+              <button type="button" class="btn-reset-filter" onclick="resetAllFilters()">
+                Đặt lại bộ lọc
+              </button>
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- IV. TABLE FOOTER & PAGINATION (SCR-HOST-05 4.1 - 4.3) -->
+      <div id="paginationContainer">
+        <% if (pagination.totalFiltered > 0) { %>
+          <div class="rev-pagination-bar">
+            <!-- 4.1 Thông tin phân trang -->
+            <div class="rev-pag-info" id="pagInfo">
+              Hiển thị <%= pagination.startCount %> – <%= pagination.endCount %> trong tổng số <%= pagination.totalFiltered %> đánh giá
+            </div>
+
+            <div class="rev-pag-right">
+              <!-- 4.2 Dropdown "Số lượng / trang" -->
+              <label class="rev-page-size-label">
+                <span>Hiển thị:</span>
+                <select class="rev-page-size-select" id="pageSizeSelect" onchange="handleFilterChange('limit', this.value)">
+                  <option value="5" <%= (pagination.limit === 5) ? 'selected' : '' %>>5 đánh giá / trang</option>
+                  <option value="10" <%= (pagination.limit === 10) ? 'selected' : '' %>>10 đánh giá / trang</option>
+                  <option value="20" <%= (pagination.limit === 20) ? 'selected' : '' %>>20 đánh giá / trang</option>
+                </select>
+              </label>
+
+              <!-- 4.3 Bộ nút chuyển trang -->
+              <div class="rev-pag-buttons" id="pagButtons">
+                <!-- Nút Previous -->
+                <button type="button"
+                        class="rev-pag-btn <%= (pagination.page <= 1) ? 'disabled' : '' %>"
+                        onclick="handleFilterChange('page', '<%= pagination.page - 1 %>')"
+                        title="Trang trước">
+                  ‹
+                </button>
+
+                <!-- Các nút số trang -->
+                <% for (let p = 1; p <= pagination.totalPages; p++) { %>
+                  <button type="button"
+                          class="rev-pag-btn <%= (pagination.page === p) ? 'active' : '' %>"
+                          onclick="handleFilterChange('page', '<%= p %>')">
+                    <%= p %>
+                  </button>
+                <% } %>
+
+                <!-- Nút Next -->
+                <button type="button"
+                        class="rev-pag-btn <%= (pagination.page >= pagination.totalPages) ? 'disabled' : '' %>"
+                        onclick="handleFilterChange('page', '<%= pagination.page + 1 %>')"
+                        title="Trang tiếp theo">
+                  ›
+                </button>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- III. MODAL LIGHTBOX (SCR-HOST-05 3.1 - 3.5) -->
+<div class="rev-lightbox-modal" id="lightboxModal" onclick="handleLightboxBackdropClick(event)">
+  <!-- 3.2 Lightbox Header -->
+  <div class="rev-lightbox-header">
+    <div class="rev-lightbox-title" id="lightboxTitle">
+      Ảnh đánh giá
+    </div>
+    <button type="button" class="rev-lightbox-close" onclick="closeLightbox()" title="Đóng (Esc)">
+      ✕
+    </button>
+  </div>
+
+  <!-- 3.3 Lightbox Body & 3.4 Controls -->
+  <div class="rev-lightbox-body">
+    <button type="button" class="rev-lightbox-nav prev" id="lightboxPrevBtn" onclick="navigateLightbox(-1)" title="Ảnh trước">
+      ‹
+    </button>
+
+    <img src="" alt="Ảnh review phóng to" class="rev-lightbox-img" id="lightboxImg"
+         onload="handleImgLoadSuccess()" onerror="handleImgLoadError()">
+
+    <!-- Network error alert [REV-PHOTO-ERROR] -->
+    <div class="rev-lightbox-error" id="lightboxError">
+      <span>⚠️</span>
+      <strong>[REV-PHOTO-ERROR]</strong>
+      <p>Không thể tải hình ảnh. Vui lòng kiểm tra lại kết nối mạng.</p>
+    </div>
+
+    <button type="button" class="rev-lightbox-nav next" id="lightboxNextBtn" onclick="navigateLightbox(1)" title="Ảnh tiếp theo">
+      ›
+    </button>
+  </div>
+
+  <!-- 3.5 Lightbox Footer Counter -->
+  <div class="rev-lightbox-footer">
+    <div class="rev-lightbox-counter" id="lightboxCounter">
+      1 / 1 ảnh
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT SCRIPTS: DYNAMIC FETCH / AJAX CALL ENDPOINT (NO RELOAD) -->
+<script>
+  let currentParams = new URLSearchParams(window.location.search);
+
+  // 1. CORE FUNCTION: CALL ENDPOINT API & RE-RENDER DYNAMICALLY (AJAX / NO FULL RELOAD)
+  async function fetchReviews(params) {
+    const loader = document.getElementById('revLoadingIndicator');
+    if (loader) loader.classList.add('active');
+
+    try {
+      // BẮN HTTP GET REQUEST ĐẾN ENDPOINT API CHUẨN
+      const apiUrl = '/host/api/reviews?' + params.toString();
+      console.log('📡 [Fetch Endpoint API]:', apiUrl);
+
+      const res = await fetch(apiUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (!res.ok) {
+        if (res.status === 403) {
+          alert('Truy cập bị từ chối [AUTH-403]: Bạn không có quyền xem cơ sở lưu trú này.');
+          return;
+        }
+        throw new Error('Lỗi tải dữ liệu đánh giá: ' + res.status);
+      }
+
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.message || 'Lỗi xử lý dữ liệu');
+      }
+
+      // Cập nhật URL trình duyệt (history pushState) để bookmark/F5 không mất filter mà không bị giật trang
+      const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      window.history.pushState(null, '', newUrl);
+
+      // Re-render toàn bộ các phần tử giao diện từ dữ liệu JSON của Endpoint
+      renderHeroCard(json.stats, params);
+      renderToolbar(json.stats, json.pagination, params);
+      renderReviewCards(json.reviews, json.stats, json.pagination);
+      renderPagination(json.pagination, params);
+
+    } catch (err) {
+      console.error('❌ Lỗi khi call endpoint reviews:', err);
+    } finally {
+      if (loader) loader.classList.remove('active');
+    }
+  }
+
+  // 2. DISPATCH FILTER CHANGE
+  function handleFilterChange(key, value) {
+    if (value !== '' && value !== null && value !== undefined) {
+      currentParams.set(key, value);
+    } else {
+      currentParams.delete(key);
+    }
+    // Khi đổi phòng, đổi rating hoặc toggle ảnh, reset về page 1
+    if (key !== 'page') {
+      currentParams.delete('page');
+    }
+    // Gọi endpoint AJAX thay vì reload toàn bộ trang
+    fetchReviews(currentParams);
+  }
+
+  function resetAllFilters() {
+    currentParams = new URLSearchParams();
+    const roomSelect = document.getElementById('roomSelect');
+    if (roomSelect) roomSelect.value = '';
+    const hasImagesToggle = document.getElementById('hasImagesToggle');
+    if (hasImagesToggle) hasImagesToggle.checked = false;
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) sortSelect.value = 'newest';
+
+    fetchReviews(currentParams);
+  }
+
+  // 3. RENDER HERO CARD FROM ENDPOINT DATA
+  function renderHeroCard(stats, params) {
+    const avgEl = document.getElementById('heroAvgRating');
+    if (avgEl) avgEl.textContent = stats.avgRating;
+
+    const countSubEl = document.getElementById('heroCountSub');
+    if (countSubEl) {
+      countSubEl.textContent = stats.totalReviews > 0
+        ? `Dựa trên ${stats.totalReviews} đánh giá thực tế`
+        : 'Chưa có đánh giá thực tế';
+    }
+
+    // Stars cluster SVG
+    const clusterEl = document.getElementById('heroStarsCluster');
+    if (clusterEl) {
+      const fullStars = stats.avgRating !== '--' ? Math.round(Number(stats.avgRating)) : 0;
+      let svgHtml = '';
+      for (let i = 1; i <= 5; i++) {
+        const fill = i <= fullStars ? '#F59E0B' : '#E2E8F0';
+        svgHtml += `<svg width="20" height="20" viewBox="0 0 24 24" fill="${fill}" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+      }
+      clusterEl.innerHTML = svgHtml;
+    }
+
+    // Distribution Bars
+    const activeRating = params.get('rating') || '';
+    stats.starDistribution.forEach(item => {
+      const row = document.getElementById(`distRow-${item.star}`);
+      if (row) {
+        if (activeRating == item.star) row.classList.add('active');
+        else row.classList.remove('active');
+      }
+      const fill = document.getElementById(`progressFill-${item.star}`);
+      if (fill) fill.style.width = item.percentage + '%';
+      const cnt = document.getElementById(`distCount-${item.star}`);
+      if (cnt) cnt.textContent = item.count;
+      const pct = document.getElementById(`distPct-${item.star}`);
+      if (pct) pct.textContent = item.percentage + '%';
+    });
+
+    // Sub-ratings
+    if (document.getElementById('subCleanliness')) document.getElementById('subCleanliness').innerHTML = `${stats.subRatings.cleanliness} <span class="rev-subrating-star">★</span>`;
+    if (document.getElementById('subService')) document.getElementById('subService').innerHTML = `${stats.subRatings.service} <span class="rev-subrating-star">★</span>`;
+    if (document.getElementById('subCheckin')) document.getElementById('subCheckin').innerHTML = `${stats.subRatings.checkin} <span class="rev-subrating-star">★</span>`;
+    if (document.getElementById('subAccuracy')) document.getElementById('subAccuracy').innerHTML = `${stats.subRatings.accuracy} <span class="rev-subrating-star">★</span>`;
+    if (document.getElementById('subLocation')) document.getElementById('subLocation').innerHTML = `${stats.subRatings.location} <span class="rev-subrating-star">★</span>`;
+    if (document.getElementById('subValue')) document.getElementById('subValue').innerHTML = `${stats.subRatings.value} <span class="rev-subrating-star">★</span>`;
+  }
+
+  // 4. RENDER TOOLBAR CHIPS & COUNTER
+  function renderToolbar(stats, pagination, params) {
+    const activeRating = params.get('rating') || '';
+    const chipAll = document.getElementById('chip-all');
+    if (chipAll) {
+      chipAll.textContent = `Tất cả (${stats.totalReviews})`;
+      chipAll.className = 'rev-chip-btn ' + (!activeRating ? 'active' : '');
+    }
+
+    [5, 4, 3, 2, 1].forEach(star => {
+      const chip = document.getElementById(`chip-${star}`);
+      if (chip) {
+        chip.textContent = `${star} ★ (${stats.starMap[star] || 0})`;
+        chip.className = 'rev-chip-btn ' + (activeRating == star ? 'active' : '');
+      }
+    });
+
+    const photoToggleText = document.getElementById('photoToggleText');
+    if (photoToggleText) photoToggleText.textContent = `Có ảnh đính kèm (${stats.photoCount})`;
+
+    const resultsCounter = document.getElementById('resultsCounter');
+    if (resultsCounter) resultsCounter.textContent = `Hiển thị ${pagination.totalFiltered} đánh giá`;
+  }
+
+  // 5. RENDER REVIEW CARDS LIST
+  function renderReviewCards(reviews, stats, pagination) {
+    const container = document.getElementById('reviewCardsContainer');
+    if (!container) return;
+
+    if (!reviews || reviews.length === 0) {
+      if (stats.totalReviews === 0) {
+        container.innerHTML = `
+          <div class="rev-empty-state">
+            <div class="rev-empty-icon">⭐</div>
+            <h3 class="rev-empty-title">Chưa có đánh giá nào</h3>
+            <p class="rev-empty-desc">Cơ sở lưu trú của bạn hiện chưa nhận được nhận xét nào từ khách hàng.</p>
+          </div>`;
+      } else {
+        container.innerHTML = `
+          <div class="rev-empty-state">
+            <div class="rev-empty-icon">🔍</div>
+            <h3 class="rev-empty-title">Không tìm thấy đánh giá nào</h3>
+            <p class="rev-empty-desc">Không có bài nhận xét nào khớp với các điều kiện lọc bạn đã chọn.</p>
+            <button type="button" class="btn-reset-filter" onclick="resetAllFilters()">Đặt lại bộ lọc</button>
+          </div>`;
+      }
+      return;
+    }
+
+    const avatarColors = ['rev-avatar-purple', 'rev-avatar-teal', 'rev-avatar-coral', 'rev-avatar-green', 'rev-avatar-blue'];
+    let html = '';
+
+    reviews.forEach((rev, idx) => {
+      const avatarClass = rev.isNegative ? 'rev-avatar-coral' : avatarColors[idx % avatarColors.length];
+      const isClamped = rev.comment && rev.comment.length > 180;
+
+      // Badges
+      let badgeHtml = '';
+      if (rev.isNegative) {
+        badgeHtml = `
+          <span class="rev-badge-warning">⚠️ Đánh giá cần lưu ý</span>
+          <span class="rev-badge-star danger">★ ${Number(rev.rating).toFixed(1)}</span>`;
+      } else {
+        badgeHtml = `<span class="rev-badge-star">★ ${Number(rev.rating).toFixed(1)}</span>`;
+      }
+
+      // Photos Grid
+      let photosHtml = '';
+      if (rev.images && rev.images.length > 0) {
+        const maxVisible = 4;
+        const hasMore = rev.images.length > maxVisible;
+        const displayImgs = rev.images.slice(0, maxVisible + (hasMore ? 1 : 0));
+
+        photosHtml += '<div class="rev-photo-grid">';
+        displayImgs.forEach((imgUrl, imgIdx) => {
+          const isFifth = hasMore && imgIdx === maxVisible;
+          const escapedImgs = JSON.stringify(rev.images).replace(/"/g, '&quot;');
+          const safeName = (rev.fullName || 'Khách hàng').replace(/"/g, '&quot;');
+          const safeRoom = (rev.roomTitle || '').replace(/"/g, '&quot;');
+
+          photosHtml += `
+            <div class="rev-thumb-wrap"
+                 onclick="openLightbox(${escapedImgs}, ${imgIdx}, '${safeName}', '${safeRoom}')"
+                 title="Xem ảnh phóng to">
+              <img src="${imgUrl}" alt="Ảnh review" class="rev-thumb-img" onerror="this.src='https://placehold.co/72x72?text=Error'">
+              ${isFifth ? `<div class="rev-thumb-overlay">+${rev.images.length - maxVisible} ẢNH</div>` : ''}
+            </div>`;
+        });
+        photosHtml += '</div>';
+      }
+
+      html += `
+        <div class="rev-card ${rev.isNegative ? 'rev-card-warning' : ''}" data-review-id="${rev._id}">
+          <div class="rev-card-header">
+            <div class="rev-avatar ${avatarClass}">${rev.initials}</div>
+            <div class="rev-card-header-main">
+              <div class="rev-card-title-row">
+                <span class="rev-author-name">${rev.fullName || 'Khách hàng'}</span>
+                ${badgeHtml}
+              </div>
+              <div class="rev-metadata-row">
+                <span>Đã ở: ${rev.stayDates || ''}</span>
+                <span class="rev-dot-sep">•</span>
+                <span>${rev.roomTitle}</span>
+                <span class="rev-dot-sep">•</span>
+                <span class="rev-booking-chip">#${rev.bookingCode}</span>
+                ${rev.postedAt ? `<span class="rev-dot-sep">•</span><span>Đăng lúc: ${rev.postedAt}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="rev-card-body">
+            <div class="rev-comment-text ${isClamped ? 'clamped' : ''}" id="comment-${rev._id}">
+              ${rev.comment || ''}
+            </div>
+            ${isClamped ? `<button type="button" class="rev-expand-btn" onclick="toggleExpandComment('${rev._id}')">Xem thêm</button>` : ''}
+            ${photosHtml}
+          </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  // 6. RENDER PAGINATION BAR
+  function renderPagination(pagination, params) {
+    const container = document.getElementById('paginationContainer');
+    if (!container) return;
+
+    if (!pagination || pagination.totalFiltered === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    let buttonsHtml = '';
+    // Prev button
+    const prevDisabled = pagination.page <= 1 ? 'disabled' : '';
+    buttonsHtml += `<button type="button" class="rev-pag-btn ${prevDisabled}" onclick="handleFilterChange('page', '${pagination.page - 1}')" title="Trang trước">‹</button>`;
+
+    // Page number buttons
+    for (let p = 1; p <= pagination.totalPages; p++) {
+      const active = pagination.page === p ? 'active' : '';
+      buttonsHtml += `<button type="button" class="rev-pag-btn ${active}" onclick="handleFilterChange('page', '${p}')">${p}</button>`;
+    }
+
+    // Next button
+    const nextDisabled = pagination.page >= pagination.totalPages ? 'disabled' : '';
+    buttonsHtml += `<button type="button" class="rev-pag-btn ${nextDisabled}" onclick="handleFilterChange('page', '${pagination.page + 1}')" title="Trang tiếp theo">›</button>`;
+
+    container.innerHTML = `
+      <div class="rev-pagination-bar">
+        <div class="rev-pag-info" id="pagInfo">
+          Hiển thị ${pagination.startCount} – ${pagination.endCount} trong tổng số ${pagination.totalFiltered} đánh giá
+        </div>
+        <div class="rev-pag-right">
+          <label class="rev-page-size-label">
+            <span>Hiển thị:</span>
+            <select class="rev-page-size-select" id="pageSizeSelect" onchange="handleFilterChange('limit', this.value)">
+              <option value="5" ${pagination.limit === 5 ? 'selected' : ''}>5 đánh giá / trang</option>
+              <option value="10" ${pagination.limit === 10 ? 'selected' : ''}>10 đánh giá / trang</option>
+              <option value="20" ${pagination.limit === 20 ? 'selected' : ''}>20 đánh giá / trang</option>
+            </select>
+          </label>
+          <div class="rev-pag-buttons" id="pagButtons">
+            ${buttonsHtml}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // 7. Toggle Truncate / Expand Comment
+  function toggleExpandComment(reviewId) {
+    const el = document.getElementById('comment-' + reviewId);
+    if (!el) return;
+    const isClamped = el.classList.contains('clamped');
+    const btn = event.currentTarget;
+    if (isClamped) {
+      el.classList.remove('clamped');
+      btn.innerText = 'Thu gọn';
+    } else {
+      el.classList.add('clamped');
+      btn.innerText = 'Xem thêm';
+    }
+  }
+
+  // ==========================================
+  // III. LIGHTBOX MODAL FUNCTIONALITY
+  // ==========================================
+  let currentGallery = [];
+  let currentImgIndex = 0;
+  let currentAuthor = '';
+  let currentRoom = '';
+
+  function openLightbox(images, startIndex, author, room) {
+    if (!images || images.length === 0) return;
+    currentGallery = images;
+    currentImgIndex = startIndex || 0;
+    currentAuthor = author || 'Khách hàng';
+    currentRoom = room || '';
+
+    updateLightboxView();
+
+    const modal = document.getElementById('lightboxModal');
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    const modal = document.getElementById('lightboxModal');
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function handleLightboxBackdropClick(e) {
+    if (e.target.id === 'lightboxModal' || e.target.classList.contains('rev-lightbox-body')) {
+      closeLightbox();
+    }
+  }
+
+  function navigateLightbox(step) {
+    const nextIdx = currentImgIndex + step;
+    if (nextIdx >= 0 && nextIdx < currentGallery.length) {
+      currentImgIndex = nextIdx;
+      updateLightboxView();
+    }
+  }
+
+  function updateLightboxView() {
+    const imgEl = document.getElementById('lightboxImg');
+    const titleEl = document.getElementById('lightboxTitle');
+    const counterEl = document.getElementById('lightboxCounter');
+    const errorEl = document.getElementById('lightboxError');
+    const prevBtn = document.getElementById('lightboxPrevBtn');
+    const nextBtn = document.getElementById('lightboxNextBtn');
+
+    errorEl.style.display = 'none';
+    imgEl.style.display = 'block';
+
+    const url = currentGallery[currentImgIndex];
+    imgEl.src = url;
+
+    titleEl.textContent = `Ảnh đánh giá • ${currentAuthor}${currentRoom ? ` (${currentRoom})` : ''}`;
+    counterEl.textContent = `${currentImgIndex + 1} / ${currentGallery.length} ảnh`;
+
+    prevBtn.disabled = currentImgIndex === 0;
+    nextBtn.disabled = currentImgIndex === currentGallery.length - 1;
+  }
+
+  function handleImgLoadSuccess() {
+    const errorEl = document.getElementById('lightboxError');
+    const imgEl = document.getElementById('lightboxImg');
+    errorEl.style.display = 'none';
+    imgEl.style.display = 'block';
+  }
+
+  function handleImgLoadError() {
+    const errorEl = document.getElementById('lightboxError');
+    const imgEl = document.getElementById('lightboxImg');
+    imgEl.style.display = 'none';
+    errorEl.style.display = 'block';
+  }
+
+  window.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('lightboxModal');
+    if (!modal.classList.contains('open')) return;
+
+    if (e.key === 'Escape') {
+      closeLightbox();
+    } else if (e.key === 'ArrowLeft') {
+      navigateLightbox(-1);
+    } else if (e.key === 'ArrowRight') {
+      navigateLightbox(1);
+    }
+  });
+
+  // Support Browser Back / Forward buttons
+  window.addEventListener('popstate', function() {
+    currentParams = new URLSearchParams(window.location.search);
+    fetchReviews(currentParams);
+  });
+</script>
+
+</body>
+</html>

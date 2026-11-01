@@ -1,9 +1,11 @@
 import mongoose from 'mongoose';
 
 const bookingSchema = new mongoose.Schema({
-  bookingCode: { type: String, required: true, unique: true, uppercase: true },
+  bookingCode: { type: String, required: true, unique: true, uppercase: true, index: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true, index: true },
+  
+  // Khách hàng
   fullName: { type: String },
   phoneNumber: { type: String },
   email: { type: String },
@@ -12,45 +14,33 @@ const bookingSchema = new mongoose.Schema({
     phoneNumber: String,
     email: String
   },
-  checkIn: { type: Date, required: true },
-  checkOut: { type: Date, required: true },
-  nights: { type: Number, default: 2 },
-  guests: { type: Number, required: true, min: 1, default: 2 },
-  notes: { type: String, trim: true },
-  specialNote: { type: String, trim: true },
-  specialRequests: { type: String, trim: true },
-  rejectReason: { type: String, trim: true },
-  paymentMethod: { type: String, default: 'momo' },
-  totalPrice: { type: Number, required: true, min: 0 },
-  status: { 
-    type: String, 
-    enum: ['PENDING', 'CONFIRMED', 'REJECTED', 'CANCELLED', 'COMPLETED'], 
-    default: 'PENDING' 
+  guestContact: {
+    fullName: String,
+    phone: String,
+    email: String,
+    guestNote: String
   },
-}, { timestamps: true, strict: false });
-
-  // Chi tiết đoàn khách
   guestDetails: {
-    adults: { type: Number, required: true, min: 1, default: 1 },
+    adults: { type: Number, default: 1 },
     children: { type: Number, default: 0 }
   },
 
-  // Thông tin liên hệ & Yêu cầu đặc biệt
-  guestContact: {
-    fullName: { type: String, required: true },
-    phone: { type: String, required: true },
-    email: { type: String },
-    guestNote: { type: String, maxlength: 500 } // Lời nhắn nhận phòng sớm, tiện ích...
-  },
+  // Thời gian & Quy mô
+  checkIn: { type: Date, required: true },
+  checkOut: { type: Date, required: true },
+  nights: { type: Number, default: 1 },
+  totalNights: { type: Number, default: 1 },
+  guests: { type: Number, default: 2 },
 
-  // Giá & Thanh toán
+  // Ghi chú & Yêu cầu
+  notes: { type: String, trim: true },
+  specialNote: { type: String, trim: true },
+  specialRequests: { type: String, trim: true },
+
+  // Tài chính & Thanh toán
   pricePerNight: { type: Number, default: 0 },
-  totalPrice: { type: Number, required: true },
-  paymentMethod: {
-    type: String,
-    enum: ['VIETQR', 'MOMO', 'ZALOPAY', 'CREDIT_CARD', 'APPLE_PAY'],
-    default: 'VIETQR'
-  },
+  totalPrice: { type: Number, required: true, min: 0 },
+  paymentMethod: { type: String, default: 'Smart Travel Pay' },
   paymentStatus: {
     type: String,
     enum: ['UNPAID', 'PAID', 'REFUNDED'],
@@ -58,13 +48,16 @@ const bookingSchema = new mongoose.Schema({
   },
 
   // Trạng thái đơn đặt phòng
-  status: {
-    type: String,
-    enum: ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'REJECTED', 'CANCELLED', 'COMPLETED', 'EXPIRED'],
+  status: { 
+    type: String, 
+    enum: ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'REJECTED', 'CANCELLED', 'COMPLETED', 'EXPIRED'], 
     default: 'PENDING',
-    index: true
+    index: true 
   },
   slaDeadline: { type: Date }, // Hạn chót duyệt 24h từ lúc tạo đơn
+  
+  // Từ chối đơn
+  rejectReason: { type: String, trim: true },
   rejectionReason: {
     type: String,
     enum: [
@@ -76,54 +69,27 @@ const bookingSchema = new mongoose.Schema({
     ]
   },
   rejectionNote: { type: String, maxlength: 200 }
-}, {
-  timestamps: true,
+}, { 
+  timestamps: true, 
+  strict: false,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-// Virtuals tương thích ngược với API Mobile App cũ
-BookingSchema.virtual('fullName')
-  .get(function () { return this.guestContact?.fullName; })
-  .set(function (v) {
-    if (!this.guestContact) this.guestContact = {};
-    this.guestContact.fullName = v;
-  });
+// Virtuals tương thích ngược
+bookingSchema.virtual('customerName').get(function() {
+  return this.fullName || this.guestInfo?.fullName || this.guestContact?.fullName || 'Khách vãng lai';
+});
 
-BookingSchema.virtual('phoneNumber')
-  .get(function () { return this.guestContact?.phone; })
-  .set(function (v) {
-    if (!this.guestContact) this.guestContact = {};
-    this.guestContact.phone = v;
-  });
+bookingSchema.virtual('customerPhone').get(function() {
+  return this.phoneNumber || this.guestInfo?.phoneNumber || this.guestContact?.phone || '';
+});
 
-BookingSchema.virtual('email')
-  .get(function () { return this.guestContact?.email; })
-  .set(function (v) {
-    if (!this.guestContact) this.guestContact = {};
-    this.guestContact.email = v;
-  });
+bookingSchema.virtual('customerEmail').get(function() {
+  return this.email || this.guestInfo?.email || this.guestContact?.email || '';
+});
 
-BookingSchema.virtual('notes')
-  .get(function () { return this.guestContact?.guestNote; })
-  .set(function (v) {
-    if (!this.guestContact) this.guestContact = {};
-    this.guestContact.guestNote = v;
-  });
+bookingSchema.index({ roomId: 1, checkIn: 1, checkOut: 1 });
 
-BookingSchema.virtual('nights')
-  .get(function () { return this.totalNights; })
-  .set(function (v) { this.totalNights = v; });
-
-BookingSchema.virtual('guests')
-  .get(function () { return this.guestDetails?.adults; })
-  .set(function (v) {
-    if (!this.guestDetails) this.guestDetails = { adults: 1, children: 0 };
-    this.guestDetails.adults = v;
-  });
-
-BookingSchema.index({ hostId: 1, status: 1 });
-BookingSchema.index({ roomId: 1, checkIn: 1, checkOut: 1 });
-
-const Booking = mongoose.model('Booking', BookingSchema);
+const Booking = mongoose.model('Booking', bookingSchema);
 export default Booking;

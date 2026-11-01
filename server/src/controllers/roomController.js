@@ -1,32 +1,34 @@
-import mongoose from 'mongoose';
 import Room from '../models/Room.js';
 
-// Host mặc định cho dữ liệu mẫu
-const DEFAULT_HOST_ID = new mongoose.Types.ObjectId('664c1234567890abcdef1001');
-
-// Danh sách dữ liệu mẫu chuẩn Schema v2.0 tại Đà Nẵng
-export const SEED_DATA = [
+// Dữ liệu mẫu chuẩn Schema v2.0 phục vụ auto-seed khi DB mới khởi tạo
+const SEED_DATA = [
   {
-    roomCode: 'MP-0101',
-    ownerId: DEFAULT_HOST_ID,
-    roomType: 'HOMESTAY',
+    roomCode: 'DN-01',
     title: 'An Nhiên Eco Retreat Đà Nẵng',
-    description: 'Nằm nép mình bên bán đảo Sơn Trà thơ mộng, An Nhiên Eco Retreat mang đến không gian nghỉ dưỡng xanh mát, ban công hướng trọn bình minh biển Mỹ Khê.',
-    address: 'Đường Hoàng Sa, Bán đảo Sơn Trà, TP. Đà Nẵng',
+    roomType: 'HOMESTAY',
     city: 'Đà Nẵng',
     district: 'Sơn Trà',
-    distance: 'Cách bãi biển Mỹ Khê 150m • Gần chùa Linh Ứng',
-    regularPrice: 1450000,
-    weekendPrice: 1650000,
-    pricePerNight: 1450000,
-    freeCancellationBeforeHours: 48,
-    checkInTime: '14:00',
-    checkOutTime: '12:00',
+    address: 'Đường Hoàng Sa, Bán đảo Sơn Trà',
+    location: { type: 'Point', coordinates: [108.2612, 16.1045] },
     maxGuests: 4,
     numBedrooms: 2,
     numBeds: 2,
-    badge: 'TOP 1% SƠN TRÀ',
-    tags: ['Tất cả', 'Homestay', 'Eco Living', 'Gần biển'],
+    regularPrice: 1450000,
+    weekendPrice: 1650000,
+    freeCancellationBeforeHours: 48,
+    checkInTime: '14:00',
+    checkOutTime: '12:00',
+    description: 'Nằm nép mình bên bán đảo Sơn Trà thơ mộng, An Nhiên Eco Retreat mang đến không gian nghỉ dưỡng xanh mát, ban công hướng trọn bình minh biển Mỹ Khê.',
+    amenities: [
+      'Wifi tốc độ cao',
+      'Bếp riêng cao cấp',
+      'Bồn tắm gỗ pơ-mu',
+      'Máy chiếu phim 4K',
+      'Giặt & sấy khô',
+      'Điều hòa 2 chiều',
+      'Ban công view biển',
+      'Chỗ đỗ xe ô tô',
+    ],
     images: [
       'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
       'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=80',
@@ -34,139 +36,206 @@ export const SEED_DATA = [
       'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=80',
       'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80',
     ],
+    status: 'PUBLISHED',
+    rating: 4.9,
+    numReviews: 48,
+    badge: 'TOP 1% SƠN TRÀ',
+    tags: ['Tất cả', 'Homestay', 'Eco Living', 'Gần biển'],
+    distance: 'Cách bãi biển Mỹ Khê 150m • Gần chùa Linh Ứng',
     specs: {
       type: 'Nhà nguyên căn',
       capacity: 'Tối đa 4 khách',
       bedroom: '2 PN • 2 Giường King',
       bathroom: '2 Phòng tắm riêng',
     },
-    amenities: [
-      { id: '1', name: 'Wifi tốc độ cao', icon: 'wifi' },
-      { id: '2', name: 'Bếp riêng cao cấp', icon: 'restaurant' },
-      { id: '3', name: 'Bồn tắm gỗ pơ-mu', icon: 'water' },
-      { id: '4', name: 'Máy chiếu phim 4K', icon: 'videocam' },
-      { id: '5', name: 'Giặt & sấy khô', icon: 'shirt' },
-      { id: '6', name: 'Điều hòa 2 chiều', icon: 'snow' },
-      { id: '7', name: 'Ban công view biển', icon: 'sunny' },
-      { id: '8', name: 'Chỗ đỗ xe ô tô', icon: 'car' },
-    ],
-    rating: 4.9,
-    numReviews: 128,
-    reviewCount: 128,
     ratingBreakdown: {
       overall: 4.9,
       cleanliness: 5.0,
       location: 4.9,
       service: 4.9,
       amenities: 4.8,
-      value: 4.9,
+      value: 4.8,
     },
     policy: {
-      checkIn: '14:00 (Nhận phòng trực tiếp bằng mã vé điện tử e-Pass hoặc chìa khóa trao tay)',
-      checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
-      cancellation: 'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00.',
+      checkIn: '14:00',
+      checkOut: '12:00',
+      cancellation: 'Miễn phí hủy phòng trước 48h',
     },
-    location: { type: 'Point', coordinates: [108.2435, 16.0825] },
-    status: 'ACTIVE',
   },
   {
-    roomCode: 'MP-0102',
-    ownerId: DEFAULT_HOST_ID,
+    roomCode: 'DN-02',
+    title: 'Sunset Boho Studio Phố Tây An Thượng',
     roomType: 'APARTMENT',
-    title: 'The Muse Bohemian Studio',
-    description: 'Studio phong cách Bohemian mộc mạc và cá tính ngay khu phố Tây An Thượng nhộn nhịp, chỉ cách bãi tắm Mỹ Khê 3 phút đi bộ.',
-    address: 'Đường An Thượng 24, Ngũ Hành Sơn, TP. Đà Nẵng',
     city: 'Đà Nẵng',
     district: 'Ngũ Hành Sơn',
-    distance: 'Cách bãi tắm Mỹ Khê 200m • Khu phố ẩm thực An Thượng',
-    regularPrice: 750000,
-    weekendPrice: 850000,
-    pricePerNight: 750000,
-    freeCancellationBeforeHours: 48,
-    checkInTime: '14:00',
-    checkOutTime: '12:00',
+    address: 'Đường An Thượng 24, Mỹ An, Ngũ Hành Sơn',
+    location: { type: 'Point', coordinates: [108.2435, 16.0512] },
     maxGuests: 2,
     numBedrooms: 1,
     numBeds: 1,
-    badge: 'YÊU THÍCH NHẤT',
-    tags: ['Tất cả', 'Căn hộ', 'Boho Chic', 'Gần biển'],
-    images: [
-      'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800&q=80',
-      'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&q=80',
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+    regularPrice: 850000,
+    weekendPrice: 950000,
+    freeCancellationBeforeHours: 24,
+    checkInTime: '14:00',
+    checkOutTime: '12:00',
+    description: 'Căn hộ Studio mang phong cách Bohemian phóng khoáng, góc làm việc view biển lộng gió, nằm ngay trung tâm phố Tây An Thượng sầm uất.',
+    amenities: [
+      'Wifi 100Mbps',
+      'Bếp đầy đủ gia vị',
+      'Máy giặt riêng',
+      'Smart TV Netflix',
+      'Khóa điện tử SmartLock',
+      'Thang máy thẻ từ',
     ],
+    images: [
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+      'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&q=80',
+      'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=800&q=80',
+    ],
+    status: 'PUBLISHED',
+    rating: 4.85,
+    numReviews: 32,
+    badge: 'PHỐ TÂY AN THƯỢNG',
+    tags: ['Tất cả', 'Căn hộ', 'Studio', 'Gần biển'],
+    distance: 'Cách biển Mỹ Khê 200m • Khu phố ẩm thực đêm',
     specs: {
       type: 'Căn hộ Studio',
       capacity: 'Tối đa 2 khách',
-      bedroom: '1 PN • 1 Giường Queen',
+      bedroom: '1 PN • 1 Giường',
       bathroom: '1 Phòng tắm riêng',
     },
-    amenities: [
-      { id: '1', name: 'Wifi tốc độ cao', icon: 'wifi' },
-      { id: '2', name: 'Bếp nhỏ tiện lợi', icon: 'restaurant' },
-      { id: '3', name: 'Smart TV Netflix', icon: 'tv' },
-      { id: '4', name: 'Điều hòa 2 chiều', icon: 'snow' },
-    ],
-    rating: 4.85,
-    numReviews: 94,
-    reviewCount: 94,
-    location: { type: 'Point', coordinates: [108.2418, 16.0503] },
-    status: 'ACTIVE',
+    ratingBreakdown: {
+      overall: 4.85,
+      cleanliness: 4.9,
+      location: 5.0,
+      service: 4.8,
+      amenities: 4.7,
+      value: 4.9,
+    },
+    policy: {
+      checkIn: '14:00',
+      checkOut: '12:00',
+      cancellation: 'Miễn phí hủy phòng trước 24h',
+    },
   },
   {
-    roomCode: 'MP-0103',
-    ownerId: DEFAULT_HOST_ID,
-    roomType: 'VILLA',
-    title: 'Mộc Garden Villa & Coffee',
-    description: 'Biệt thự sân vườn biệt lập với hồ bơi riêng và khu tiệc nướng BBQ ngoài trời, lý tưởng cho gia đình hoặc nhóm bạn khám phá Đà Nẵng.',
-    address: 'Đường Hà Bổng, Phước Mỹ, Sơn Trà, TP. Đà Nẵng',
-    city: 'Đà Nẵng',
-    district: 'Sơn Trà',
-    distance: 'Cách cầu Rồng 2km • Sát chợ đêm Sơn Trà',
-    regularPrice: 920000,
-    weekendPrice: 1100000,
-    pricePerNight: 920000,
+    roomCode: 'DL-01',
+    title: 'Mây Valley Pine Bungalow Đà Lạt',
+    roomType: 'BUNGALOW',
+    city: 'Đà Lạt',
+    district: 'Phường 10',
+    address: 'Đường Khe Sanh, Phường 10',
+    location: { type: 'Point', coordinates: [108.4552, 11.9324] },
+    maxGuests: 3,
+    numBedrooms: 1,
+    numBeds: 2,
+    regularPrice: 950000,
+    weekendPrice: 1150000,
+    freeCancellationBeforeHours: 48,
+    checkInTime: '14:00',
+    checkOutTime: '11:00',
+    description: 'Bungalow gỗ thông mộc mạc ngắm trọn thung lũng sương mù Đà Lạt. Buổi sớm đón mây luồn qua khung cửa kính, thưởng thức trà atiso thơm lừng bên lò sưởi.',
+    amenities: [
+      'Lò sưởi củi ấm cúng',
+      'Bồn tắm thảo mộc view đồi',
+      'Bếp nướng BBQ ngoài trời',
+      'Trà atiso & Cafe mộc miễn phí',
+      'Sân đậu xe rộng rãi',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800&q=80',
+      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&q=80',
+      'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=800&q=80',
+    ],
+    status: 'PUBLISHED',
+    rating: 4.92,
+    numReviews: 64,
+    badge: 'VIEW THUNG LŨNG MÂY',
+    tags: ['Tất cả', 'Bungalow', 'Săn mây', 'Đà Lạt'],
+    distance: 'Cách Quảng trường Lâm Viên 3.5km • View đồi thông',
+    specs: {
+      type: 'Bungalow gỗ riêng biệt',
+      capacity: 'Tối đa 3 khách',
+      bedroom: '1 PN • 1 Giường Đôi + 1 Sofa Bed',
+      bathroom: '1 Phòng tắm view đồi',
+    },
+    ratingBreakdown: {
+      overall: 4.92,
+      cleanliness: 4.9,
+      location: 4.9,
+      service: 5.0,
+      amenities: 4.8,
+      value: 4.9,
+    },
+    policy: {
+      checkIn: '14:00',
+      checkOut: '11:00',
+      cancellation: 'Miễn phí hủy phòng trước 48h',
+    },
+  },
+  {
+    roomCode: 'HN-01',
+    title: 'West Lake Sunset Luxury Loft Hà Nội',
+    roomType: 'APARTMENT',
+    city: 'Hà Nội',
+    district: 'Tây Hồ',
+    address: 'Đường Quảng Khánh, Quảng An, Tây Hồ',
+    location: { type: 'Point', coordinates: [105.8245, 21.0621] },
+    maxGuests: 4,
+    numBedrooms: 2,
+    numBeds: 2,
+    regularPrice: 1850000,
+    weekendPrice: 2100000,
     freeCancellationBeforeHours: 48,
     checkInTime: '14:00',
     checkOutTime: '12:00',
-    maxGuests: 8,
-    numBedrooms: 3,
-    numBeds: 4,
-    badge: 'GIẢM 20% HÔM NAY',
-    tags: ['Tất cả', 'Biệt thự / Villa', 'Hồ bơi riêng', 'Sân vườn BBQ'],
-    images: [
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80',
-      'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&q=80',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-    ],
-    specs: {
-      type: 'Biệt thự sân vườn',
-      capacity: 'Tối đa 8 khách',
-      bedroom: '3 PN • 4 Giường',
-      bathroom: '3 Phòng tắm riêng',
-    },
+    description: 'Căn hộ Duplex cao cấp với cửa kính panorama chạm trần thu trọn hoàng hôn Hồ Tây lộng lẫy, đầy đủ tiện nghi chuẩn 5 sao quốc tế.',
     amenities: [
-      { id: '1', name: 'Hồ bơi riêng ngoài trời', icon: 'water' },
-      { id: '2', name: 'Sân BBQ gia đình', icon: 'flame' },
-      { id: '3', name: 'Wifi tốc độ cao', icon: 'wifi' },
-      { id: '4', name: 'Chỗ đỗ xe ô tô 7 chỗ', icon: 'car' },
+      'Ban công kính view Hồ Tây',
+      'Smart Home điều khiển giọng nói',
+      'Bếp đảo đá cẩm thạch',
+      'Hầm đỗ xe thông minh',
     ],
-    rating: 4.95,
-    numReviews: 156,
-    reviewCount: 156,
-    location: { type: 'Point', coordinates: [108.2452, 16.0667] },
-    status: 'ACTIVE',
+    images: [
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
+      'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80',
+      'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80',
+    ],
+    status: 'PUBLISHED',
+    rating: 4.96,
+    numReviews: 29,
+    badge: 'PANORAMA HỒ TÂY',
+    tags: ['Tất cả', 'Căn hộ', 'Hồ Tây', 'View hoàng hôn'],
+    distance: 'Trực diện Hồ Tây • Cách trung tâm phố cổ 10 phút taxi',
+    specs: {
+      type: 'Căn hộ Duplex Penthouse',
+      capacity: 'Tối đa 4 khách',
+      bedroom: '2 PN • 2 Giường King',
+      bathroom: '2 Phòng tắm',
+    },
+    ratingBreakdown: {
+      overall: 4.96,
+      cleanliness: 5.0,
+      location: 5.0,
+      service: 5.0,
+      amenities: 5.0,
+      value: 4.8,
+    },
+    policy: {
+      checkIn: '14:00',
+      checkOut: '12:00',
+      cancellation: 'Miễn phí hủy phòng trước 48h',
+    },
   },
 ];
 
 /**
- * 1. Lấy danh sách homestay hỗ trợ tìm kiếm và lọc đa tiêu chí
- * GET /api/rooms hoặc GET /api/v1/rooms
+ * Controller: Lấy danh sách Homestay / Phòng nghỉ với bộ lọc đa tiêu chí
+ * Hỗ trợ các use case: Discovery, Search, Category Tabs, Filter theo giá, số phòng, tiện ích
  */
-export const getAllRooms = async (req, res) => {
+export const getRooms = async (req, res) => {
   try {
     const {
-      city,
       category,
       search,
       minPrice,
@@ -175,6 +244,7 @@ export const getAllRooms = async (req, res) => {
       roomsCount,
       minRating,
       amenities,
+      city,
       page = 1,
       limit = 10,
     } = req.query;
@@ -190,10 +260,8 @@ export const getAllRooms = async (req, res) => {
       console.warn('Bỏ qua auto-seed:', seedErr.message);
     }
 
-    const conditions = [{ status: { $in: ['ACTIVE', 'Published'] } }];
-
     // Xây dựng điều kiện lọc (hỗ trợ cả PUBLISHED và ACTIVE tương thích ngược)
-    const andConditions = [{ status: { $in: ['PUBLISHED', 'ACTIVE'] } }];
+    const andConditions = [{ status: { $in: ['PUBLISHED', 'ACTIVE', 'Published'] } }];
 
     // 1. Lọc theo danh mục (category)
     if (category && category !== 'Tất cả') {
@@ -228,46 +296,46 @@ export const getAllRooms = async (req, res) => {
       const cityKeywords = cleanCity.split(',').map((c) => c.trim()).filter(Boolean);
       if (cityKeywords.length > 0) {
         andConditions.push({
-          $or: cityKeywords.map((kw) => ({
-            $or: [
-              { city: { $regex: new RegExp(kw, 'i') } },
-              { district: { $regex: new RegExp(kw, 'i') } },
-              { address: { $regex: new RegExp(kw, 'i') } },
-              { title: { $regex: new RegExp(kw, 'i') } },
-            ],
-          })),
+          $or: cityKeywords.flatMap((kw) => [
+            { city: { $regex: kw, $options: 'i' } },
+            { district: { $regex: kw, $options: 'i' } },
+            { address: { $regex: kw, $options: 'i' } },
+            { distance: { $regex: kw, $options: 'i' } },
+          ]),
         });
       }
     }
 
-    // 4. Lọc theo khoảng giá (regularPrice hoặc pricePerNight)
-    if (minPrice !== undefined || maxPrice !== undefined) {
+    // 4. Lọc theo khoảng giá (minPrice, maxPrice)
+    if (minPrice || maxPrice) {
       const priceFilter = {};
-      if (minPrice !== undefined && minPrice !== '') {
-        const min = Number(minPrice);
-        if (!isNaN(min)) priceFilter.$gte = min;
+      if (minPrice && !isNaN(Number(minPrice))) {
+        priceFilter.$gte = Number(minPrice);
       }
-      if (maxPrice !== undefined && maxPrice !== '') {
-        const max = Number(maxPrice);
-        if (!isNaN(max)) priceFilter.$lte = max;
+      if (maxPrice && !isNaN(Number(maxPrice))) {
+        priceFilter.$lte = Number(maxPrice);
       }
-      if (Object.keys(priceFilter).length > 0) {
-        andConditions.push({
-          $or: [
-            { regularPrice: priceFilter },
-            { pricePerNight: priceFilter },
-          ],
-        });
-      }
+      andConditions.push({
+        $or: [
+          { regularPrice: priceFilter },
+          { pricePerNight: priceFilter }
+        ]
+      });
     }
 
     // 5. Lọc theo số lượng khách (guests)
-    if (guests && !isNaN(Number(guests)) && Number(guests) > 0) {
-      andConditions.push({ maxGuests: { $gte: Number(guests) } });
+    if (guests && !isNaN(Number(guests))) {
+      const numGuests = Number(guests);
+      andConditions.push({
+        $or: [
+          { maxGuests: { $gte: numGuests } },
+          { 'specs.capacity': { $regex: new RegExp(`([${numGuests}-9]|\\d{2,})\\s*khách`, 'i') } },
+        ],
+      });
     }
 
-    // 6. Lọc theo số lượng phòng (roomsCount / numBedrooms)
-    if (roomsCount && !isNaN(Number(roomsCount)) && Number(roomsCount) > 1) {
+    // 6. Lọc theo số lượng phòng ngủ (roomsCount)
+    if (roomsCount && !isNaN(Number(roomsCount))) {
       const minRooms = Number(roomsCount);
       andConditions.push({
         $or: [
@@ -303,6 +371,10 @@ export const getAllRooms = async (req, res) => {
 
     const query = andConditions.length === 1 ? andConditions[0] : { $and: andConditions };
 
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const skip = (pageNum - 1) * limitNum;
+
     const [rooms, totalCount] = await Promise.all([
       Room.find(query)
         .populate('ownerId', 'fullName name avatar phone email hostProfile')
@@ -318,11 +390,10 @@ export const getAllRooms = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Lấy danh sách homestay thành công',
-      count: rooms.length,
       data: {
         rooms,
         totalCount,
+        currentPage: pageNum,
         page: pageNum,
         totalPages,
         hasMore,
@@ -339,13 +410,11 @@ export const getAllRooms = async (req, res) => {
 };
 
 /**
- * 2. Lấy chi tiết homestay theo ID
- * GET /api/rooms/:id
+ * Controller: Lấy chi tiết homestay theo ID
  */
 export const getRoomById = async (req, res) => {
   try {
     const { id } = req.params;
-
     const room = await Room.findById(id)
       .populate('ownerId', 'fullName name avatar phone email hostProfile')
       .lean({ virtuals: true });
@@ -353,54 +422,68 @@ export const getRoomById = async (req, res) => {
     if (!room) {
       return res.status(404).json({
         success: false,
-        message: 'Không tìm thấy nơi lưu trú này',
+        message: 'Không tìm thấy cơ sở lưu trú này',
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Lấy chi tiết phòng thành công',
       data: room,
     });
   } catch (error) {
-    console.error('Lỗi khi lấy chi tiết phòng:', error);
+    console.error('Lỗi khi lấy chi tiết homestay:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi máy chủ khi lấy chi tiết phòng',
+      message: 'Lỗi máy chủ khi lấy chi tiết homestay',
       error: error.message,
     });
   }
 };
 
 /**
- * 3. Khởi tạo / nạp lại dữ liệu mẫu
- * GET /api/rooms/seed
+ * Controller: Lấy danh sách thành phố phổ biến cho trang chủ
  */
-export const seedRooms = async (req, res) => {
+export const getPopularCities = async (req, res) => {
   try {
-    await Room.deleteMany({});
-    const inserted = await Room.insertMany(SEED_DATA);
+    const cities = await Room.aggregate([
+      { $match: { status: { $in: ['PUBLISHED', 'ACTIVE', 'Published'] } } },
+      {
+        $group: {
+          _id: '$city',
+          count: { $sum: 1 },
+          image: { $first: { $arrayElemAt: ['$images', 0] } },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 6 },
+    ]);
+
+    const formattedCities = cities.map((c) => ({
+      name: c._id,
+      count: c.count,
+      image: c.image || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80',
+    }));
+
     return res.status(200).json({
       success: true,
-      message: 'Khởi tạo lại dữ liệu mẫu thành công',
-      count: inserted.length,
-      data: inserted,
+      data: formattedCities,
     });
   } catch (error) {
-    console.error('Lỗi seed phòng:', error);
+    console.error('Lỗi khi lấy danh sách thành phố phổ biến:', error);
     return res.status(500).json({
       success: false,
-      message: 'Lỗi khi seed dữ liệu',
-      error: error.message,
+      message: 'Lỗi máy chủ khi lấy danh sách thành phố',
     });
   }
 };
 
-export const getRooms = getAllRooms;
-
-export default {
-  getAllRooms,
-  getRooms,
-  getRoomById,
-  seedRooms,
+export const getAllRooms = getRooms;
+export const seedRooms = async (req, res) => {
+  try {
+    await Room.deleteMany({});
+    const created = await Room.insertMany(SEED_DATA);
+    return res.status(200).json({ success: true, count: created.length });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 };
