@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/host/css/host.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+<div class="host-layout">
+  <!-- SIDEBAR NAVIGATION -->
+  <%- include('../partials/sidebar', { activeNav: 'rooms' }) %>
+
+  <!-- MAIN CONTAINER -->
+  <main class="host-main-container">
+    <!-- TOP HEADER -->
+    <%- include('../partials/header', { user, breadcrumbSub: mode === 'edit' ? 'Chỉnh sửa phòng' : 'Thêm phòng mới' }) %>
+
+    <!-- PAGE BODY -->
+    <div class="host-page-body">
+      <!-- 2.2 TOP NAVIGATION & TITLE -->
+      <div class="host-page-header">
+        <div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+            <h1 class="host-page-title" style="margin-bottom: 0;">
+              <%= mode === 'edit' ? room.title : 'Thêm phòng nghỉ mới' %>
+            </h1>
+            <% if (mode === 'edit') { %>
+              <span class="room-code-badge" style="font-size: 12px; padding: 4px 10px;">
+                <%= room.roomCode || `#P-${room._id.toString().slice(-5).toUpperCase()}` %>
+              </span>
+              <span class="status-pill <%= room.status === 'Published' ? 'published' : (room.status === 'Archived' ? 'archived' : 'draft') %>" style="cursor: default;">
+                <span class="status-dot"></span>
+                <span><%= room.status %></span>
+              </span>
+            <% } %>
+          </div>
+          <p class="host-page-subtext">Điền thông tin chi tiết để thiết lập cơ sở lưu trú và biểu giá</p>
+        </div>
+
+        <div class="host-page-actions">
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('btnPublish').click()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span><%= mode === 'edit' ? 'Lưu thay đổi' : 'Đăng bán phòng' %></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2-COLUMN LAYOUT -->
+      <form id="roomForm" onsubmit="return false;">
+        <input type="hidden" id="roomId" value="<%= mode === 'edit' ? room._id : '' %>">
+
+        <div class="form-2col-layout">
+          <!-- LEFT MAIN COLUMN (70%) -->
+          <div class="form-main-col">
+
+            <!-- SECTION 1: THÔNG TIN CƠ BẢN (2.4 -> 2.7) -->
+            <div class="form-card">
+              <div class="form-card-header">
+                <div class="form-card-icon-box">🏠</div>
+                <div>
+                  <h2 class="form-card-title" data-i18n="sec1_title">1. Thông tin cơ bản & Quy mô</h2>
+                  <p class="form-card-subtext" data-i18n="sec1_sub">Tên cơ sở lưu trú, phân loại hình thức và thông số phòng</p>
+                </div>
+              </div>
+
+              <!-- 2.4 Tên phòng nghỉ -->
+              <div class="form-group">
+                <label class="form-label" for="inputTitle">
+                  <span data-i18n="lbl_room_name">Tên phòng nghỉ / Homestay</span> <span class="req">*</span>
+                </label>
+                <input type="text" class="form-control" id="inputTitle" placeholder="Vd: An Nhiên Eco Retreat - Bungalow View Rừng Thông Đà Lạt" data-i18n-ph="ph_room_name" value="<%= room.title || '' %>" maxlength="150" required>
+                <div class="form-helper-text">Từ 10 đến 150 ký tự. Không được trùng tên với phòng khác của bạn.</div>
+              </div>
+
+              <!-- 2.5, 2.6, 2.7 3-column row -->
+              <div class="form-row" style="grid-template-columns: 1.2fr 1fr 1.3fr;">
+                <!-- 2.5 Loại cơ sở lưu trú -->
+                <div class="form-group">
+                  <label class="form-label" for="selectRoomType">
+                    <span data-i18n="lbl_room_type">Loại hình phòng</span> <span class="req">*</span>
+                  </label>
+                  <select class="form-control" id="selectRoomType" required>
+                    <option value="Biệt thự / Villa nguyên căn" <%= (room.specs && room.specs.type.includes('Biệt thự')) ? 'selected' : '' %>>Biệt thự / Villa nguyên căn</option>
+                    <option value="Homestay" <%= (room.specs && room.specs.type.includes('Homestay')) ? 'selected' : '' %>>Homestay</option>
+                    <option value="Căn hộ / Studio" <%= (room.specs && room.specs.type.includes('Căn hộ')) ? 'selected' : '' %>>Căn hộ / Studio</option>
+                    <option value="Khách sạn" <%= (room.specs && room.specs.type.includes('Khách sạn')) ? 'selected' : '' %>>Khách sạn</option>
+                    <option value="Bungalow" <%= (room.specs && room.specs.type.includes('Bungalow')) ? 'selected' : '' %>>Bungalow</option>
+                  </select>
+                </div>
+
+                <!-- 2.6 Sức chứa tối đa -->
+                <div class="form-group">
+                  <label class="form-label">
+                    Sức chứa tối đa <span class="req">*</span>
+                  </label>
+                  <input type="hidden" id="inputMaxGuests" value="<%= room.maxGuests || 2 %>">
+                  <div class="stepper-input-box">
+                    <button type="button" class="stepper-btn" id="btnGuestMinus" <%= (room.maxGuests <= 1) ? 'disabled' : '' %>>−</button>
+                    <div class="stepper-display" id="guestDisplay"><%= room.maxGuests || 2 %> khách</div>
+                    <button type="button" class="stepper-btn" id="btnGuestPlus">+</button>
+                  </div>
+                </div>
+
+                <!-- 2.7 Phòng ngủ & Giường -->
+                <div class="form-group">
+                  <label class="form-label">
+                    Phòng ngủ & Giường <span class="req">*</span>
+                  </label>
+                  <div class="dual-stepper-box">
+                    <input type="hidden" id="inputBedrooms" value="<%= room.bedrooms || 1 %>">
+                    <div class="mini-stepper">
+                      <button type="button" class="stepper-btn" id="btnBedroomMinus">−</button>
+                      <div class="stepper-display" id="bedroomDisplay"><%= room.bedrooms || 1 %> phòng</div>
+                      <button type="button" class="stepper-btn" id="btnBedroomPlus">+</button>
+                    </div>
+
+                    <input type="hidden" id="inputBeds" value="<%= room.beds || 1 %>">
+                    <div class="mini-stepper">
+                      <button type="button" class="stepper-btn" id="btnBedMinus">−</button>
+                      <div class="stepper-display" id="bedDisplay"><%= room.beds || 1 %> giường</div>
+                      <button type="button" class="stepper-btn" id="btnBedPlus">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Diện tích m2 -->
+              <input type="hidden" id="inputArea" value="<%= room.area || 45 %>">
+            </div>
+
+            <!-- SECTION 2: ĐỊA CHỈ & VỊ TRÍ TỌA ĐỘ (2.8 -> 2.11) -->
+            <div class="form-card">
+              <div class="form-card-header">
+                <div class="form-card-icon-box" style="background: #EFF6FF; color: #2563EB;">📍</div>
+                <div>
+                  <h2 class="form-card-title" data-i18n="sec2_title">2. Địa chỉ & Vị trí tọa độ</h2>
+                  <p class="form-card-subtext" data-i18n="sec2_sub">Giúp khách hàng dễ dàng tìm đường và đồng bộ hiển thị vị trí GPS</p>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <!-- 2.8 Tỉnh / Thành phố -->
+                <div class="form-group">
+                  <label class="form-label" for="selectCity">
+                    <span data-i18n="lbl_province">Tỉnh / Thành phố</span> <span class="req">*</span>
+                  </label>
+                  <select class="form-control" id="selectCity" required>
+                    <option value="Đà Nẵng" <%= (room.city && room.city.includes('Đà Nẵng')) ? 'selected' : '' %>>Đà Nẵng</option>
+                    <option value="Lâm Đồng (Đà Lạt)" <%= (room.city && room.city.includes('Lâm Đồng')) ? 'selected' : '' %>>Lâm Đồng (Đà Lạt)</option>
+                    <option value="TP. Hồ Chí Minh" <%= (room.city && room.city.includes('Hồ Chí Minh')) ? 'selected' : '' %>>TP. Hồ Chí Minh</option>
+                    <option value="Hà Nội" <%= (room.city && room.city.includes('Hà Nội')) ? 'selected' : '' %>>Hà Nội</option>
+                    <option value="Khánh Hòa (Nha Trang)" <%= (room.city && room.city.includes('Khánh Hòa')) ? 'selected' : '' %>>Khánh Hòa (Nha Trang)</option>
+                    <option value="Kiên Giang (Phú Quốc)" <%= (room.city && room.city.includes('Kiên Giang')) ? 'selected' : '' %>>Kiên Giang (Phú Quốc)</option>
+                    <option value="Quảng Nam (Hội An)" <%= (room.city && room.city.includes('Quảng Nam')) ? 'selected' : '' %>>Quảng Nam (Hội An)</option>
+                    <option value="Lào Cai (Sa Pa)" <%= (room.city && room.city.includes('Lào Cai')) ? 'selected' : '' %>>Lào Cai (Sa Pa)</option>
+                  </select>
+                </div>
+
+                <!-- 2.9 Quận / Huyện / Phường (Cascading) -->
+                <div class="form-group">
+                  <label class="form-label" for="selectDistrict">
+                    <span data-i18n="lbl_district">Quận / Huyện / Phường</span> <span class="req">*</span>
+                  </label>
+                  <select class="form-control" id="selectDistrict" data-selected="<%= room.district || '' %>" required>
+                    <option value="" data-i18n="ph_choose_district">Chọn Quận/Huyện/Phường...</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 2.10 Địa chỉ chi tiết & Tìm kiếm trên bản đồ -->
+              <div class="form-group">
+                <label class="form-label" for="inputAddress">
+                  <span data-i18n="lbl_address">Địa chỉ chi tiết</span> <span class="req">*</span>
+                </label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <div style="position: relative; flex: 1;">
+                    <input type="text" class="form-control" id="inputAddress" placeholder="Số nhà, tên đường, khu vực (Vd: Chợ An Hải Bắc, đường Trần Hưng Đạo)..." data-i18n-ph="ph_address" value="<%= room.address || '' %>" required style="padding-left: 36px;">
+                    <span style="position: absolute; left: 12px; top: 12px; color: var(--text-muted);">📍</span>
+                  </div>
+                  <button type="button" class="btn btn-outline" id="btnGeocodeAddress" style="white-space: nowrap; height: 46px; font-weight: 700; color: var(--primary); border-color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                    <span data-i18n="btn_find_on_map">🔍 Tìm vị trí</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2.11 Bản đồ GPS Interactive Leaflet -->
+              <%
+                let curLat = 16.0678;
+                let curLng = 108.2208;
+                if (room && room.location) {
+                  if (Array.isArray(room.location.coordinates) && room.location.coordinates.length >= 2) {
+                    curLng = room.location.coordinates[0];
+                    curLat = room.location.coordinates[1];
+                  } else if (room.location.lat != null && room.location.lng != null) {
+                    curLat = room.location.lat;
+                    curLng = room.location.lng;
+                  }
+                }
+              %>
+              <input type="hidden" id="inputLatitude" name="lat" value="<%= curLat %>">
+              <input type="hidden" id="inputLongitude" name="lng" value="<%= curLng %>">
+
+              <div class="gps-real-map-wrapper" style="border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; background: white; margin-top: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div id="hostRoomMap" style="height: 340px; width: 100%; z-index: 1;"></div>
+                <div class="gps-info-bar" style="padding: 12px 16px; background: #F8FAFC; border-top: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                  <div class="gps-coord-display" style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text-main);">
+                    <span style="color: var(--primary); font-size: 16px;">📍</span>
+                    <span data-i18n="gps_coord_label">TỌA ĐỘ GPS:</span>
+                    <span id="displayCoordText" style="color: var(--primary); font-family: monospace; font-size: 13.5px;"><%= `${Number(curLat).toFixed(4)}° N, ${Number(curLng).toFixed(4)}° E` %></span>
+                    <span class="gps-geocoding-spinner" id="gpsGeoSpinner" style="display: none; font-size: 12px; color: #D97706; margin-left: 8px;">⏳ Đang định vị...</span>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="openFullscreenMapModal()" style="font-size: 12.5px;">
+                    <span data-i18n="btn_fullscreen_map">Phóng to bản đồ ⛶</span>
+                  </button>
+                </div>
+                <div style="padding: 8px 16px; background: #FFFBEB; border-top: 1px solid #FEF3C7; font-size: 12px; color: #92400E;">
+                  <span data-i18n="gps_tip">💡 Mẹo: Bạn có thể kéo thả ghim đỏ hoặc click trực tiếp lên bản đồ để chọn chính xác vị trí cơ sở lưu trú của bạn.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SECTION 3: ĐƠN GIÁ & MÔ TẢ PHÒNG (2.12 -> 2.15) -->
+            <div class="form-card">
+              <div class="form-card-header">
+                <div class="form-card-icon-box" style="background: #DEF7EC; color: #03543F;">💵</div>
+                <div>
+                  <h2 class="form-card-title" data-i18n="sec3_title">3. Định giá & Mô tả phòng</h2>
+                  <p class="form-card-subtext" data-i18n="sec3_sub">Chiến lược giá linh hoạt và nội dung giới thiệu thu hút khách hàng</p>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <!-- 2.12 Giá tiêu chuẩn -->
+                <div class="form-group">
+                  <label class="form-label" for="inputPrice">
+                    <span data-i18n="lbl_price_weekday">Giá thuê theo đêm tiêu chuẩn</span> <span class="req">*</span>
+                  </label>
+                  <div class="input-with-suffix">
+                    <input type="text" class="form-control" id="inputPrice" placeholder="2.500.000" value="<%= room.pricePerNight ? Number(room.pricePerNight).toLocaleString('vi-VN') : '' %>" required>
+                    <span class="input-suffix-tag">VND / đêm</span>
+                  </div>
+                  <div class="form-helper-text">Áp dụng từ Thứ 2 đến Thứ 5</div>
+                </div>
+
+                <!-- 2.13 Giá cuối tuần -->
+                <div class="form-group">
+                  <label class="form-label" for="inputWeekendPrice">
+                    Giá cuối tuần (Tùy chọn)
+                  </label>
+                  <div class="input-with-suffix">
+                    <input type="text" class="form-control" id="inputWeekendPrice" placeholder="2.800.000" value="<%= room.weekendPrice ? Number(room.weekendPrice).toLocaleString('vi-VN') : '' %>">
+                    <span class="input-suffix-tag">VND / đêm</span>
+                  </div>
+                  <div class="form-helper-text">Áp dụng cho Thứ 6, Thứ 7, Chủ Nhật</div>
+                </div>
+              </div>
+
+              <!-- 2.14 Mô tả chi tiết -->
+              <div class="form-group">
+                <label class="form-label" for="inputDescription">
+                  Mô tả chi tiết phòng nghỉ <span class="req">*</span>
+                </label>
+                <div class="textarea-wrapper">
+                  <textarea class="form-textarea" id="inputDescription" placeholder="Mô tả không gian, tầm nhìn, dịch vụ đặc sắc..." required><%= room.description || '' %></textarea>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                  <div class="field-error-text" id="charLimitWarning"></div>
+                  <div class="char-counter" id="descCharCounter">0 / 1.000 ký tự</div>
+                </div>
+              </div>
+
+              <!-- 2.15 Chính sách hủy phòng -->
+              <div class="form-group">
+                <label class="policy-card-check">
+                  <input type="checkbox" id="checkFreeCancel" <%= (room.policy && room.policy.freeCancel48h !== false) ? 'checked' : '' %>>
+                  <div>
+                    <div class="policy-check-title">Cho phép hủy miễn phí trước 48h nhận phòng</div>
+                    <div class="policy-check-subtext">Khách hàng được hoàn trả 100% tiền cọc nếu báo trước 2 ngày</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- SECTION 4: TIỆN ÍCH & DỊCH VỤ NỔI BẬT (2.16 -> 2.17) -->
+            <div class="form-card">
+              <div class="form-card-header">
+                <div class="form-card-icon-box" style="background: #FEF3C7; color: #92400E;">✨</div>
+                <div>
+                  <h2 class="form-card-title">4. Tiện ích & Dịch vụ nổi bật</h2>
+                  <p class="form-card-subtext">Chọn các tiện nghi sẵn có tại cơ sở để tăng tỷ lệ tìm kiếm lọc</p>
+                </div>
+                <div class="form-card-counter" id="amenitiesCounter">0/12 đã chọn</div>
+              </div>
+
+              <!-- 2.16 Danh mục tiện nghi (Checkbox Cards) -->
+              <% 
+                const standardAmenities = [
+                  { id: '1', name: 'Wifi 100Mbps', icon: '📶' },
+                  { id: '2', name: 'Điều hòa 2 chiều', icon: '❄️' },
+                  { id: '3', name: 'Bếp đầy đủ gia vị', icon: '🍳' },
+                  { id: '4', name: 'Hồ bơi vô cực riêng', icon: '🏊' },
+                  { id: '5', name: 'Chỗ đỗ xe ô tô free', icon: '🚗' },
+                  { id: '6', name: 'Máy giặt & sấy', icon: '🧺' },
+                  { id: '7', name: 'Lò nướng BBQ ngoài trời', icon: '🔥' },
+                  { id: '8', name: 'Bồn tắm thảo mộc', icon: '🛁' },
+                  { id: '9', name: 'Cho mang thú cưng', icon: '🐾' },
+                  { id: '10', name: 'Bữa sáng miễn phí', icon: '☕' },
+                  { id: '11', name: 'Khóa điện tử SmartLock', icon: '🔒' },
+                  { id: '12', name: 'Xe đưa đón sân bay', icon: '🚐' }
+                ];
+                const activeAmenityNames = (room.amenities || []).map(a => a.name);
+              %>
+
+              <div class="amenities-grid">
+                <% standardAmenities.forEach(item => { 
+                     const isChecked = activeAmenityNames.includes(item.name);
+                %>
+                  <div class="amenity-card <%= isChecked ? 'selected' : '' %>">
+                    <input type="checkbox" <%= isChecked ? 'checked' : '' %> value="<%= item.name %>" data-icon="<%= item.icon %>" data-id="<%= item.id %>">
+                    <span class="amenity-icon"><%= item.icon %></span>
+                    <span class="amenity-label"><%= item.name %></span>
+                  </div>
+                <% }); %>
+              </div>
+
+              <!-- 2.17 Nút + Tạo tiện ích mới -->
+              <a href="javascript:void(0)" class="add-amenity-link" onclick="handleOpenAddAmenityModal()">
+                <span>+</span>
+                <span>Tạo tiện ích đặc thù mới</span>
+              </a>
+            </div>
+
+            <!-- SECTION 5: ALBUM HÌNH ẢNH PHÒNG (2.18 -> 2.20) -->
+            <div class="form-card">
+              <div class="form-card-header">
+                <div class="form-card-icon-box" style="background: #F3E8FF; color: #7C3AED;">📸</div>
+                <div>
+                  <h2 class="form-card-title">5. Album hình ảnh phòng</h2>
+                  <p class="form-card-subtext">Ảnh chất lượng cao, thực tế giúp tăng 3x tỷ lệ đặt phòng thành công</p>
+                </div>
+                <div class="form-card-counter" id="photoCounter">
+                  <%= (room.images ? room.images.length : 0) %>/15 ảnh đã tải
+                </div>
+              </div>
+
+              <!-- 2.18 Drag & Drop Zone -->
+              <div class="dropzone-box" id="photoDropzone">
+                <div class="dropzone-icon">☁️</div>
+                <div class="dropzone-title">Kéo thả hình ảnh vào đây hoặc <span>Bấm để duyệt file</span></div>
+                <div class="dropzone-hint">Tối thiểu 3 ảnh, tối đa 15 ảnh (Định dạng PNG, JPG, WEBP - Dung lượng tối đa 5MB/ảnh)</div>
+                <input type="file" id="photoFileInput" multiple accept=".jpg,.jpeg,.png,.webp" style="display: none;">
+              </div>
+
+              <!-- 2.19 Gallery Grid -->
+              <div class="gallery-grid" id="galleryGrid">
+                <% if (room.images && room.images.length > 0) { %>
+                  <% room.images.forEach((img, idx) => { %>
+                    <div class="gallery-item" data-img="<%= img %>">
+                      <img src="<%= img %>" alt="Ảnh phòng <%= idx + 1 %>">
+                      <% if (idx === 0) { %>
+                        <span class="gallery-primary-badge">⭐ Ảnh bìa chính</span>
+                      <% } %>
+                      <button type="button" class="gallery-del-btn" onclick="removePhoto(<%= idx %>)">✕</button>
+                    </div>
+                  <% }); %>
+                <% } %>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT SIDEBAR (30%) (2.21 -> 2.22) -->
+          <div class="form-sidebar-col">
+
+            <!-- 2.21 THẺ "THÔNG TIN NHANH" -->
+            <div class="form-card">
+              <h3 style="font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;" data-i18n="form_quick_info">
+                THÔNG TIN NHANH
+              </h3>
+              <div class="meta-info-list">
+                <div class="meta-info-item">
+                  <span class="meta-info-label" data-i18n="form_current_status">Trạng thái hiện tại</span>
+                  <span class="status-pill <%= room.status === 'Published' ? 'published' : (room.status === 'Archived' ? 'archived' : 'draft') %>" style="cursor: default; padding: 2px 8px; font-size: 11px;">
+                    <span class="status-dot"></span>
+                    <span><%= room.status || 'Draft' %></span>
+                  </span>
+                </div>
+
+                <div class="meta-info-item">
+                  <span class="meta-info-label" data-i18n="form_created_date">Ngày tạo phòng</span>
+                  <span class="meta-info-val"><%= room.createdAt ? new Date(room.createdAt).toLocaleDateString('vi-VN') : new Date().toLocaleDateString('vi-VN') %></span>
+                </div>
+
+                <div class="meta-info-item">
+                  <span class="meta-info-label" data-i18n="form_updated_date">Cập nhật lần cuối</span>
+                  <span class="meta-info-val"><%= room.updatedAt ? new Date(room.updatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong' %></span>
+                </div>
+
+                <div class="meta-info-item">
+                  <span class="meta-info-label" data-i18n="form_manager">Người phụ trách</span>
+                  <span class="meta-info-val">
+                    <span style="color: var(--primary);">👤</span>
+                    <span><%= user ? (user.firstName + ' ' + user.lastName) : 'Robin Nguyen' %></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2.22 THẺ "CHỈ SỐ TỐI ƯU TIN ĐĂNG" (Profile Health Score) -->
+            <div class="form-card">
+              <div class="health-score-header">
+                <h3 style="font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;" data-i18n="form_health_title">
+                  CHỈ SỐ TỐI ƯU TIN ĐĂNG
+                </h3>
+                <span class="health-badge superhost" id="healthScoreBadge">Xuất sắc</span>
+              </div>
+
+              <div class="health-score-big">
+                <span id="healthScoreNum" style="font-size: 26px; font-weight: 800; color: var(--primary); margin-right: 6px;">92%</span>
+                <span id="healthScoreSubtext" style="font-size: 14px; font-weight: 700; color: var(--text-main);">Đạt chuẩn Superhost</span>
+              </div>
+
+              <div class="progress-track">
+                <div class="progress-bar" id="healthProgressBar" style="width: 92%;"></div>
+              </div>
+
+              <ul class="health-checklist">
+                <li class="health-checklist-item">
+                  <div class="health-check-text">
+                    <span class="health-check-icon">✓</span>
+                    <span data-i18n="form_check_name_loc">Tên và thông tin vị trí chính xác</span>
+                  </div>
+                  <span class="health-check-pct" id="checkScoreLoc">100%</span>
+                </li>
+
+                <li class="health-checklist-item">
+                  <div class="health-check-text">
+                    <span class="health-check-icon">✓</span>
+                    <span data-i18n="form_check_pricing">Định giá theo ngày & cuối tuần</span>
+                  </div>
+                  <span class="health-check-pct" id="checkScorePrice">100%</span>
+                </li>
+
+                <li class="health-checklist-item">
+                  <div class="health-check-text">
+                    <span class="health-check-icon">✓</span>
+                    <span data-i18n="form_check_amenities">Danh mục tiện ích đầy đủ (>6 mục)</span>
+                  </div>
+                  <span class="health-check-pct" id="checkScoreAmenity">100%</span>
+                </li>
+
+                <li class="health-checklist-item">
+                  <div class="health-check-text">
+                    <span class="health-check-icon">✓</span>
+                    <span data-i18n="form_check_photos">Số lượng ảnh tải lên (4/5 ảnh chuẩn)</span>
+                  </div>
+                  <span class="health-check-pct" id="checkScorePhoto">90%</span>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- STICKY BOTTOM ACTION BAR (2.23 -> 2.26) -->
+        <div class="host-sticky-bottom-bar">
+          <!-- 2.23 Nút Hủy thay đổi -->
+          <div class="bottom-bar-left">
+            <button type="button" class="btn btn-ghost" id="btnCancelChanges">Hủy thay đổi</button>
+            <% if (mode === 'edit' && room.status === 'Published') { %>
+              <button type="button" class="btn btn-ghost" onclick="handleStatusPillClick('<%= room._id %>', 'Published')">
+                ⏸️ Chuyển vào Lưu trữ
+              </button>
+            <% } %>
+          </div>
+
+          <!-- 2.24 Trạng thái Auto-save -->
+          <div class="bottom-bar-center" id="autosaveLabel">
+            Đã lưu bản nháp tự động <%= new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) %>
+          </div>
+
+          <!-- 2.25 & 2.26 Nút Lưu bản nháp & Đăng bán -->
+          <div class="bottom-bar-right">
+            <button type="button" class="btn btn-outline" id="btnSaveDraft">
+              <span data-i18n="btn_save_draft">Lưu bản nháp</span>
+            </button>
+
+            <% if (mode === 'edit') { %>
+              <button type="button" class="btn btn-outline" onclick="handleDuplicateRoom('<%= room._id %>')">
+                Sao chép phòng
+              </button>
+            <% } %>
+
+            <button type="button" class="btn btn-primary" id="btnPublish">
+              <span data-i18n="btn_publish_room"><%= mode === 'edit' ? 'Cập nhật & Đăng bán' : 'Đăng bán' %></span>
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<%- include('../partials/modals', { user }) %>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/host/js/host.js"></script>
+<script src="/host/js/form.js"></script>
+</body>
+</html>

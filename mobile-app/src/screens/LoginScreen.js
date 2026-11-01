@@ -143,9 +143,7 @@ const LoginScreen = ({ navigation }) => {
       const loginData = await loginRes.json();
 
       if (!loginRes.ok) {
-        const msg = loginData.message || 'Mật khẩu hoặc địa chỉ Gmail không chính xác!';
-        setFormError(msg);
-        showErrorPopup(msg, 'Đăng nhập thất bại');
+        Alert.alert('Không thể đăng nhập', loginData.message || 'Sai thông tin');
         return;
       }
 
@@ -163,7 +161,15 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        completeLogin(profileData.data, accessToken);
+        if (profileData.role === 'HOST') {
+          Alert.alert(
+            'Tài khoản Đối tác Host',
+            'Tài khoản này là tài khoản Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!'
+          );
+          return;
+        }
+        // Chuyển sang màn hình Trang chủ (Booking Discovery)
+        navigation.replace('Home', { user: profileData, token: accessToken });
       } else {
         const msg = 'Không lấy được thông tin User';
         setFormError(msg);
@@ -188,12 +194,12 @@ const LoginScreen = ({ navigation }) => {
       const res = await fetch(`${API_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accessToken }),
+        body: JSON.stringify({ accessToken, platform: 'mobile', role: 'USER' }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        showErrorPopup(data.message || 'Đăng nhập Google thất bại', 'Lỗi đăng nhập Google');
+        Alert.alert('Không thể đăng nhập', data.message || 'Đăng nhập Google thất bại');
         return;
       }
 
@@ -204,7 +210,14 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        completeLogin(profileData.data, data.data.accessToken);
+        if (profileData.role === 'HOST') {
+          Alert.alert(
+            'Tài khoản Đối tác Host',
+            'Tài khoản này là tài khoản Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!'
+          );
+          return;
+        }
+        navigation.replace('Home', { user: profileData, token: data.accessToken });
       } else {
         showErrorPopup('Không lấy được thông tin tài khoản Google', 'Lỗi tài khoản');
       }
@@ -233,6 +246,14 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.subtitle}>
               Đăng nhập bằng Gmail để tiếp tục khám phá hành trình của bạn.
             </Text>
+          </View>
+
+          {/* Vai trò Khách du lịch (Mobile chỉ dành cho Khách du lịch) */}
+          <View style={styles.singleRoleContainer}>
+            <View style={styles.singleRoleBadge}>
+              <Ionicons name="compass" size={20} color="#00796B" />
+              <Text style={styles.singleRoleText}>Khách du lịch</Text>
+            </View>
           </View>
 
           {/* Input Form */}
@@ -431,6 +452,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 10,
+  },
+  singleRoleContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  singleRoleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#B2DFDB',
+    elevation: 2,
+    shadowColor: '#00796B',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  singleRoleText: {
+    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#00796B',
   },
   formContainer: {
     backgroundColor: '#fff',

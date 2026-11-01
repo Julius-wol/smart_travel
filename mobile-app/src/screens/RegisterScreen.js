@@ -90,6 +90,14 @@ const RegisterScreen = ({ navigation }) => {
           <Text style={styles.title}>Đăng ký tài khoản</Text>
           <Text style={styles.subtitle}>Điền thông tin bên dưới để tham gia SmartTravel</Text>
 
+          {/* Vai trò Khách du lịch (Mobile chỉ dành riêng cho Khách du lịch) */}
+          <View style={styles.singleRoleContainer}>
+            <View style={styles.singleRoleBadge}>
+              <Ionicons name="compass" size={20} color="#00796B" />
+              <Text style={styles.singleRoleText}>Khách du lịch</Text>
+            </View>
+          </View>
+
           <View style={styles.formContainer}>
             <Text style={styles.inputLabel}>Tên đăng nhập (Username)</Text>
             <View style={styles.inputWrapper}>
@@ -185,37 +193,30 @@ const styles = StyleSheet.create({
   input: { flex: 1, height: 48, fontSize: 15, color: '#2D3748' },
   eyeIcon: { padding: 4 },
   errorText: { color: '#E53E3E', fontSize: 12, marginBottom: 12, marginTop: 2, marginLeft: 4 },
-  successText: { color: '#00796B', fontSize: 14, marginVertical: 12 },
-  roleSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#EDF2F7',
-    borderRadius: 12,
-    padding: 4,
+  singleRoleContainer: {
+    alignItems: 'center',
     marginBottom: 20,
   },
-  roleButton: {
-    flex: 1,
+  singleRoleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  roleButtonActive: {
     backgroundColor: '#fff',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
+    paddingVertical: 10,
+    paddingHorizontal: 22,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#B2DFDB',
+    elevation: 2,
+    shadowColor: '#00796B',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
-  roleText: {
+  singleRoleText: {
     marginLeft: 8,
     fontSize: 15,
-    fontWeight: '600',
-    color: '#718096',
-  },
-  roleTextActive: {
+    fontWeight: '700',
     color: '#00796B',
   },
   submitBtn: { backgroundColor: '#00796B', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 10 },

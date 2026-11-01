@@ -1,35 +1,33 @@
 import mongoose from 'mongoose';
 
-const BookingSchema = new mongoose.Schema({
-  // Mã vé e-Pass hiển thị trên UI (vd: "BK-9821" hoặc "ST-5894")
-  bookingCode: {
-    type: String,
-    required: true,
-    unique: true,
-    uppercase: true,
-    index: true
+const bookingSchema = new mongoose.Schema({
+  bookingCode: { type: String, required: true, unique: true, uppercase: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
+  fullName: { type: String },
+  phoneNumber: { type: String },
+  email: { type: String },
+  guestInfo: {
+    fullName: String,
+    phoneNumber: String,
+    email: String
   },
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    index: true
-  },
-  hostId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    index: true
-  }, // Denormalized để tăng tốc Dashboard của Host
-  roomId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Room',
-    required: true,
-    index: true
-  },
-
-  // Thời gian lưu trú
   checkIn: { type: Date, required: true },
   checkOut: { type: Date, required: true },
-  totalNights: { type: Number, required: true, min: 1, default: 1 },
+  nights: { type: Number, default: 2 },
+  guests: { type: Number, required: true, min: 1, default: 2 },
+  notes: { type: String, trim: true },
+  specialNote: { type: String, trim: true },
+  specialRequests: { type: String, trim: true },
+  rejectReason: { type: String, trim: true },
+  paymentMethod: { type: String, default: 'momo' },
+  totalPrice: { type: Number, required: true, min: 0 },
+  status: { 
+    type: String, 
+    enum: ['PENDING', 'CONFIRMED', 'REJECTED', 'CANCELLED', 'COMPLETED'], 
+    default: 'PENDING' 
+  },
+}, { timestamps: true, strict: false });
 
   // Chi tiết đoàn khách
   guestDetails: {

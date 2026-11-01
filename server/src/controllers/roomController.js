@@ -66,12 +66,8 @@ export const SEED_DATA = [
       checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
       cancellation: 'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00.',
     },
-    cancellationPolicy: 'Miễn phí hủy phòng trước 48h',
-    location: {
-      type: 'Point',
-      coordinates: [108.2435, 16.0825],
-    },
-    status: 'PUBLISHED',
+    location: { type: 'Point', coordinates: [108.2435, 16.0825] },
+    status: 'ACTIVE',
   },
   {
     roomCode: 'MP-0102',
@@ -114,17 +110,8 @@ export const SEED_DATA = [
     rating: 4.85,
     numReviews: 94,
     reviewCount: 94,
-    policy: {
-      checkIn: '14:00 (Nhận phòng trực tiếp bằng mã vé điện tử e-Pass)',
-      checkOut: '12:00',
-      cancellation: 'Miễn phí hủy phòng trước 48h.',
-    },
-    cancellationPolicy: 'Miễn phí hủy phòng trước 48h',
-    location: {
-      type: 'Point',
-      coordinates: [108.2418, 16.0503],
-    },
-    status: 'PUBLISHED',
+    location: { type: 'Point', coordinates: [108.2418, 16.0503] },
+    status: 'ACTIVE',
   },
   {
     roomCode: 'MP-0103',
@@ -167,17 +154,8 @@ export const SEED_DATA = [
     rating: 4.95,
     numReviews: 156,
     reviewCount: 156,
-    policy: {
-      checkIn: '14:00 (Nhận phòng trực tiếp bằng mã vé điện tử e-Pass)',
-      checkOut: '12:00',
-      cancellation: 'Miễn phí hủy phòng trước 48h.',
-    },
-    cancellationPolicy: 'Miễn phí hủy phòng trước 48h',
-    location: {
-      type: 'Point',
-      coordinates: [108.2452, 16.0667],
-    },
-    status: 'PUBLISHED',
+    location: { type: 'Point', coordinates: [108.2452, 16.0667] },
+    status: 'ACTIVE',
   },
 ];
 
@@ -212,9 +190,7 @@ export const getAllRooms = async (req, res) => {
       console.warn('Bỏ qua auto-seed:', seedErr.message);
     }
 
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.max(1, parseInt(limit, 10) || 10);
-    const skip = (pageNum - 1) * limitNum;
+    const conditions = [{ status: { $in: ['ACTIVE', 'Published'] } }];
 
     // Xây dựng điều kiện lọc (hỗ trợ cả PUBLISHED và ACTIVE tương thích ngược)
     const andConditions = [{ status: { $in: ['PUBLISHED', 'ACTIVE'] } }];

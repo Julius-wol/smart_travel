@@ -115,44 +115,25 @@ export const createBooking = async (req, res) => {
       ? userId
       : undefined;
 
-    // Xác định số khách
-    const numAdults = guestDetails?.adults || (typeof guests === 'number' ? guests : 2);
-    const numChildren = guestDetails?.children || 0;
-
-    // Denormalized hostId từ Room
-    const hostId = room.ownerId || new mongoose.Types.ObjectId('664c1234567890abcdef1001');
-
-    // Hạn chót duyệt SLA (24h kể từ khi tạo đơn)
-    const slaDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    const pricePerNight = room.regularPrice || Math.round((totalPrice || 2550000) / actualNights);
-    const finalTotalPrice = totalPrice || (pricePerNight * actualNights);
-
-    // Tạo bản ghi đặt phòng mới theo chuẩn Schema v2.0
+    // Tạo bản ghi đặt phòng mới với trạng thái PENDING để Host xét duyệt
     const newBooking = await Booking.create({
       bookingCode,
       userId: validUserId,
-      hostId,
-      roomId: targetRoomId,
+      fullName: fullName.trim(),
+      phoneNumber: phoneNumber.trim(),
+      email: email.trim(),
+      guestInfo: {
+        fullName: fullName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        email: email.trim()
+      },
       checkIn: startDate,
       checkOut: endDate,
-      totalNights: actualNights,
-      guestDetails: {
-        adults: numAdults,
-        children: numChildren,
-      },
-      guestContact: {
-        fullName: contactName,
-        phone: contactPhone,
-        email: contactEmail,
-        guestNote: contactNote,
-      },
-      pricePerNight,
-      totalPrice: finalTotalPrice,
-      paymentMethod: normalizePaymentMethod(paymentMethod),
-      paymentStatus: 'PAID',
-      status: 'CONFIRMED',
-      slaDeadline,
+      nights: actualNights,
+      guests: guests || 2,
+      paymentMethod: paymentMethod || 'momo',
+      totalPrice: totalPrice || 2550000,
+      status: 'PENDING',
     });
 
     // Tự động khóa lịch phòng trong RoomAvailability cho từng ngày lưu trú

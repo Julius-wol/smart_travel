@@ -1,0 +1,62 @@
+<!-- TOP HEADER (SCR-HOST-01 1.1 -> 1.4) -->
+<header class="host-top-header">
+  <div class="host-breadcrumb">
+    <a href="/host/rooms">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line>
+        <polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      <span data-i18n="nav_rooms">Quản lý phòng</span>
+    </a>
+    <% if (typeof breadcrumbSub !== 'undefined' && breadcrumbSub) { %>
+      <span class="host-breadcrumb-sep">/</span>
+      <span class="host-breadcrumb-current" id="headerBreadcrumbSub"><%= breadcrumbSub %></span>
+    <% } %>
+  </div>
+
+  <div class="host-header-right">
+    <!-- 1.2 Language Switcher (VN / EN) -->
+    <div class="host-lang-switch">
+      <button type="button" class="host-lang-btn active" id="btnLangVN" onclick="setHostLanguage('vi')">VN</button>
+      <button type="button" class="host-lang-btn" id="btnLangEN" onclick="setHostLanguage('en')">EN</button>
+    </div>
+
+    <!-- 1.3 Notification Bell with Red Badge -->
+    <button type="button" class="host-notif-btn" title="Thông báo mới" data-i18n-title="notif_title" onclick="showToast('info', 'NOTIF', 'Bạn có 2 đơn đặt phòng mới cần duyệt.')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+      </svg>
+      <span class="host-notif-dot"></span>
+    </button>
+
+    <!-- 1.4 Profile Menu with Avatar & Dropdown -->
+    <div class="host-profile-pill">
+      <% if (user && user.avatar) { %>
+        <img src="<%= user.avatar %>" alt="Avatar" class="host-profile-avatar">
+      <% } else { %>
+        <div class="host-profile-avatar">RN</div>
+      <% } %>
+      <div class="host-profile-info">
+        <span class="host-profile-name"><%= user ? (user.firstName + ' ' + user.lastName) : 'Robin Nguyen' %></span>
+        <span class="host-profile-email"><%= user ? user.email : 'Robinnguyen@gmail.com' %></span>
+      </div>
+      <span class="host-profile-arrow">▼</span>
+
+      <!-- Dropdown Popover -->
+      <div class="host-dropdown-menu">
+        <a href="#profile" class="host-dropdown-item">
+          <span>👤</span> <span data-i18n="profile_link">Hồ sơ cá nhân</span>
+        </a>
+        <a href="#settings" class="host-dropdown-item">
+          <span>⚙️</span> <span data-i18n="settings_link">Cài đặt tài khoản</span>
+        </a>
+        <div style="height: 1px; background: #E2E8F0; margin: 4px 0;"></div>
+        <a href="/host/logout" class="host-dropdown-item danger">
+          <span>🚪</span> <span data-i18n="logout_btn">Đăng xuất</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+<script src="/host/js/i18n.js"></script>
