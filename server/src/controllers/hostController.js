@@ -234,8 +234,8 @@ export const getCreateRoom = (req, res) => {
     maxGuests: 2,
     bedrooms: 1,
     beds: 1,
-    area: 45,
-    city: 'Lâm Đồng (Đà Lạt)',
+    area: '',
+    city: '',
     district: '',
     address: '',
     pricePerNight: '',
@@ -243,20 +243,16 @@ export const getCreateRoom = (req, res) => {
     description: '',
     policy: {
       freeCancel48h: true,
-      checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
-      checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
+      checkIn: '14:00',
+      checkOut: '12:00',
       cancellation: 'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00.'
     },
-    amenities: [
-      { id: '1', name: 'Wifi 100Mbps', icon: 'wifi' }
-    ],
+    amenities: [],
     images: [],
     status: 'Draft',
     location: {
       type: 'Point',
-      coordinates: [108.2208, 16.0678],
-      lat: 16.0678,
-      lng: 108.2208
+      coordinates: [], lat: '', lng: ''
     },
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -436,8 +432,8 @@ export const saveRoom = async (req, res) => {
       maxGuests: Number(maxGuests) || 2,
       bedrooms: Number(bedrooms) || 1,
       beds: Number(beds) || 1,
-      area: Number(area) || 45,
-      city: city || 'Đà Nẵng',
+      area: area ? Number(area) : undefined,
+      city: city || '',
       district: district || '',
       address: address || '',
       pricePerNight: numPrice,
@@ -447,8 +443,8 @@ export const saveRoom = async (req, res) => {
       images: parsedImages,
       policy: {
         freeCancel48h: freeCancel48h === true || freeCancel48h === 'true' || freeCancel48h === 'on',
-        checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
-        checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
+        checkIn: '14:00',
+        checkOut: '12:00',
         cancellation: (freeCancel48h === true || freeCancel48h === 'true' || freeCancel48h === 'on')
           ? 'Cho phép hủy miễn phí trước 48h nhận phòng. Khách hàng được hoàn 100% tiền nếu hủy trước 2 ngày.'
           : 'Không hoàn tiền khi hủy phòng.'
@@ -457,12 +453,14 @@ export const saveRoom = async (req, res) => {
       location: {
         type: 'Point',
         coordinates: [
-          Number(lng) || 108.2208,
-          Number(lat) || 16.0678
+          Number(lng),
+          Number(lat)
         ]
       },
-      lastUpdatedBy: req.user.firstName + ' ' + req.user.lastName
+      lastUpdatedBy: req.user.fullName || [req.user.firstName, req.user.lastName].filter(Boolean).join(' ')
     };
+
+    if (lat == null || lat === '' || lng == null || lng === '' || !Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) delete roomData.location;
 
     let savedRoom;
     if (id && mongoose.isValidObjectId(id)) {
@@ -881,14 +879,14 @@ export const postGoogleLogin = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Không lấy được email từ tài khoản Google' });
     }
 
-    let user = await User.findOne({ email: email.toLowerCase() });
+    let user = await User.findOne({ email: email.trim().toLowerCase(), role: 'HOST' });
 
     if (!user) {
       // Auto-register as HOST
       const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
       let username = baseUsername;
       let counter = 1;
-      while (await User.findOne({ username })) {
+      while (await User.findOne({ username, role: 'HOST' })) {
         username = `${baseUsername}${counter++}`;
       }
 
@@ -908,17 +906,8 @@ export const postGoogleLogin = async (req, res) => {
         wishlist: []
       });
       console.log(`✅ [Host Google Login] Tự động tạo tài khoản Host mới: ${email}`);
-    } else {
-      // Check role
-      if (user.role !== 'HOST') {
-        return res.status(403).json({
-          success: false,
-          message: `Tài khoản (${email}) hiện đang là Khách du lịch (USER). Cổng web này chỉ dành riêng cho Đối tác Chủ phòng (HOST). Vui lòng đăng nhập bằng tài khoản Chủ phòng!`
-        });
-      }
     }
 
-    // Lưu session vào Database & cấp token đồng bộ chuẩn JWT
     await createSessionAndTokens(user, res, { isHost: true });
 
     return res.status(200).json({
@@ -1085,7 +1074,7 @@ export const getHostReviews = async (req, res) => {
       subRatings: {
         cleanliness: totalReviews > 0 ? (overallData.cleanlinessAvg || 5.0).toFixed(1) : '--',
         service: totalReviews > 0 ? (overallData.serviceAvg || 4.8).toFixed(1) : '--',
-        checkin: totalReviews > 0 ? (overallData.checkinAvg || 4.9).toFixed(1) : '--',
+        checkin: totalReviews > 0 ? (overallData.checkinAvg ?? 0).toFixed(1) : '--',
         accuracy: totalReviews > 0 ? (overallData.accuracyAvg || 4.7).toFixed(1) : '--',
         location: totalReviews > 0 ? (overallData.locationAvg || 4.6).toFixed(1) : '--',
         value: totalReviews > 0 ? (overallData.valueAvg || 4.6).toFixed(1) : '--'

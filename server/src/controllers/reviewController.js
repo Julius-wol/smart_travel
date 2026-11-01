@@ -175,29 +175,49 @@ export const getReviewsByRoom = async (req, res) => {
 export const getRoomRatingSummary = async (req, res) => {
   try {
     const { roomId } = req.params;
+    if (!mongoose.isValidObjectId(roomId)) {
+      return res.status(404).json({ success: false, message: 'ID phòng không hợp lệ.' });
+    }
     const room = await Room.findById(roomId).select('rating numReviews reviewCount ratingBreakdown title');
     if (!room) {
       return res.status(404).json({ success: false, message: 'Phòng không tồn tại.' });
     }
 
-    if (!mongoose.isValidObjectId(roomId)) {
-      return res.status(404).json({ success: false, message: 'ID phòng không hợp lệ.' });
-    }
-
-    // Phân phối sao (1★ - 5★)
-    const dist = await Review.aggregate([
+    // Read the actual reviews, rather than potentially stale seeded room totals.
+    const [result] = await Review.aggregate([
       { $match: { roomId: new mongoose.Types.ObjectId(roomId) } },
-      { $group: { _id: '$rating', count: { $sum: 1 } } },
+      { $facet: {
+        stats: [{ $group: {
+          _id: null,
+          reviewCount: { $sum: 1 },
+          rating: { $avg: '$rating' },
+          cleanliness: { $avg: '$categories.cleanliness' },
+          location: { $avg: '$categories.location' },
+          service: { $avg: '$categories.service' },
+          amenities: { $avg: '$categories.amenities' },
+          value: { $avg: '$categories.value' },
+        } }],
+        distribution: [{ $group: { _id: '$rating', count: { $sum: 1 } } }],
+      } },
     ]);
+    const stats = result?.stats?.[0] || {};
+    const round = (value) => Math.round((value ?? 0) * 10) / 10;
     const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    dist.forEach((d) => { distribution[d._id] = d.count; });
+    (result?.distribution || []).forEach((d) => { distribution[d._id] = d.count; });
 
     return res.status(200).json({
       success: true,
       data: {
-        rating:          room.rating,
-        reviewCount:     room.numReviews || room.reviewCount,
-        ratingBreakdown: room.ratingBreakdown,
+        rating: round(stats.rating),
+        reviewCount: stats.reviewCount ?? 0,
+        ratingBreakdown: {
+          overall: round(stats.rating),
+          cleanliness: round(stats.cleanliness),
+          location: round(stats.location),
+          service: round(stats.service),
+          amenities: round(stats.amenities),
+          value: round(stats.value),
+        },
         distribution,
       },
     });

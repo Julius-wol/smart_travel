@@ -1,3 +1,5 @@
+import Image from '../components/MediaImage';
+import { resolveMediaUrl } from '../utils/config';
 import React, { useState } from 'react';
 import {
   View,
@@ -5,7 +7,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Image,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -52,6 +53,7 @@ const CheckoutScreen = ({ navigation, route }) => {
   // Modal cảnh báo xung đột phòng thời gian thực (CR_BOOK_07)
   const [conflictModalVisible, setConflictModalVisible] = useState(false);
   const [conflictMessage, setConflictMessage] = useState('');
+  const [isGuestConflict, setIsGuestConflict] = useState(false);
 
   // Ngày trả phòng tính theo thời gian thực: checkIn + nights
   const checkOutDate =
@@ -65,10 +67,10 @@ const CheckoutScreen = ({ navigation, route }) => {
 
   // Tính toán chi phí thực tế theo số đêm được chọn
   const formatVND = (num) => new Intl.NumberFormat('vi-VN').format(num) + 'đ';
-  const pricePerNight = homestay?.pricePerNight || homestay?.price || 1450000;
+  const pricePerNight = homestay?.pricePerNight || homestay?.price || 0;
   const roomTotal = hasSelectedDates && nights > 0 ? pricePerNight * nights : 0;
-  const serviceFee = hasSelectedDates && nights > 0 ? 150000 : 0;
-  const voucherDiscount = hasSelectedDates && nights > 0 ? 500000 : 0;
+  const serviceFee = 0;
+  const voucherDiscount = 0;
   const totalAmount = Math.max(0, roomTotal + serviceFee - voucherDiscount);
 
   // Điền thông tin từ tài khoản đăng nhập; khách vẫn có thể chỉnh sửa liên hệ.
@@ -244,6 +246,7 @@ const CheckoutScreen = ({ navigation, route }) => {
 
   // Xử lý xác nhận thanh toán (VERIFY LẠI TRẠNG THÁI AVAILABLE TRƯỚC KHI TẠO BOOKING)
   const handleConfirmPayment = async () => {
+    if (isProcessing) return;
     console.log('👉 [CheckoutScreen] Đang nhấn Xác nhận & Thanh toán...');
 
     // 1. Kiểm tra khách đã chọn ngày hay chưa (Bắt buộc cho cả 2 luồng)
@@ -271,7 +274,8 @@ const CheckoutScreen = ({ navigation, route }) => {
       const roomId = homestay?._id || homestay?.id;
 
       // 4. VERIFY LẠI TRẠNG THÁI AVAILABLE TRÁNH KHÁCH KHÁC ĐÃ THANH TOÁN TRƯỚC
-      const checkUrl = `${API_URL}/bookings/check-availability?roomId=${roomId}&checkIn=${checkInDate.toISOString()}&checkOut=${checkOutDate.toISOString()}`;
+      const customerQuery = `&userId=${encodeURIComponent(user?._id || user?.id || '')}&email=${encodeURIComponent(user?.email || email.trim())}`;
+      const checkUrl = `${API_URL}/bookings/check-availability?roomId=${roomId}&checkIn=${checkInDate.toISOString()}&checkOut=${checkOutDate.toISOString()}${customerQuery}`;
       console.log('🔍 [CheckoutScreen] Đang verify lại trạng thái phòng trống:', checkUrl);
 
       const availRes = await fetch(checkUrl, {
@@ -283,9 +287,15 @@ const CheckoutScreen = ({ navigation, route }) => {
       });
 
       const availData = await availRes.json();
+      if (!availRes.ok && availRes.status !== 409) {
+        setIsProcessing(false);
+        showToast(availData.message || 'Không thể kiểm tra lịch đặt phòng. Vui lòng thử lại.', 'error');
+        return;
+      }
       console.log('📥 [CheckoutScreen] Kết quả verify phòng trống:', availData);
 
       if (!availRes.ok || !availData.available) {
+        setIsGuestConflict(availData.code === 'GUEST_BOOKING_CONFLICT');
         setIsProcessing(false);
         setConflictMessage(
           availData.message ||
@@ -327,6 +337,7 @@ const CheckoutScreen = ({ navigation, route }) => {
 
       // CR_BOOK_07: Xung đột lịch phòng thời gian thực khi bấm lưu
       if (res.status === 409 || data.conflict) {
+        setIsGuestConflict(data.code === 'GUEST_BOOKING_CONFLICT');
         setConflictMessage(
           data.message ||
             'Rất tiếc, phòng này vừa được khách khác đặt trong khoảng thời gian bạn chọn. Vui lòng bấm "Thay đổi ngày" để chọn ngày khác.'
@@ -344,14 +355,15 @@ const CheckoutScreen = ({ navigation, route }) => {
         // Chuyển sang màn hình Vé e-Pass thành công với mã booking và thời gian thực tế
         navigation.replace('BookingSuccess', {
           homestay,
-          bookingCode: data.bookingCode || 'ST-5894',
+          bookingCode: data.bookingCode || '',
           user,
           token,
           bookingDetails: {
+            paymentStatus: data.data?.paymentStatus,
             fullName: fullName.trim(),
             phoneNumber: phoneNumber.trim(),
             email: email.trim(),
-            totalAmount: formatVND(totalAmount),
+            totalAmount: formatVND(data.data?.totalPrice ?? totalAmount),
             checkIn: formatDateVN(checkInDate),
             checkOut: formatDateVN(checkOutDate),
             nights,
@@ -406,8 +418,8 @@ const CheckoutScreen = ({ navigation, route }) => {
           <Image
             source={{
               uri:
-                homestay?.images?.[0] ||
-                'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&q=80',
+                resolveMediaUrl(homestay?.images?.[0]) ||
+                '',
             }}
             style={styles.roomThumb}
           />
@@ -416,14 +428,14 @@ const CheckoutScreen = ({ navigation, route }) => {
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={11} color="#F6AD55" />
               <Text style={styles.ratingVal}>
-                {homestay?.rating || 4.9} ({homestay?.reviewCount || 142})
+                {homestay?.rating || 0} ({homestay?.reviewCount || 0})
               </Text>
               <Text style={styles.ratingLocation}>
-                {' '}• {typeof homestay?.location === 'string' ? homestay.location : (homestay?.city || 'Sơn Trà, Đà Nẵng')}
+                {' '}• {typeof homestay?.location === 'string' ? homestay.location : (homestay?.city || '')}
               </Text>
             </View>
             <Text style={styles.roomName} numberOfLines={2}>
-              {homestay?.title || homestay?.name || 'An Nhiên Eco Retreat'}
+              {homestay?.title || homestay?.name || ''}
             </Text>
             <Text style={styles.roomSubName} numberOfLines={1}>
               {homestay?.subtitle || 'Nguyên căn 2PN View Biển'}
@@ -769,14 +781,10 @@ const CheckoutScreen = ({ navigation, route }) => {
                 <Text style={styles.priceLabel}>Tiền phòng ({formatVND(pricePerNight)} x {nights} đêm)</Text>
                 <Text style={styles.priceVal}>{formatVND(roomTotal)}</Text>
               </View>
-              <View style={styles.priceLine}>
+              {!!serviceFee && <View style={styles.priceLine}>
                 <Text style={styles.priceLabel}>Phí dịch vụ & tiện ích</Text>
-                <Text style={styles.priceVal}>150.000đ</Text>
-              </View>
-              <View style={styles.priceLine}>
-                <Text style={[styles.priceLabel, { color: '#00796B' }]}>Voucher giảm giá SMART2026</Text>
-                <Text style={[styles.priceVal, { color: '#00796B' }]}>-500.000đ</Text>
-              </View>
+                <Text style={styles.priceVal}>{formatVND(serviceFee)}</Text>
+              </View>}
               <View style={styles.divider} />
               <View style={styles.priceLineTotal}>
                 <Text style={styles.totalLabel}>Tổng thanh toán</Text>
@@ -993,7 +1001,7 @@ const CheckoutScreen = ({ navigation, route }) => {
             <View style={styles.conflictIconWrap}>
               <Ionicons name="alert-circle" size={42} color="#E53E3E" />
             </View>
-            <Text style={styles.conflictTitle}>Phòng không còn trống</Text>
+            <Text style={styles.conflictTitle}>{isGuestConflict ? 'Bạn đã có lịch đặt phòng' : 'Phòng không còn trống'}</Text>
             <Text style={styles.conflictDesc}>
               {conflictMessage ||
                 'Rất tiếc, phòng này vừa được khách khác đặt trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác hoặc phòng tương đương.'}
@@ -1013,12 +1021,12 @@ const CheckoutScreen = ({ navigation, route }) => {
                 <Text style={styles.conflictBtnSecondaryText}>Thay đổi ngày</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
+              {!isGuestConflict && <TouchableOpacity
                 style={styles.conflictBtnPrimary}
                 onPress={handleBackToHome}
               >
                 <Text style={styles.conflictBtnPrimaryText}>Xem phòng khác</Text>
-              </TouchableOpacity>
+              </TouchableOpacity>}
             </View>
           </View>
         </View>

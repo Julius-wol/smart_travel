@@ -1,3 +1,4 @@
+import { defaultStayDates } from '../utils/stayDates';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
@@ -34,6 +35,7 @@ import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 const BookingDiscoveryScreen = ({ navigation, route }) => {
   const user = route?.params?.user;
   const token = route?.params?.token;
+  const hasTabNavigator = navigation?.getState?.()?.type === 'tab';
   const dispatch = useDispatch();
   const flatListRef = useRef(null);
 
@@ -149,9 +151,9 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
     return dateStr;
   };
 
-  const checkInDate = filters.checkIn || '2026-10-25';
-  const checkOutDate = filters.checkOut || '2026-10-28';
-  const nightsCount = filters.nights || 3;
+  const checkInDate = filters.checkIn || defaultStayDates().checkIn;
+  const checkOutDate = filters.checkOut || defaultStayDates().checkOut;
+  const nightsCount = filters.nights || 1;
   const dateRangeDisplay = `${formatDateDisplay(checkInDate, '15/05')} – ${formatDateDisplay(checkOutDate, '18/05')}`;
   const nightsDisplay = `${nightsCount} đêm`;
 
@@ -162,7 +164,7 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
         onLogoPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
         onSearchPress={() => {}}
         onNotificationPress={() => {}}
-        onProfilePress={() => navigation.navigate('Profile', { user, token })}
+        onProfilePress={() => navigation.navigate(hasTabNavigator ? 'Account' : 'Profile', { user, token })}
         unreadNotifications={2}
       />
 
@@ -257,7 +259,7 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {/* Network Error Banner (CR_BOOK_03) */}
       {error && (
         <View style={styles.errorBanner}>
@@ -282,6 +284,7 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
         </View>
       ) : (
         <FlatList
+          style={styles.roomList}
           ref={flatListRef}
           data={rooms}
           keyExtractor={(item) => item._id}
@@ -293,7 +296,11 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
                 onToggleWishlist={() => handleToggleWishlist(item)}
                 onPress={() =>
                   navigation?.navigate
-                    ? navigation.navigate('RoomDetail', { roomId: item._id })
+                    ? navigation.navigate('RoomDetail', {
+                        roomId: item._id, user, token,
+                        selectedDates: { checkIn: filters.checkIn, checkOut: filters.checkOut, nights: filters.nights },
+                        guestConfig: { adults: filters.guests, children: 0, rooms: filters.roomsCount, isCustomized: true },
+                      })
                     : null
                 }
               />
@@ -336,8 +343,8 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
       <DatePickerModal
         visible={dateModalVisible}
         onClose={() => setDateModalVisible(false)}
-        initialCheckIn={filters.checkIn || '2026-10-25'}
-        initialCheckOut={filters.checkOut || '2026-10-28'}
+        initialCheckIn={filters.checkIn || defaultStayDates().checkIn}
+        initialCheckOut={filters.checkOut || defaultStayDates().checkOut}
         onApply={({ checkIn, checkOut, nights }) => {
           dispatch(setFilters({ checkIn, checkOut, nights }));
         }}
@@ -354,6 +361,9 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  roomList: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.screenBg,

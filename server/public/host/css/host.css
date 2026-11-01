@@ -218,14 +218,14 @@ body {
 
 /* TOP HEADER */
 .host-top-header {
-  height: 68px;
+  min-height: 68px;
+  flex-shrink: 0;
   padding: 0 36px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: transparent;
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 90;
 }
 
@@ -1037,7 +1037,7 @@ body {
   flex-direction: column;
   gap: 20px;
   position: sticky;
-  top: 88px;
+  top: 20px;
 }
 
 /* Form Card Sections */

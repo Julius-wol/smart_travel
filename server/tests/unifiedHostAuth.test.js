@@ -54,7 +54,7 @@ describe('Unified Authentication for HOST & USER (Option 1)', () => {
         expect(setCookieHeaders.some(c => c.includes('hostToken='))).toBe(true);
     });
 
-    test('Regular user is rejected with 403 when trying to access Host portal /host/signin', async () => {
+    test('Host sign-in only searches HOST accounts; a visitor alone returns 401', async () => {
         const hashedPassword = await bcrypt.hash('UserSecret123!', 4);
         const normalUser = {
             _id: '607f1f77bcf86cd799439001',
@@ -64,13 +64,14 @@ describe('Unified Authentication for HOST & USER (Option 1)', () => {
             password: hashedPassword
         };
 
-        jest.spyOn(User, 'findOne').mockResolvedValue(normalUser);
+        const lookup = jest.spyOn(User, 'findOne').mockResolvedValue(null);
 
         const res = await request(app)
             .post('/api/auth/host/signin')
             .send({ emailOrPhone: 'traveler@gmail.com', password: 'UserSecret123!' });
 
-        expect(res.status).toBe(403);
+        expect(res.status).toBe(401);
+        expect(lookup).toHaveBeenCalledWith(expect.objectContaining({ role: 'HOST' }));
     });
 
     test('Host signing in via /api/auth/signin with clientType=host succeeds', async () => {
@@ -94,7 +95,7 @@ describe('Unified Authentication for HOST & USER (Option 1)', () => {
         expect(res.body.data.accessToken).toBeDefined();
     });
 
-    test('Host signing in via /api/auth/signin without clientType=host is blocked with ROLE_NOT_PERMITTED_ON_MOBILE', async () => {
+    test('Host account can sign into mobile', async () => {
         const hashedPassword = await bcrypt.hash('HostSecret123!', 4);
         const hostUser = {
             _id: '607f1f77bcf86cd799439099',
@@ -104,14 +105,16 @@ describe('Unified Authentication for HOST & USER (Option 1)', () => {
             password: hashedPassword
         };
 
-        jest.spyOn(User, 'findOne').mockResolvedValue(hostUser);
+        const lookup = jest.spyOn(User, 'findOne').mockImplementation(async query => query.role === 'HOST' ? hostUser : null);
+        jest.spyOn(Session, 'create').mockResolvedValue({});
 
         const res = await request(app)
             .post('/api/auth/signin')
             .send({ username: 'host@smarttravel.vn', password: 'HostSecret123!' });
 
-        expect(res.status).toBe(403);
-        expect(res.body.code).toBe('ROLE_NOT_PERMITTED_ON_MOBILE');
+        expect(res.status).toBe(200);
+        expect(lookup).toHaveBeenCalledWith(expect.objectContaining({ role: 'USER' }));
+        expect(res.body.code).toBeUndefined();
     });
 
     test('Refresh token endpoint refreshes access token', async () => {

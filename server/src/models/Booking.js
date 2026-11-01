@@ -44,7 +44,7 @@ const bookingSchema = new mongoose.Schema({
   paymentStatus: {
     type: String,
     enum: ['UNPAID', 'PAID', 'REFUNDED'],
-    default: 'PAID'
+    default: 'UNPAID'
   },
 
   // Trạng thái đơn đặt phòng

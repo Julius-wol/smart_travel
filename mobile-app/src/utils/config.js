@@ -50,6 +50,15 @@ export const SERVER_IP = getServerIP();
 export const BASE_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
 export const API_URL = `${BASE_URL}/api`;
 
+// Host uploads are stored as paths; native Image needs the backend's full URL.
+export const resolveMediaUrl = (uri) => {
+  if (typeof uri !== 'string' || !uri.trim()) return undefined;
+  const value = uri.trim();
+  if (/^[a-z][a-z\d+.-]*:/i.test(value)) return value;
+  if (value.startsWith('//')) return `${BASE_URL.split(':')[0]}:${value}`;
+  return `${BASE_URL}/${value.replace(/^\/+/, '')}`;
+};
+
 export default {
   SERVER_IP,
   SERVER_PORT,

@@ -4,10 +4,8 @@ const UserSchema = new mongoose.Schema({
   email: { 
     type: String, 
     required: [true, 'Email là bắt buộc'], 
-    unique: true, 
     lowercase: true, 
-    trim: true,
-    index: true 
+    trim: true
   },
   password: { 
     type: String, 
@@ -50,8 +48,7 @@ const UserSchema = new mongoose.Schema({
   // Trường tương thích ngược & hỗ trợ xác thực mở rộng
   username: { 
     type: String, 
-    trim: true, 
-    sparse: true 
+    trim: true
   },
   firstName: { 
     type: String, 
@@ -71,6 +68,13 @@ const UserSchema = new mongoose.Schema({
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
+});
+
+// Email and username identify an account within its role, not across portals.
+UserSchema.index({ email: 1, role: 1 }, { unique: true });
+UserSchema.index({ username: 1, role: 1 }, {
+  unique: true,
+  partialFilterExpression: { username: { $type: 'string', $gt: '' } }
 });
 
 // Tự động gán fullName từ firstName và lastName nếu chưa có (tương thích ngược dữ liệu cũ)

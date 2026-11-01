@@ -71,31 +71,58 @@ function renderScreen(name, values, responses, googleResponse = null) {
 }
 
 for (const provider of ['password', 'google']) {
-  for (const role of ['HOST', 'USER']) {
-    test(`${provider}: ${role === 'HOST' ? 'rejects HOST' : 'allows USER'}`, async () => {
-      const screen = renderScreen('LoginScreen', ['traveler@gmail.com', 'secret123'], [
+  for (const hasVisitor of [false, true]) {
+    test(provider + ': ' + (hasVisitor ? 'uses visitor profile returned by API' : 'shows API login failure'), async () => {
+      const responses = hasVisitor ? [
         { ok: true, data: { status: 200, message: 'OK', data: { accessToken: 'jwt' } } },
-        { ok: true, data: { status: 200, message: 'OK', data: { role, username: 'traveler' } } },
-      ], provider === 'google' ? {
-        type: 'success', authentication: { accessToken: 'google-token' },
-      } : null);
+        { ok: true, data: { status: 200, message: 'OK', data: { role: 'USER', email: 'same@gmail.com', username: 'traveler' } } },
+      ] : [{ ok: false, data: { status: 401, message: 'Visitor account not found', data: null } }];
+      const screen = renderScreen('LoginScreen', ['same@gmail.com', 'secret123'], responses,
+        provider === 'google' ? { type: 'success', authentication: { accessToken: 'google-token' } } : null);
       if (provider === 'password') {
-        const button = screen.find(screen.tree, (node) =>
-          node.type === 'TouchableOpacity' && node.props.onPress?.name === 'handleLogin');
+        const button = screen.find(screen.tree, node => node.type === 'TouchableOpacity' && node.props.onPress?.name === 'handleLogin');
         assert.ok(button);
         await button.props.onPress();
       } else {
-        screen.effects.forEach((effect) => effect());
-        await new Promise((resolve) => setImmediate(resolve));
+        screen.effects.forEach(effect => effect());
+        await new Promise(resolve => setImmediate(resolve));
       }
-      assert.equal(screen.requests.length, 2);
-      assert.ok(screen.requests[0].url.endsWith(provider === 'google' ? '/auth/google' : '/auth/signin'));
-      assert.equal(screen.navigations.length, role === 'HOST' ? 0 : 1);
-      assert.equal(screen.alerts.length, role === 'HOST' ? 1 : 0);
-      if (role === 'HOST') assert.match(screen.alerts[0][1], /Chủ phòng/);
-      else assert.equal(screen.navigations[0][0], 'Home');
+      assert.equal(screen.requests.length, hasVisitor ? 2 : 1);
+      const body = JSON.parse(screen.requests[0].options.body);
+      assert.equal(body.platform, 'mobile');
+      assert.equal(body.role, 'USER');
+      assert.equal(screen.navigations.length, hasVisitor ? 1 : 0);
+      assert.equal(screen.alerts.length, hasVisitor ? 0 : 1);
+      if (hasVisitor) {
+        assert.equal(screen.navigations[0][0], 'Home');
+        assert.equal(screen.navigations[0][1].user.role, 'USER');
+        assert.equal(screen.navigations[0][1].token, 'jwt');
+      }
     });
   }
+}
+
+for (const provider of ['password', 'google']) {
+  test(`${provider}: HOST account opens the visitor Home screen`, async () => {
+    const screen = renderScreen('LoginScreen', ['host@gmail.com', 'secret123'], [
+      { ok: true, data: { status: 200, data: { accessToken: 'host-jwt' } } },
+      { ok: true, data: { status: 200, data: { role: 'HOST', email: 'host@gmail.com' } } },
+    ], provider === 'google' ? {
+      type: 'success', authentication: { accessToken: 'google-token' },
+    } : null);
+    if (provider === 'password') {
+      const button = screen.find(screen.tree, node => node.props.onPress?.name === 'handleLogin');
+      await button.props.onPress();
+    } else {
+      screen.effects.forEach(effect => effect());
+      await new Promise(resolve => setImmediate(resolve));
+    }
+    assert.equal(screen.alerts.length, 0);
+    assert.equal(screen.navigations.length, 1);
+    assert.equal(screen.navigations[0][0], 'Home');
+    assert.equal(screen.navigations[0][1].user.role, 'HOST');
+    assert.equal(screen.navigations[0][1].token, 'host-jwt');
+  });
 }
 
 test('registration only sends USER and has no HOST selector', async () => {

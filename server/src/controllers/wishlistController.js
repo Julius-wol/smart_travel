@@ -19,7 +19,8 @@ export const toggleWishlist = async (req, res) => {
     }
 
     // Nếu người dùng chưa truyền userId hoặc chưa đăng nhập, sử dụng fallback ID
-    const targetUserId = userId || req.user?._id || req.user?.id || '664c1234567890abcdef1234';
+    const targetUserId = req.user?._id || req.user?.id || userId;
+    if (!targetUserId || !mongoose.isValidObjectId(targetUserId)) return res.status(401).json({ success: false, message: 'Authentication required' });
 
     const existing = await Wishlist.findOne({ userId: targetUserId, roomId });
 

@@ -135,7 +135,7 @@
               </div>
 
               <!-- Diện tích m2 -->
-              <input type="hidden" id="inputArea" value="<%= room.area || 45 %>">
+              <input type="hidden" id="inputArea" value="<%= room.area ?? '' %>">
             </div>
 
             <!-- SECTION 2: ĐỊA CHỈ & VỊ TRÍ TỌA ĐỘ (2.8 -> 2.11) -->
@@ -195,8 +195,8 @@
 
               <!-- 2.11 Bản đồ GPS Interactive Leaflet -->
               <%
-                let curLat = 16.0678;
-                let curLng = 108.2208;
+                let curLat = null;
+                let curLng = null;
                 if (room && room.location) {
                   if (Array.isArray(room.location.coordinates) && room.location.coordinates.length >= 2) {
                     curLng = room.location.coordinates[0];
@@ -410,7 +410,7 @@
                   <span class="meta-info-label" data-i18n="form_manager">Người phụ trách</span>
                   <span class="meta-info-val">
                     <span style="color: var(--primary);">👤</span>
-                    <span><%= user ? (user.firstName + ' ' + user.lastName) : 'Robin Nguyen' %></span>
+                    <span><%= user ? (user.fullName || [user.firstName, user.lastName].filter(Boolean).join(' ')) : '' %></span>
                   </span>
                 </div>
               </div>

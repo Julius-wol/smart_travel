@@ -1,3 +1,6 @@
+import Image from '../components/MediaImage';
+import { formatBookingHistory, nextUpcomingBooking, bookingNotifications } from '../utils/bookingHistory';
+import { resolveMediaUrl } from '../utils/config';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -9,7 +12,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Image,
   Switch,
   Modal,
   ActivityIndicator,
@@ -21,6 +23,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BASE_URL, API_URL } from '../utils/config';
 import ToastNotification from '../components/ToastNotification';
 import { toggleWishlistThunk } from '../store/slices/wishlistSlice';
+import { fetchRoomDetailApi } from '../services/roomService';
 
 /**
  * Màn hình [SMART-92] / [SMART-83] Tài khoản của tôi (My Account & Dashboard)
@@ -32,6 +35,7 @@ import { toggleWishlistThunk } from '../store/slices/wishlistSlice';
  * - e-Pass & Vé điện tử: Đồng bộ chính xác tên và email của user đang test
  */
 const ProfileScreen = ({ route, navigation }) => {
+  const hasTabNavigator = navigation?.getState?.()?.type === 'tab';
   const dispatch = useDispatch();
   const passedUser = route.params?.user;
   const token = route.params?.token;
@@ -42,176 +46,40 @@ const ProfileScreen = ({ route, navigation }) => {
 
   // State thông tin người dùng
   const [user, setUser] = useState({
+    _id: passedUser?._id || passedUser?.id,
     fullName:
       passedUser?.fullName ||
       (passedUser?.firstName ? `${passedUser.firstName} ${passedUser.lastName || ''}`.trim() : '') ||
-      'Linh Nguyễn',
-    firstName: passedUser?.firstName || 'Linh',
-    lastName: passedUser?.lastName || 'Nguyễn',
-    email: passedUser?.email || 'linh.traveler@gmail.com',
-    phone: passedUser?.phone || '0912345888',
+      '',
+    firstName: passedUser?.firstName || '',
+    lastName: passedUser?.lastName || '',
+    email: passedUser?.email || '',
+    phone: passedUser?.phone || '',
     avatar: passedUser?.avatar
       ? passedUser.avatar.startsWith('http')
         ? passedUser.avatar
         : `${BASE_URL}${passedUser.avatar}`
-      : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-    username: passedUser?.username || 'linh.traveler',
+      : '',
+    username: passedUser?.username || '',
     role: passedUser?.role || 'USER',
   });
+
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [bookingsError, setBookingsError] = useState('');
+  const [bookingsReloadKey, setBookingsReloadKey] = useState(0);
 
   const [avatarUri, setAvatarUri] = useState(user.avatar);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
 
-  // Mock dữ liệu danh sách phòng đã đặt mẫu chất lượng cao
-  const defaultBookedRooms = [
-    {
-      id: 'bk-01',
-      bookingCode: 'ST-5894',
-      title: 'West Lake Sunset Luxury Loft Hà Nội',
-      subtitle: 'Nguyên căn 2PN Ocean View Panorama',
-      thumbnail: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
-      location: 'Tây Hồ, Hà Nội',
-      checkIn: '27/10/2026',
-      checkOut: '29/10/2026',
-      dateRange: '27/10 - 29/10/2026',
-      nights: 3,
-      guests: 2,
-      pricePerNight: 2050000,
-      totalAmount: '6.110.000đ',
-      rating: 4.98,
-      reviewCount: 142,
-      status: 'CONFIRMED',
-      statusText: 'E-PASS SẴN SÀNG',
-      roomNumber: '402',
-    },
-    {
-      id: 'bk-02',
-      bookingCode: 'BK-9821',
-      title: 'Đà Nẵng Riverside Luxury Villa',
-      subtitle: 'Villa hồ bơi riêng gần biển Mỹ Khê',
-      thumbnail: 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=600&q=80',
-      location: 'Sơn Trà, Đà Nẵng',
-      checkIn: '15/05/2026',
-      checkOut: '18/05/2026',
-      dateRange: '15/05 - 18/05/2026',
-      nights: 3,
-      guests: 2,
-      pricePerNight: 1450000,
-      totalAmount: '4.350.000đ',
-      rating: 4.95,
-      reviewCount: 98,
-      status: 'CONFIRMED',
-      statusText: 'E-PASS SẴN SÀNG',
-      roomNumber: 'Villa 02',
-    },
-    {
-      id: 'bk-03',
-      bookingCode: 'BK-4412',
-      title: 'An Nhiên Eco Retreat Bán Đảo Sơn Trà',
-      subtitle: 'Bungalow gỗ view rừng nguyên sinh',
-      thumbnail: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=80',
-      location: 'Bán đảo Sơn Trà, Đà Nẵng',
-      checkIn: '10/01/2026',
-      checkOut: '13/01/2026',
-      dateRange: '10/01 - 13/01/2026',
-      nights: 3,
-      guests: 2,
-      pricePerNight: 1250000,
-      totalAmount: '3.750.000đ',
-      rating: 4.92,
-      reviewCount: 115,
-      status: 'COMPLETED',
-      statusText: 'ĐÃ HOÀN THÀNH',
-      roomNumber: 'BG-08',
-    },
-    {
-      id: 'bk-04',
-      bookingCode: 'BK-3390',
-      title: 'Sapa Pine Hill Mountain Retreat',
-      subtitle: 'Biệt thự trên mây ngắm đỉnh Fansipan',
-      thumbnail: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80',
-      location: 'Thị xã Sapa, Lào Cai',
-      checkIn: '20/12/2025',
-      checkOut: '23/12/2025',
-      dateRange: '20/12 - 23/12/2025',
-      nights: 3,
-      guests: 2,
-      pricePerNight: 1650000,
-      totalAmount: '4.950.000đ',
-      rating: 4.96,
-      reviewCount: 84,
-      status: 'COMPLETED',
-      statusText: 'ĐÃ HOÀN THÀNH',
-      roomNumber: 'M-101',
-    },
-  ];
+  // Booking history is loaded for the authenticated account.
 
-  const [bookedRooms, setBookedRooms] = useState(defaultBookedRooms);
+
+  const [bookedRooms, setBookedRooms] = useState([]);
 
   // Chuyến đi sắp tới (Hero Card)
-  const [upcomingTrip, setUpcomingTrip] = useState(defaultBookedRooms[0]);
+  const [upcomingTrip, setUpcomingTrip] = useState(null);
 
-  // Mock danh sách homestay yêu thích
-  const defaultWishlistRooms = [
-    {
-      id: 'wl-01',
-      _id: 'wl-01',
-      title: 'West Lake Sunset Luxury Loft Hà Nội',
-      name: 'West Lake Sunset Luxury Loft Hà Nội',
-      subtitle: 'Nguyên căn 2PN Ocean View Panorama',
-      images: ['https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80'],
-      location: { city: 'Tây Hồ, Hà Nội' },
-      address: 'Đường Quảng An, Quận Tây Hồ, TP. Hà Nội',
-      pricePerNight: 2050000,
-      rating: 4.98,
-      reviewCount: 142,
-      badge: 'HOT NHẤT TÂY HỒ',
-    },
-    {
-      id: 'wl-02',
-      _id: 'wl-02',
-      title: 'Đà Nẵng Riverside Luxury Villa',
-      name: 'Đà Nẵng Riverside Luxury Villa',
-      subtitle: 'Villa hồ bơi riêng gần biển Mỹ Khê',
-      images: ['https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?auto=format&fit=crop&w=600&q=80'],
-      location: { city: 'Sơn Trà, Đà Nẵng' },
-      address: 'Đường Hoàng Sa, Bán đảo Sơn Trà, TP. Đà Nẵng',
-      pricePerNight: 1450000,
-      rating: 4.95,
-      reviewCount: 98,
-      badge: 'TOP 1% SƠN TRÀ',
-    },
-    {
-      id: 'wl-03',
-      _id: 'wl-03',
-      title: 'Dalat Pine Garden & Cloud Villa',
-      name: 'Dalat Pine Garden & Cloud Villa',
-      subtitle: 'Biệt thự đồi thông săn mây sớm',
-      images: ['https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80'],
-      location: { city: 'Phường 10, TP. Đà Lạt' },
-      address: 'Đường Hùng Vương, Phường 10, TP. Đà Lạt',
-      pricePerNight: 1350000,
-      rating: 4.92,
-      reviewCount: 89,
-      badge: 'SĂN MÂY ĐÀ LẠT',
-    },
-    {
-      id: 'wl-04',
-      _id: 'wl-04',
-      title: 'Phú Quốc Ocean Pearl Beachfront Villa',
-      name: 'Phú Quốc Ocean Pearl Beachfront Villa',
-      subtitle: 'Villa mặt biển hoàng hôn bãi Trường',
-      images: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80'],
-      location: { city: 'Bãi Trường, Phú Quốc' },
-      address: 'Dương Tơ, TP. Phú Quốc, Kiên Giang',
-      pricePerNight: 2850000,
-      rating: 4.99,
-      reviewCount: 210,
-      badge: 'NGHỈ DƯỠNG BIỂN',
-    },
-  ];
-
-  const [wishlistRooms, setWishlistRooms] = useState(defaultWishlistRooms);
+  const [wishlistRooms, setWishlistRooms] = useState([]);
 
   // State Cài đặt
   const [pushNotificationEnabled, setPushNotificationEnabled] = useState(true);
@@ -229,65 +97,7 @@ const ProfileScreen = ({ route, navigation }) => {
   // State Thông báo (Notification Center Modal)
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [notificationFilter, setNotificationFilter] = useState('all'); // 'all' | 'unread'
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'notif-promo',
-      type: 'promo',
-      title: 'Tặng bạn Voucher 500.000đ',
-      message: 'Mã SMART2026 giảm ngay 500.000đ cho đơn đặt villa từ 2 đêm tại Bán đảo Sơn Trà.',
-      time: 'Hôm qua',
-      read: false,
-      badgeText: 'ƯU ĐÃI',
-      badgeColor: '#FEE2E2',
-      badgeTextColor: '#DC2626',
-      icon: 'gift',
-      iconColor: '#DC2626',
-      actionType: 'copy_voucher',
-      voucherCode: 'SMART2026',
-    },
-    {
-      id: 'notif-epass',
-      type: 'epass',
-      title: 'Vé điện tử e-Pass ST-5894 đã sẵn sàng',
-      message: 'Đơn đặt phòng tại West Lake Sunset Luxury Loft đã xác thực Napas thành công.',
-      time: 'Hôm nay',
-      read: false,
-      badgeText: 'VÉ ĐIỆN TỬ',
-      badgeColor: '#CCFBF1',
-      badgeTextColor: '#00685F',
-      icon: 'qr-code',
-      iconColor: '#00685F',
-      actionType: 'epass',
-    },
-    {
-      id: 'notif-ai',
-      type: 'ai_trip',
-      title: 'Lịch trình AI Đà Nẵng 3N2Đ đã sẵn sàng',
-      message: 'Trợ lý AI đã chuẩn bị xong kế hoạch ăn chơi, ngắm hoàng hôn và quán cà phê đẹp.',
-      time: '2 ngày trước',
-      read: true,
-      badgeText: 'AI PLANNER',
-      badgeColor: '#EDE9FE',
-      badgeTextColor: '#7C3AED',
-      icon: 'sparkles',
-      iconColor: '#7C3AED',
-      actionType: 'ai_trip',
-    },
-    {
-      id: 'notif-weather',
-      type: 'weather',
-      title: 'Dự báo thời tiết chuyến đi sắp tới',
-      message: 'Thời tiết Đà Nẵng những ngày tới nắng đẹp, nhiệt độ 26-30°C, lý tưởng tắm biển.',
-      time: '3 ngày trước',
-      read: true,
-      badgeText: 'THỜI TIẾT',
-      badgeColor: '#FEF3C7',
-      badgeTextColor: '#D97706',
-      icon: 'sunny',
-      iconColor: '#D97706',
-      actionType: 'weather',
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   const unreadNotifCount = notifications.filter((n) => !n.read).length;
 
@@ -346,55 +156,50 @@ const ProfileScreen = ({ route, navigation }) => {
 
   // Tải danh sách đơn đặt phòng thực tế từ backend
   useEffect(() => {
+    let active = true;
+    let latestRequest = 0;
+    setBookedRooms([]);
+    setUpcomingTrip(null);
     const fetchUserBookings = async () => {
+      const requestId = ++latestRequest;
+      setBookingsLoading(true);
+      setBookingsError('');
       try {
-        const queryEmail = user.email || passedUser?.email;
-        if (!queryEmail) return;
-
-        const res = await fetch(`${API_URL}/bookings/my-bookings?email=${encodeURIComponent(queryEmail)}`);
+        if (!token) throw new Error('Vui lòng đăng nhập lại để xem booking.');
+        const res = await fetch(API_URL + '/bookings/my-bookings', {
+          headers: { Authorization: 'Bearer ' + token },
+        });
         const json = await res.json();
-
-        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-          const formatted = json.data.map((b) => {
-            const checkInDate = new Date(b.checkIn);
-            const checkOutDate = new Date(b.checkOut);
-            const formatDate = (d) =>
-              `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-            return {
-              id: b._id,
-              bookingCode: b.bookingCode || 'ST-5894',
-              title: b.roomId?.title || b.roomId?.name || 'West Lake Sunset Luxury Loft Hà Nội',
-              subtitle: b.roomId?.subtitle || 'Nguyên căn 2PN Ocean View Panorama',
-              thumbnail:
-                b.roomId?.images?.[0] ||
-                'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
-              location: b.roomId?.location?.city || b.roomId?.city || 'Hà Nội',
-              checkIn: formatDate(checkInDate),
-              checkOut: formatDate(checkOutDate),
-              dateRange: `${formatDate(checkInDate)} - ${formatDate(checkOutDate)}`,
-              nights: b.totalNights || 3,
-              guests: b.guestDetails?.adults || 2,
-              pricePerNight: b.pricePerNight || 2050000,
-              totalAmount: b.totalPrice ? new Intl.NumberFormat('vi-VN').format(b.totalPrice) + 'đ' : '6.110.000đ',
-              rating: b.roomId?.rating || 4.98,
-              reviewCount: b.roomId?.reviewCount || 142,
-              status: b.paymentStatus || 'CONFIRMED',
-              statusText: 'E-PASS SẴN SÀNG',
-              roomNumber: '402',
-              rawRoom: b.roomId,
-            };
-          });
-
-          setBookedRooms(formatted);
-          setUpcomingTrip(formatted[0]);
-        }
+        if (!res.ok || !json.success || !Array.isArray(json.data)) throw new Error(json.message || 'Không thể tải danh sách đặt phòng.');
+        if (!active || requestId !== latestRequest) return;
+        const formatted = formatBookingHistory(json.data);
+        setNotifications(previous => bookingNotifications(json.data, previous));
+        setBookedRooms(formatted);
+        setUpcomingTrip(nextUpcomingBooking(formatted));
       } catch (err) {
-        console.warn('Lỗi lấy thông tin booking:', err);
+        if (!active || requestId !== latestRequest) return;
+        setBookedRooms([]);
+        setUpcomingTrip(null);
+        setBookingsError(err.message);
+      } finally {
+        if (active && requestId === latestRequest) setBookingsLoading(false);
       }
     };
-
     fetchUserBookings();
-  }, [user.email]);
+    const unsubscribe = navigation.addListener?.('focus', fetchUserBookings);
+    return () => { active = false; unsubscribe?.(); };
+  }, [token, passedUser?._id, passedUser?.id, navigation, bookingsReloadKey]);
+
+  const savedWishlistKey = Object.keys(savedRoomIds).sort().join(',');
+  useEffect(() => {
+    let active = true;
+    const ids = savedWishlistKey ? savedWishlistKey.split(',') : [];
+    Promise.allSettled(ids.map(id => fetchRoomDetailApi(id))).then(results => {
+      if (active) setWishlistRooms(results.filter(result => result.status === 'fulfilled' && result.value.data)
+        .map(result => result.value.data));
+    });
+    return () => { active = false; };
+  }, [savedWishlistKey]);
 
   // Đổi ảnh đại diện
   const handlePickAvatar = async () => {
@@ -553,62 +358,35 @@ const ProfileScreen = ({ route, navigation }) => {
   // Điều hướng đến e-Pass (Đồng bộ chính xác tên và email của user đang test!)
   const handleOpenEPass = (tripItem) => {
     const targetTrip = tripItem || upcomingTrip;
+    if (!targetTrip?.bookingCode) {
+      showToast('Bạn chưa có vé đặt phòng để xem.', 'info');
+      return;
+    }
     setShowBookingsModal(false);
 
     navigation.navigate('BookingSuccess', {
-      bookingCode: targetTrip.bookingCode || 'ST-5894',
-      homestay: {
-        id: targetTrip.id || 'hs-01',
-        _id: targetTrip.id || 'hs-01',
-        title: targetTrip.title,
-        name: targetTrip.title,
-        subtitle: targetTrip.subtitle || 'Nguyên căn 2PN Ocean View Panorama',
-        images: [targetTrip.thumbnail],
-        address: targetTrip.location,
-        location: { city: targetTrip.location },
-        rating: targetTrip.rating || 4.98,
-        reviewCount: targetTrip.reviewCount || 142,
-        roomNumber: targetTrip.roomNumber || '402',
-      },
+      bookingCode: targetTrip.bookingCode,
+      homestay: targetTrip.rawRoom || { _id: targetTrip.roomId, title: targetTrip.title, images: [targetTrip.thumbnail].filter(Boolean) },
       bookingDetails: {
-        fullName: user.fullName || user.username || 'Linh Nguyễn',
-        email: user.email || 'linh.traveler@gmail.com',
-        phone: user.phone || '0912345888',
-        checkIn: targetTrip.checkIn || targetTrip.dateRange?.split(' - ')[0] || '27/10/2026',
-        checkOut: targetTrip.checkOut || targetTrip.dateRange?.split(' - ')[1] || '29/10/2026',
-        nights: targetTrip.nights || 3,
-        guests: targetTrip.guests || 2,
-        totalAmount: targetTrip.totalAmount || '6.110.000đ',
+        paymentStatus: targetTrip.paymentStatus,
+        fullName: targetTrip.contact.fullName || user.fullName,
+        email: targetTrip.contact.email || user.email,
+        phone: targetTrip.contact.phone || user.phone,
+        checkIn: targetTrip.checkIn, checkOut: targetTrip.checkOut,
+        nights: targetTrip.nights, guests: targetTrip.guests, totalAmount: targetTrip.totalAmount,
       },
-      user,
-      token,
+      user, token,
     });
   };
 
   // Điều hướng xem chi tiết phòng để đặt lại (Re-book)
   const handleRebookRoom = (tripItem) => {
+    if (!tripItem.rawRoom?._id) {
+      showToast('Phòng này không còn khả dụng.', 'info');
+      return;
+    }
     setShowBookingsModal(false);
-    const homestayData = {
-      id: tripItem.id || 'hs-01',
-      _id: tripItem.id || 'hs-01',
-      name: tripItem.title,
-      title: tripItem.title,
-      subtitle: tripItem.subtitle || 'Nguyên căn 2PN Ocean View Panorama',
-      images: [tripItem.thumbnail],
-      address: tripItem.location,
-      rating: tripItem.rating || 4.98,
-      reviewCount: tripItem.reviewCount || 142,
-      pricePerNight: tripItem.pricePerNight || 2050000,
-      priceFormatted: tripItem.totalAmount || '2.050.000đ',
-      badge: 'HOMESTAY ĐÃ ĐẶT',
-      specs: {
-        type: 'Nhà nguyên căn',
-        capacity: 'Tối đa 4 khách',
-        bedroom: '2 PN • 2 Giường King',
-        bathroom: '2 Phòng tắm riêng',
-      },
-      ...tripItem.rawRoom,
-    };
+    const homestayData = tripItem.rawRoom;
 
     navigation.navigate('HomeDetails', {
       homestay: homestayData,
@@ -631,7 +409,7 @@ const ProfileScreen = ({ route, navigation }) => {
   const handleRemoveWishlist = (item) => {
     const targetId = item._id || item.id;
     setWishlistRooms((prev) => prev.filter((r) => r.id !== item.id && r._id !== item._id));
-    
+
     // Chỉ gọi API đồng bộ server nếu là ObjectId hợp lệ của MongoDB
     if (targetId && /^[0-9a-fA-F]{24}$/.test(String(targetId))) {
       dispatch(toggleWishlistThunk({ room: item, isCurrentlySaved: true }));
@@ -645,7 +423,10 @@ const ProfileScreen = ({ route, navigation }) => {
       prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
     );
 
-    if (item.actionType === 'copy_voucher') {
+    if (item.actionType === 'view_booking') {
+      const booking = bookedRooms.find(value => value.id === item.rawBooking?._id);
+      if (booking) handleOpenEPass(booking);
+    } else if (item.actionType === 'copy_voucher') {
       showToast(`Đã sao chép voucher ${item.voucherCode}!`, 'success', 2500);
     } else if (item.actionType === 'epass') {
       setShowNotificationModal(false);
@@ -798,11 +579,12 @@ const ProfileScreen = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Trip Hero Card Container */}
+        {/* Trip Hero Card Container */}
+        {upcomingTrip && !bookingsLoading && !bookingsError ? (
           <View style={styles.tripHeroCard}>
             <View style={styles.tripMainRow}>
               {/* Thumbnail Image */}
-              <Image source={{ uri: upcomingTrip.thumbnail }} style={styles.tripThumbnail} />
+              <Image source={{ uri: resolveMediaUrl(upcomingTrip.thumbnail) }} style={styles.tripThumbnail} />
 
               {/* Thông tin chuyến đi */}
               <View style={styles.tripMetaCol}>
@@ -845,6 +627,16 @@ const ProfileScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
           </View>
+
+        ) : (
+          <View style={styles.emptyContainer}>
+            {bookingsLoading ? <ActivityIndicator color="#00685F" /> : <Ionicons name="calendar-outline" size={32} color="#64748B" />}
+            <Text style={styles.emptyTitle}>
+              {bookingsLoading ? 'Đang tải chuyến đi…' : bookingsError ? 'Không thể tải chuyến đi' : 'Chưa có chuyến đi sắp tới'}
+            </Text>
+            {!bookingsLoading && <Text style={styles.emptySub}>{bookingsError || 'Các chuyến đi mới của bạn sẽ xuất hiện tại đây.'}</Text>}
+          </View>
+        )}
 
           {/* 5. QUICK SHORTCUTS */}
           <View style={styles.shortcutsRow}>
@@ -964,12 +756,13 @@ const ProfileScreen = ({ route, navigation }) => {
         {/* 8. FOOTER NOTE */}
         <View style={styles.footerNoteWrap}>
           <Text style={styles.footerNoteText}>
-            Smart Travel v2.4.1 (Build 2026) • Thiết kế bởi Smart AI
+            Smart Travel
           </Text>
         </View>
       </ScrollView>
 
       {/* 9. BOTTOM NAVIGATION BAR (4 Tabs) */}
+      {!hasTabNavigator && (
       <View style={styles.bottomNav}>
         {/* Tab 1: Khám phá */}
         <TouchableOpacity
@@ -1010,6 +803,7 @@ const ProfileScreen = ({ route, navigation }) => {
           <Text style={[styles.bottomNavLabel, styles.bottomNavLabelActive]}>Tài khoản</Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {/* ================= MODALS & POPUPS ================= */}
 
@@ -1144,7 +938,7 @@ const ProfileScreen = ({ route, navigation }) => {
                       onPress={() => handleViewWishlistDetail(room)}
                       style={styles.wishlistCardImageWrapper}
                     >
-                      <Image source={{ uri: room.images[0] }} style={styles.wishlistCardImg} />
+                      <Image source={{ uri: resolveMediaUrl(room.images[0]) }} style={styles.wishlistCardImg} />
                       <View style={styles.wishlistBadge}>
                         <Text style={styles.wishlistBadgeText}>{room.badge || 'HOMESTAY'}</Text>
                       </View>
@@ -1216,11 +1010,20 @@ const ProfileScreen = ({ route, navigation }) => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-              {bookedRooms.map((item) => (
+              {bookingsLoading || bookingsError || bookedRooms.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  {bookingsLoading ? <ActivityIndicator color="#00685F" /> : <Ionicons name="bed-outline" size={36} color="#64748B" />}
+                  <Text style={styles.emptyTitle}>
+                    {bookingsLoading ? 'Đang tải booking…' : bookingsError ? 'Không thể tải booking' : 'Bạn chưa đặt phòng nào'}
+                  </Text>
+                  <Text style={styles.emptySub}>{bookingsError || (bookingsLoading ? '' : 'Booking của bạn sẽ xuất hiện ở đây sau khi đặt phòng.')}</Text>
+                  {!!bookingsError && <TouchableOpacity onPress={() => setBookingsReloadKey(value => value + 1)}><Text style={styles.seeAllText}>Thử lại</Text></TouchableOpacity>}
+                </View>
+              ) : bookedRooms.map((item) => (
                 <View key={item.id} style={styles.bookedTravelCard}>
                   {/* Ảnh và thông tin cơ bản */}
                   <View style={styles.bookedCardTopRow}>
-                    <Image source={{ uri: item.thumbnail }} style={styles.bookedCardThumb} />
+                    <Image source={{ uri: resolveMediaUrl(item.thumbnail) }} style={styles.bookedCardThumb} />
                     <View style={styles.bookedCardMeta}>
                       <View style={styles.bookedCodeBadgeRow}>
                         <Text style={styles.bookedCodeBadge}>Mã: {item.bookingCode}</Text>

@@ -12,7 +12,7 @@ export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
  * Dùng chung cho cả USER và HOST
  */
 export const createSessionAndTokens = async (user, res, options = {}) => {
-  const isHost = options.isHost || user.role === 'HOST';
+  const isHost = options.isHost ?? (user.role === 'HOST');
 
   // 1. Tạo Access Token (JWT) mang thông tin userId và role
   const accessToken = jwt.sign(
@@ -87,7 +87,7 @@ export const refreshSession = async (refreshToken, res, options = {}) => {
     return null;
   }
 
-  const isHost = options.isHost || user.role === 'HOST';
+  const isHost = options.isHost ?? (user.role === 'HOST');
 
   // Tạo access token mới
   const newAccessToken = jwt.sign(
@@ -136,6 +136,7 @@ export const authenticateHostCredentials = async (queryInput, password) => {
   }
 
   const user = await User.findOne({
+    role: 'HOST',
     $or: [
       { username: query },
       { email: query.toLowerCase() },
@@ -153,12 +154,6 @@ export const authenticateHostCredentials = async (queryInput, password) => {
   if (!match) {
     const err = new Error('Mật khẩu không chính xác');
     err.code = 'INVALID_PASSWORD';
-    throw err;
-  }
-
-  if (user.role !== 'HOST') {
-    const err = new Error('Tài khoản của bạn là Khách du lịch (USER). Cổng này chỉ dành riêng cho Đối tác cho thuê phòng (HOST).');
-    err.code = 'NOT_HOST';
     throw err;
   }
 
@@ -188,6 +183,7 @@ export const registerHostUser = async ({ username, email, phone, firstName, last
   }
 
   const duplicate = await User.findOne({
+    role: 'HOST',
     $or: [
       { username: cleanUsername },
       { email: cleanEmail }

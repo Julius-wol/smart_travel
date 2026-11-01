@@ -1,3 +1,4 @@
+import { defaultStayDates } from '../utils/stayDates';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -18,13 +19,13 @@ import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 export const DatePickerModal = ({
   visible,
   onClose,
-  initialCheckIn = '2026-10-25',
-  initialCheckOut = '2026-10-28',
+  initialCheckIn = defaultStayDates().checkIn,
+  initialCheckOut = defaultStayDates().checkOut,
   onApply,
 }) => {
-  const [checkIn, setCheckIn] = useState(initialCheckIn || '2026-10-25');
-  const [checkOut, setCheckOut] = useState(initialCheckOut || '2026-10-28');
-  const [nights, setNights] = useState(3);
+  const [checkIn, setCheckIn] = useState(initialCheckIn || defaultStayDates().checkIn);
+  const [checkOut, setCheckOut] = useState(initialCheckOut || defaultStayDates().checkOut);
+  const [nights, setNights] = useState(1);
   const [errorMsg, setErrorMsg] = useState(null);
 
   // Tính số đêm lưu trú
@@ -45,10 +46,10 @@ export const DatePickerModal = ({
 
   useEffect(() => {
     if (visible) {
-      setCheckIn(initialCheckIn || '2026-10-25');
-      setCheckOut(initialCheckOut || '2026-10-28');
-      const diff = calculateNights(initialCheckIn || '2026-10-25', initialCheckOut || '2026-10-28');
-      setNights(diff && diff > 0 ? diff : 3);
+      setCheckIn(initialCheckIn || defaultStayDates().checkIn);
+      setCheckOut(initialCheckOut || defaultStayDates().checkOut);
+      const diff = calculateNights(initialCheckIn || defaultStayDates().checkIn, initialCheckOut || defaultStayDates().checkOut);
+      setNights(diff && diff > 0 ? diff : 1);
       setErrorMsg(null);
     }
   }, [visible, initialCheckIn, initialCheckOut]);

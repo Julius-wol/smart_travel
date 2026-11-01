@@ -8,16 +8,16 @@ const pointSchema = new mongoose.Schema({
   },
   coordinates: {
     type: [Number], // [longitude, latitude]
-    default: [108.2208, 16.0678]
+    default: undefined
   }
 }, { _id: false, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 pointSchema.virtual('lat').get(function() {
-  return (Array.isArray(this.coordinates) && this.coordinates.length >= 2) ? this.coordinates[1] : 16.0678;
+  return (Array.isArray(this.coordinates) && this.coordinates.length >= 2) ? this.coordinates[1] : undefined;
 });
 
 pointSchema.virtual('lng').get(function() {
-  return (Array.isArray(this.coordinates) && this.coordinates.length >= 2) ? this.coordinates[0] : 108.2208;
+  return (Array.isArray(this.coordinates) && this.coordinates.length >= 2) ? this.coordinates[0] : undefined;
 });
 
 const roomSchema = new mongoose.Schema({
@@ -26,7 +26,7 @@ const roomSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   description: { type: String, default: '' },
   address: { type: String, default: '' },
-  city: { type: String, required: true, default: 'Đà Nẵng' },
+  city: { type: String, default: '' },
   district: { type: String, default: '' },
   distance: { type: String, default: '' },
   pricePerNight: { type: Number, default: 0, min: 0 },
@@ -34,33 +34,33 @@ const roomSchema = new mongoose.Schema({
   maxGuests: { type: Number, default: 2, min: 1 },
   bedrooms: { type: Number, default: 1, min: 1 },
   beds: { type: Number, default: 1, min: 1 },
-  area: { type: Number, default: 45 },
+  area: { type: Number, min: 0 },
   images: [{ type: String }],
   badge: { type: String, default: '' },
   tags: [{ type: String }],
   distanceInfo: { type: String },
   specs: {
-    type: { type: String, default: 'Nhà nguyên căn' },
-    capacity: { type: String, default: 'Tối đa 2 khách' },
-    bedroom: { type: String, default: '1 PN • 1 Giường' },
-    bathroom: { type: String, default: '1 Phòng tắm riêng' },
+    type: { type: String, default: '' },
+    capacity: { type: String, default: '' },
+    bedroom: { type: String, default: '' },
+    bathroom: { type: String, default: '' },
   },
   amenities: [{ type: mongoose.Schema.Types.Mixed }],
-  rating: { type: Number, default: 4.9, min: 0, max: 5 },
+  rating: { type: Number, default: 0, min: 0, max: 5 },
   reviewCount: { type: Number, default: 0 },
   ratingBreakdown: {
-    overall: { type: Number, default: 5.0 },
-    cleanliness: { type: Number, default: 5.0 },
-    location: { type: Number, default: 5.0 },
-    service: { type: Number, default: 5.0 },
-    amenities: { type: Number, default: 5.0 },
-    value: { type: Number, default: 5.0 },
+    overall: { type: Number, default: 0 },
+    cleanliness: { type: Number, default: 0 },
+    location: { type: Number, default: 0 },
+    service: { type: Number, default: 0 },
+    amenities: { type: Number, default: 0 },
+    value: { type: Number, default: 0 },
   },
   policy: {
-    checkIn: { type: String, default: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)' },
-    checkOut: { type: String, default: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)' },
-    cancellation: { type: String, default: 'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00.' },
-    freeCancel48h: { type: Boolean, default: true }
+    checkIn: { type: String, default: '' },
+    checkOut: { type: String, default: '' },
+    cancellation: { type: String, default: '' },
+    freeCancel48h: { type: Boolean, default: false }
   },
   status: { 
     type: String, 
@@ -69,9 +69,9 @@ const roomSchema = new mongoose.Schema({
   },
   location: {
     type: pointSchema,
-    default: () => ({ type: 'Point', coordinates: [108.2208, 16.0678] })
+    default: undefined
   },
-  lastUpdatedBy: { type: String, default: 'Robin Nguyen' }
+  lastUpdatedBy: { type: String, default: '' }
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

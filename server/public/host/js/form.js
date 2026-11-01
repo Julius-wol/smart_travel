@@ -923,8 +923,8 @@ function getFormDataPayload(targetStatus) {
     amenities: JSON.stringify(amenities),
     images: JSON.stringify(currentImages),
     status: targetStatus,
-    lat: parseFloat(document.getElementById('inputLatitude')?.value) || 16.0678,
-    lng: parseFloat(document.getElementById('inputLongitude')?.value) || 108.2208
+    lat: document.getElementById('inputLatitude')?.value || null,
+    lng: document.getElementById('inputLongitude')?.value || null
   };
 }
 

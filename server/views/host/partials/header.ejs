@@ -38,8 +38,8 @@
         <div class="host-profile-avatar">RN</div>
       <% } %>
       <div class="host-profile-info">
-        <span class="host-profile-name"><%= user ? (user.firstName + ' ' + user.lastName) : 'Robin Nguyen' %></span>
-        <span class="host-profile-email"><%= user ? user.email : 'Robinnguyen@gmail.com' %></span>
+        <span class="host-profile-name"><%= user ? (user.fullName || [user.firstName, user.lastName].filter(Boolean).join(' ')) : '' %></span>
+        <span class="host-profile-email"><%= user ? user.email : '' %></span>
       </div>
       <span class="host-profile-arrow">▼</span>
 

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BookingDiscoveryScreen from '../screens/BookingDiscoveryScreen';
 import RoomDetailScreen from '../screens/RoomDetailScreen';
@@ -31,23 +32,33 @@ const ItineraryPlaceholder = () => (
 );
 
 // Bottom Tab Navigator (4 tabs theo thiết kế Figma)
-const MainTabNavigator = () => {
+const MainTabNavigator = ({ route, initialTab = 'Booking' }) => {
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  // Reserve space for the icon, scaled label and the tab button's own padding.
+  const tabBarContentHeight = Math.max(72, 56 + Math.ceil(16 * fontScale));
+  const sessionParams = route?.params || {};
   return (
     <Tab.Navigator
-      initialRouteName="Booking"
+      initialRouteName={initialTab}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#00685F', // Deep Teal
         tabBarInactiveTintColor: '#475569',
+        tabBarLabelPosition: 'below-icon',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E2E8F0',
-          height: 62,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: tabBarContentHeight + insets.bottom,
+          minHeight: tabBarContentHeight + insets.bottom,
+          flexShrink: 0,
+          paddingBottom: 6 + insets.bottom,
+          paddingTop: 4,
         },
         tabBarLabelStyle: {
           fontSize: 11,
+          lineHeight: 16,
+          marginTop: 2,
           fontWeight: '700',
         },
         tabBarIcon: ({ color, focused }) => {
@@ -69,11 +80,13 @@ const MainTabNavigator = () => {
       <Tab.Screen
         name="Discovery"
         component={HomeScreen}
+        initialParams={sessionParams}
         options={{ tabBarLabel: 'Khám phá' }}
       />
       <Tab.Screen
         name="Booking"
         component={BookingDiscoveryScreen}
+        initialParams={sessionParams}
         options={{ tabBarLabel: 'Đặt phòng' }}
       />
       <Tab.Screen
@@ -84,11 +97,16 @@ const MainTabNavigator = () => {
       <Tab.Screen
         name="Account"
         component={ProfileScreen}
+        initialParams={sessionParams}
         options={{ tabBarLabel: 'Tài khoản' }}
       />
     </Tab.Navigator>
   );
 };
+
+// Legacy routes enter the shared tabs instead of opening standalone screens.
+const HomeTabEntry = (props) => <MainTabNavigator {...props} initialTab="Discovery" />;
+const ProfileTabEntry = (props) => <MainTabNavigator {...props} initialTab="Account" />;
 
 // Root Stack Navigator
 export const AppNavigator = ({ initialRouteName = 'Login' }) => {
@@ -98,14 +116,14 @@ export const AppNavigator = ({ initialRouteName = 'Login' }) => {
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Home" component={HomeTabEntry} />
         <Stack.Screen name="HomeDetails" component={HomeDetailsScreen} />
         <Stack.Screen name="Checkout" component={CheckoutScreen} />
         <Stack.Screen name="BookingSuccess" component={BookingSuccessScreen} />
         <Stack.Screen name="WriteReview" component={WriteReviewScreen} />
-        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="Profile" component={ProfileTabEntry} />
         <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-        <Stack.Screen name="BookingDiscovery" component={BookingDiscoveryScreen} />
+        <Stack.Screen name="BookingDiscovery" component={MainTabNavigator} />
         <Stack.Screen
           name="RoomDetail"
           component={RoomDetailScreen}

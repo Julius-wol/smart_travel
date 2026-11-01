@@ -1,11 +1,16 @@
 import express from 'express';
 import { createBooking, getBookingByCode, getMyBookings, checkAvailability } from '../controllers/bookingController.js';
+import { protectedRoute } from '../middlewares/authMiddlewares.js';
 
 const router = express.Router();
 
-router.post('/', createBooking);
-router.get('/check-availability', checkAvailability);
-router.get('/my-bookings', getMyBookings);
+// Use the signed-in customer's identity when a bearer token is supplied.
+const identifyCustomer = (req, res, next) => req.headers.authorization
+  ? protectedRoute(req, res, next)
+  : next();
+router.post('/', identifyCustomer, createBooking);
+router.get('/check-availability', identifyCustomer, checkAvailability);
+router.get('/my-bookings', protectedRoute, getMyBookings);
 router.get('/:code', getBookingByCode);
 
 export default router;

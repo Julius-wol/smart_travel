@@ -51,14 +51,6 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const completeLogin = (user, token) => {
-    if (user.role === 'HOST') {
-      showErrorPopup(
-        'Ứng dụng di động không hỗ trợ đăng nhập tài khoản Chủ phòng.',
-        'Không thể đăng nhập'
-      );
-      return;
-    }
-
     navigation.replace('Home', { user, token });
   };
 
@@ -137,7 +129,7 @@ const LoginScreen = ({ navigation }) => {
       const loginRes = await fetch(`${API_URL}/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: trimmedEmail.toLowerCase(), password })
+        body: JSON.stringify({ username: trimmedEmail.toLowerCase(), password, platform: 'mobile', role: 'USER' })
       });
 
       const loginData = await loginRes.json();
@@ -161,15 +153,7 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        if (profileData.role === 'HOST') {
-          Alert.alert(
-            'Tài khoản Đối tác Host',
-            'Tài khoản này là tài khoản Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!'
-          );
-          return;
-        }
-        // Chuyển sang màn hình Trang chủ (Booking Discovery)
-        navigation.replace('Home', { user: profileData, token: accessToken });
+        completeLogin(profileData.data, accessToken);
       } else {
         const msg = 'Không lấy được thông tin User';
         setFormError(msg);
@@ -210,14 +194,7 @@ const LoginScreen = ({ navigation }) => {
       const profileData = await profileRes.json();
 
       if (profileRes.ok) {
-        if (profileData.role === 'HOST') {
-          Alert.alert(
-            'Tài khoản Đối tác Host',
-            'Tài khoản này là tài khoản Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!'
-          );
-          return;
-        }
-        navigation.replace('Home', { user: profileData, token: data.accessToken });
+        completeLogin(profileData.data, data.data.accessToken);
       } else {
         showErrorPopup('Không lấy được thông tin tài khoản Google', 'Lỗi tài khoản');
       }

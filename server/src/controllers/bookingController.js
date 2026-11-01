@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Booking from '../models/Booking.js';
 import Room from '../models/Room.js';
 import RoomAvailability from '../models/RoomAvailability.js';
+import { findGuestBookingConflict, GUEST_BOOKING_CONFLICT, validStayDates } from '../services/bookingConflictService.js';
 
 // Helper chuẩn hóa phương thức thanh toán
 const normalizePaymentMethod = (method) => {
@@ -52,12 +53,6 @@ export const createBooking = async (req, res) => {
     if (roomId && mongoose.isValidObjectId(roomId)) {
       room = await Room.findById(roomId);
     }
-    if (!room) {
-      room = await Room.findOne({ status: { $in: ['PUBLISHED', 'ACTIVE'] } });
-      if (room) {
-        targetRoomId = room._id;
-      }
-    }
 
     if (!room) {
       return res.status(404).json({
@@ -67,8 +62,17 @@ export const createBooking = async (req, res) => {
     }
 
     // Xử lý ngày nhận/trả phòng thời gian thực
-    const startDate = checkIn ? new Date(checkIn) : new Date();
-    const endDate = checkOut ? new Date(checkOut) : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const startDate = new Date(checkIn);
+    const endDate = new Date(checkOut);
+    if (!validStayDates(startDate, endDate)) {
+      return res.status(400).json({ success: false, message: 'Ngày nhận/trả phòng không hợp lệ.' });
+    }
+    const accountId = req.user?._id || userId;
+    const guestConflict = await findGuestBookingConflict({
+      userId: accountId,
+      emails: [req.user?.email, contactEmail],
+    }, startDate, endDate);
+    if (guestConflict) return res.status(409).json(GUEST_BOOKING_CONFLICT);
 
     // Tính số đêm thực tế
     const diffTime = endDate.getTime() - startDate.getTime();
@@ -111,28 +115,35 @@ export const createBooking = async (req, res) => {
     }
 
     // Sanitize userId
-    const validUserId = (userId && typeof userId === 'string' && mongoose.isValidObjectId(userId))
-      ? userId
+    const validUserId = (accountId && mongoose.isValidObjectId(accountId))
+      ? accountId
       : undefined;
 
     // Tạo bản ghi đặt phòng mới với trạng thái PENDING để Host xét duyệt
+    const pricePerNight = Number(room.pricePerNight ?? room.regularPrice ?? room.price);
+    if (!Number.isFinite(pricePerNight) || pricePerNight <= 0) {
+      return res.status(400).json({ success: false, message: 'Phòng chưa có giá hợp lệ.' });
+    }
     const newBooking = await Booking.create({
       bookingCode,
+      roomId: targetRoomId,
       userId: validUserId,
-      fullName: fullName.trim(),
-      phoneNumber: phoneNumber.trim(),
-      email: email.trim(),
+      fullName: contactName,
+      phoneNumber: contactPhone,
+      email: contactEmail.toLowerCase(),
       guestInfo: {
-        fullName: fullName.trim(),
-        phoneNumber: phoneNumber.trim(),
-        email: email.trim()
+        fullName: contactName,
+        phoneNumber: contactPhone,
+        email: contactEmail.toLowerCase()
       },
       checkIn: startDate,
       checkOut: endDate,
       nights: actualNights,
       guests: guests || 2,
-      paymentMethod: paymentMethod || 'momo',
-      totalPrice: totalPrice || 2550000,
+      paymentMethod: normalizePaymentMethod(paymentMethod),
+      pricePerNight,
+      totalPrice: pricePerNight * actualNights,
+      paymentStatus: 'UNPAID',
       status: 'PENDING',
     });
 
@@ -167,7 +178,7 @@ export const createBooking = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Đặt phòng và thanh toán thành công!',
+      message: 'Đã gửi yêu cầu đặt phòng.',
       bookingCode,
       data: newBooking,
     });
@@ -193,6 +204,14 @@ export const checkAvailability = async (req, res) => {
 
     const startDate = new Date(checkIn);
     const endDate = new Date(checkOut);
+    if (!validStayDates(startDate, endDate)) {
+      return res.status(400).json({ success: false, message: 'Ngày nhận/trả phòng không hợp lệ.' });
+    }
+    const guestConflict = await findGuestBookingConflict({
+      userId: req.user?._id || req.query.userId,
+      emails: [req.user?.email, req.query.email],
+    }, startDate, endDate);
+    if (guestConflict) return res.status(409).json(GUEST_BOOKING_CONFLICT);
 
     // Kiểm tra đơn Booking hiện hữu
     const conflictingBooking = await Booking.findOne({
@@ -264,15 +283,14 @@ export const getBookingByCode = async (req, res) => {
 // 4. Lấy danh sách lịch sử đặt phòng của người dùng
 export const getMyBookings = async (req, res) => {
   try {
-    const { email } = req.query;
-    const query = email
-      ? {
-          $or: [
-            { email },
-            { 'guestContact.email': email },
-          ],
-        }
-      : {};
+    if (!req.user?._id) return res.status(401).json({ success: false, message: 'Vui lòng đăng nhập để xem booking.' });
+    const identity = [{ userId: req.user._id }];
+    if (req.user.email) {
+      const email = new RegExp(`^${req.user.email.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      // Legacy bookings may lack userId. Never include another account's bookings.
+      identity.push({ userId: null, $or: [{ email }, { 'guestContact.email': email }, { 'guestInfo.email': email }] });
+    }
+    const query = { $or: identity };
 
     const bookings = await Booking.find(query)
       .populate('roomId')

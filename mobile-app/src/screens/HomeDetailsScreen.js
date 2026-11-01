@@ -1,8 +1,9 @@
+import Image from '../components/MediaImage';
+import { resolveMediaUrl } from '../utils/config';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -26,166 +27,21 @@ const HomeDetailsScreen = ({ navigation, route }) => {
   const { homestay, user, token, selectedDates, guestConfig } = route.params || {};
 
   // Dữ liệu nơi lưu trú (ưu tiên dữ liệu thực từ MongoDB)
-  const data = homestay
-    ? {
-        ...homestay,
-        id: homestay._id || homestay.id || 'hs-01',
-        _id: homestay._id || homestay.id,
-        name: homestay.title || homestay.name || 'An Nhiên Eco Retreat Đà Nẵng',
-        badge: homestay.badge || (homestay.tags && homestay.tags[0]) || 'TOP 1% SƠN TRÀ',
-        tags:
-          homestay.tags && homestay.tags.length > 0
-            ? homestay.tags
-            : ['TOP 1% SƠN TRÀ', 'Eco Living', 'Gần biển'],
-        rating: homestay.rating || 4.9,
-        reviewCount: homestay.reviewCount || 128,
-        address: homestay.address || 'Đường Hoàng Sa, Bán đảo Sơn Trà, TP. Đà Nẵng',
-        distance: homestay.distance || 'Cách bãi biển Mỹ Khê 150m • Gần chùa Linh Ứng',
-        price: homestay.pricePerNight || homestay.price || 1450000,
-        priceFormatted: homestay.pricePerNight
-          ? new Intl.NumberFormat('vi-VN').format(homestay.pricePerNight) + 'đ'
-          : homestay.priceFormatted || '1.450.000đ',
-        images:
-          homestay.images && homestay.images.length > 0
-            ? homestay.images
-            : [
-                'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
-                'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=80',
-                'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80',
-              ],
-        specs: homestay.specs || {
-          type: 'Nhà nguyên căn',
-          capacity: 'Tối đa 4 khách',
-          bedroom: '2 PN • 2 Giường King',
-          bathroom: '2 Phòng tắm riêng',
-        },
-        amenities:
-          homestay.amenities && homestay.amenities.length > 0
-            ? homestay.amenities
-            : [
-                { id: '1', name: 'Wifi tốc độ cao', icon: 'wifi' },
-                { id: '2', name: 'Bếp riêng cao cấp', icon: 'restaurant' },
-                { id: '3', name: 'Bồn tắm gỗ pơ-mu', icon: 'water' },
-                { id: '4', name: 'Máy chiếu phim 4K', icon: 'videocam' },
-                { id: '5', name: 'Giặt & sấy khô', icon: 'shirt' },
-                { id: '6', name: 'Điều hòa 2 chiều', icon: 'snow' },
-                { id: '7', name: 'Ban công view biển', icon: 'sunny' },
-                { id: '8', name: 'Chỗ đỗ xe ô tô', icon: 'car' },
-              ],
-        ratingBreakdown: homestay.ratingBreakdown || {
-          overall: homestay.rating || 4.9,
-          cleanliness: 5.0,
-          location: 4.9,
-          service: 4.9,
-          amenities: 4.8,
-          value: 4.9,
-        },
-        reviews: [
-          {
-            id: 'rev-01',
-            author: 'Trần Hoàng Nam',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&q=80',
-            date: 'Lưu trú tháng 04/2026',
-            rating: 5.0,
-            comment:
-              'Phòng thực tế y hệt như ảnh! Ban công ngắm trọn bình minh biển Sơn Trà cực kỳ chill. Chủ nhà nhiệt tình hỗ trợ check-in sớm mà không phụ thu.',
-            images: [
-              'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300&q=80',
-              'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=300&q=80',
-            ],
-          },
-          {
-            id: 'rev-02',
-            author: 'Nguyễn Mai Anh',
-            avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80',
-            date: 'Lưu trú tháng 03/2026',
-            rating: 5.0,
-            comment:
-              'Tiện nghi rất đầy đủ, máy chiếu xem phim buổi tối cực thích. Không gian sạch sẽ, thơm mùi tinh dầu thiên nhiên.',
-            images: [],
-          },
-        ],
-        policy: homestay.policy || {
-          checkIn: '14:00 (Nhận phòng trực tiếp với nhân viên lễ tân)',
-          checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
-          cancellation:
-            'Miễn phí hủy phòng trước 48h trước giờ nhận phòng. Hoàn tiền 100% nếu hủy kịp thời. Sau thời gian này áp dụng chính sách hoàn trả của chủ nhà.',
-        },
-      }
-    : {
-        id: 'hs-01',
-        name: 'An Nhiên Eco Retreat Đà Nẵng',
-        badge: 'TOP 1% SƠN TRÀ',
-        tags: ['TOP 1% SƠN TRÀ', 'Eco Living', 'Gần biển'],
-        rating: 4.9,
-        reviewCount: 128,
-        address: 'Đường Hoàng Sa, Bán đảo Sơn Trà, TP. Đà Nẵng',
-        distance: 'Cách bãi biển Mỹ Khê 150m • Gần chùa Linh Ứng',
-        price: 1450000,
-        priceFormatted: '1.450.000đ',
-        images: [
-          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
-          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=80',
-          'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80',
-          'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=80',
-          'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80',
-        ],
-        specs: {
-          type: 'Nhà nguyên căn',
-          capacity: 'Tối đa 4 khách',
-          bedroom: '2 PN • 2 Giường King',
-          bathroom: '2 Phòng tắm riêng',
-        },
-        amenities: [
-          { id: '1', name: 'Wifi tốc độ cao', icon: 'wifi' },
-          { id: '2', name: 'Bếp riêng cao cấp', icon: 'restaurant' },
-          { id: '3', name: 'Bồn tắm gỗ pơ-mu', icon: 'water' },
-          { id: '4', name: 'Máy chiếu phim 4K', icon: 'videocam' },
-          { id: '5', name: 'Giặt & sấy khô', icon: 'shirt' },
-          { id: '6', name: 'Điều hòa 2 chiều', icon: 'snow' },
-          { id: '7', name: 'Ban công view biển', icon: 'sunny' },
-          { id: '8', name: 'Chỗ đỗ xe ô tô', icon: 'car' },
-        ],
-        ratingBreakdown: {
-          overall: 4.9,
-          cleanliness: 5.0,
-          location: 4.9,
-          service: 4.9,
-          amenities: 4.8,
-          value: 4.9,
-        },
-        reviews: [
-          {
-            id: 'rev-01',
-            author: 'Trần Hoàng Nam',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&q=80',
-            date: 'Lưu trú tháng 04/2026',
-            rating: 5.0,
-            comment:
-              'Phòng thực tế y hệt như ảnh! Ban công ngắm trọn bình minh biển Sơn Trà cực kỳ chill. Chủ nhà nhiệt tình hỗ trợ check-in sớm mà không phụ thu.',
-            images: [
-              'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300&q=80',
-              'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=300&q=80',
-            ],
-          },
-          {
-            id: 'rev-02',
-            author: 'Nguyễn Mai Anh',
-            avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80',
-            date: 'Lưu trú tháng 03/2026',
-            rating: 5.0,
-            comment:
-              'Tiện nghi rất đầy đủ, máy chiếu xem phim buổi tối cực thích. Không gian sạch sẽ, thơm mùi tinh dầu thiên nhiên.',
-            images: [],
-          },
-        ],
-        policy: {
-          checkIn: '14:00 (Nhận phòng trực tiếp với nhân viên lễ tân)',
-          checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
-          cancellation:
-            'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00 ngày 10 Th05. Sau thời gian này áp dụng chính sách hoàn trả của chủ nhà.',
-        },
-      };
+  const data = {
+    ...homestay,
+    id: homestay?._id || homestay?.id,
+    _id: homestay?._id || homestay?.id,
+    name: homestay?.title || homestay?.name || '',
+    badge: homestay?.badge || '', tags: homestay?.tags || [],
+    rating: homestay?.rating ?? 0, reviewCount: homestay?.reviewCount ?? 0,
+    address: homestay?.address || '', distance: homestay?.distance || '',
+    price: homestay?.pricePerNight ?? homestay?.price ?? 0,
+    priceFormatted: new Intl.NumberFormat('vi-VN').format(homestay?.pricePerNight ?? homestay?.price ?? 0) + ' VND',
+    images: (homestay?.images || []).filter(Boolean),
+    specs: homestay?.specs || {},
+    amenities: (homestay?.amenities || []).map((value,index) => typeof value === 'string' ? { id: String(index), name: value, icon: 'checkmark-circle-outline' } : value),
+    policy: homestay?.policy || {},
+  };
 
   const scrollViewRef = useRef(null);
   const reviewsPositionRef = useRef(0);
@@ -213,18 +69,11 @@ const HomeDetailsScreen = ({ navigation, route }) => {
   const [showAllAmenities, setShowAllAmenities] = useState(false);
 
   // State đánh giá thời gian thực từ MongoDB
-  const [reviewsList, setReviewsList] = useState(data.reviews || []);
+  const [reviewsList, setReviewsList] = useState([]);
   const [ratingSummary, setRatingSummary] = useState({
-    rating: data.rating || 4.9,
-    reviewCount: data.reviewCount || 128,
-    breakdown: data.ratingBreakdown || {
-      overall: 4.9,
-      cleanliness: 5.0,
-      location: 4.9,
-      service: 4.9,
-      amenities: 4.8,
-      value: 4.9,
-    },
+    rating: 0,
+    reviewCount: 0,
+    breakdown: {},
   });
 
   // Gọi API lấy đánh giá mới nhất từ máy chủ
@@ -238,7 +87,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
       const revJson = await revRes.json();
       const sumJson = await sumRes.json();
 
-      if (revRes.ok && revJson.success && Array.isArray(revJson.data) && revJson.data.length > 0) {
+      if (revRes.ok && revJson.success && Array.isArray(revJson.data)) {
         const mapped = revJson.data.map((r) => ({
           id: r._id,
           author: r.fullName,
@@ -248,23 +97,22 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           date: formatReviewDate(r.createdAt),
           rating: r.rating,
           comment: r.comment,
-          images: [],
+          images: r.images || [],
           bookingCode: r.bookingCode,
           isReal: true,
         }));
-        // Kết hợp review thực tế lên đầu, kèm fallback mock data
         setReviewsList(mapped);
       }
 
       if (sumRes.ok && sumJson.success && sumJson.data) {
         setRatingSummary({
-          rating: sumJson.data.rating || data.rating,
-          reviewCount: sumJson.data.reviewCount || data.reviewCount,
-          breakdown: sumJson.data.ratingBreakdown || data.ratingBreakdown,
+          rating: sumJson.data.rating ?? 0,
+          reviewCount: sumJson.data.reviewCount ?? 0,
+          breakdown: sumJson.data.ratingBreakdown ?? {},
         });
       }
     } catch (e) {
-      // Giữ mock reviews nếu offline
+      // Keep the last fetched reviews when the connection is unavailable.
     }
   };
 
@@ -361,7 +209,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
     hasCustomGuests && Number(guestConfig.rooms) > 0 ? Number(guestConfig.rooms) : 1;
 
   // Tính tổng giá theo số đêm đã chọn
-  const basePricePerNight = Number(data.price) || 1450000;
+  const basePricePerNight = Number(data.price) || 0;
   const totalPrice = basePricePerNight * nightsCount;
   const totalPriceFormatted = new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ';
 
@@ -394,7 +242,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
 
     try {
       const userId = user._id || user.id;
-      const res = await fetch(`${API_URL}/bookings/my-bookings?userId=${userId}`);
+      const res = await fetch(`${API_URL}/bookings/my-bookings`, { headers: { Authorization: `Bearer ${token}` } });
       const json = await res.json();
 
       if (json.success && Array.isArray(json.data)) {
@@ -481,7 +329,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             }}
           >
             {data.images.map((imgUri, index) => (
-              <Image key={index} source={{ uri: imgUri }} style={styles.heroImage} />
+              <Image key={index} source={{ uri: resolveMediaUrl(imgUri) }} style={styles.heroImage} />
             ))}
           </ScrollView>
 
@@ -496,7 +344,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           {/* 3 Thumbnails nhỏ bên dưới */}
           <View style={styles.thumbnailRow}>
             {data.images.slice(0, 3).map((imgUri, index) => (
-              <Image key={index} source={{ uri: imgUri }} style={styles.thumbnailImg} />
+              <Image key={index} source={{ uri: resolveMediaUrl(imgUri) }} style={styles.thumbnailImg} />
             ))}
             <TouchableOpacity style={styles.moreImagesBtn} activeOpacity={0.8}>
               <Text style={styles.moreImagesText}>+{data.images.length - 3} ảnh</Text>
@@ -523,9 +371,9 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           {/* Section 7: Rating & Review link (Click cuộn mượt xuống review) */}
           <TouchableOpacity style={styles.ratingRow} onPress={scrollToReviews} activeOpacity={0.7}>
             <Ionicons name="star" size={16} color="#ECC94B" />
-            <Text style={styles.ratingNumber}>{data.rating}</Text>
+            <Text style={styles.ratingNumber}>{ratingSummary.rating}</Text>
             <Text style={styles.ratingDot}>•</Text>
-            <Text style={styles.reviewLinkText}>{data.reviewCount} đánh giá</Text>
+            <Text style={styles.reviewLinkText}>{ratingSummary.reviewCount} đánh giá</Text>
             <Ionicons name="chevron-forward" size={14} color="#00796B" style={{ marginLeft: 4 }} />
           </TouchableOpacity>
 
@@ -659,13 +507,13 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           <View style={styles.overallScoreCard}>
             <View style={styles.overallScoreLeft}>
               <Text style={styles.overallBigScore}>
-                {(ratingSummary.rating || 5.0).toFixed(1)}
+                {(ratingSummary.rating ?? 0).toFixed(1)}
               </Text>
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((s) => (
                   <Ionicons
                     key={s}
-                    name={s <= Math.round(ratingSummary.rating || 5) ? 'star' : 'star-outline'}
+                    name={s <= Math.round(ratingSummary.rating ?? 0) ? 'star' : 'star-outline'}
                     size={14}
                     color="#ECC94B"
                     style={{ marginRight: 2 }}
@@ -673,7 +521,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                 ))}
               </View>
               <Text style={styles.overallComment}>
-                Xuất sắc ({ratingSummary.reviewCount} đánh giá)
+                {ratingSummary.reviewCount} đánh giá
               </Text>
             </View>
 
@@ -688,14 +536,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.cleanliness || 5.0) / 5) * 100
+                          ((ratingSummary.breakdown?.cleanliness ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.cleanliness || 5.0).toFixed(1)}
+                  {(ratingSummary.breakdown?.cleanliness ?? 0).toFixed(1)}
                 </Text>
               </View>
               <View style={styles.scoreBarRow}>
@@ -707,14 +555,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.location || 4.9) / 5) * 100
+                          ((ratingSummary.breakdown?.location ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.location || 4.9).toFixed(1)}
+                  {(ratingSummary.breakdown?.location ?? 0).toFixed(1)}
                 </Text>
               </View>
               <View style={styles.scoreBarRow}>
@@ -726,14 +574,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.service || 4.9) / 5) * 100
+                          ((ratingSummary.breakdown?.service ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.service || 4.9).toFixed(1)}
+                  {(ratingSummary.breakdown?.service ?? 0).toFixed(1)}
                 </Text>
               </View>
               <View style={styles.scoreBarRow}>
@@ -745,14 +593,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.amenities || 4.8) / 5) * 100
+                          ((ratingSummary.breakdown?.amenities ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.amenities || 4.8).toFixed(1)}
+                  {(ratingSummary.breakdown?.amenities ?? 0).toFixed(1)}
                 </Text>
               </View>
               <View style={styles.scoreBarRow}>
@@ -764,14 +612,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.value || 4.9) / 5) * 100
+                          ((ratingSummary.breakdown?.value ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.value || 4.9).toFixed(1)}
+                  {(ratingSummary.breakdown?.value ?? 0).toFixed(1)}
                 </Text>
               </View>
             </View>

@@ -132,7 +132,7 @@ const WriteReviewScreen = ({ navigation, route }) => {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Ionicons name="home-outline" size={18} color="#00796B" />
               <Text style={styles.roomNameText} numberOfLines={1}>
-                {homestay?.title || homestay?.name || 'An Nhiên Eco Retreat'}
+                {homestay?.title || homestay?.name || ''}
               </Text>
             </View>
             {bookingCode ? (

@@ -139,10 +139,10 @@
                   <!-- 1.16 HÌNH ẢNH (Frame bo góc 56x40px, hover preview popover) -->
                   <td>
                     <div class="thumb-frame">
-                      <img src="<%= (room.images && room.images.length > 0) ? room.images[0] : 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=200&q=80' %>" alt="<%= room.title %>" class="thumb-img">
+                      <img src="<%= (room.images && room.images.length > 0) ? room.images[0] : '/host/images/room-placeholder.svg' %>" alt="<%= room.title %>" class="thumb-img">
                       <span class="thumb-badge"><%= (room.images && room.images.length > 0) ? `1/${room.images.length}` : '4:3' %></span>
                       <div class="thumb-popover">
-                        <img src="<%= (room.images && room.images.length > 0) ? room.images[0] : 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&q=80' %>" alt="Xem nhanh">
+                        <img src="<%= (room.images && room.images.length > 0) ? room.images[0] : '/host/images/room-placeholder.svg' %>" alt="Xem nhanh">
                       </div>
                     </div>
                   </td>
@@ -155,7 +155,7 @@
                     </div>
                     <div class="room-specs-sub">
                       <%= room.specs ? room.specs.type : 'Nhà nghỉ' %> • 
-                      <%= room.area || 45 %>m² • 
+                      <%= room.area ?? '--' %>m² • 
                       <%= room.specs ? room.specs.capacity : `Tối đa ${room.maxGuests || 2} khách` %> • 
                       <%= room.specs ? room.specs.bedroom : '1 Giường' %>
                     </div>

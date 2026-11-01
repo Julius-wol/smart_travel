@@ -1,10 +1,11 @@
+import Image from '../components/MediaImage';
+import { resolveMediaUrl } from '../utils/config';
 import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  Image,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -17,7 +18,7 @@ import ToastNotification from '../components/ToastNotification';
  * Tương thích với Screen 4 trong bản thiết kế Figma
  */
 const BookingSuccessScreen = ({ navigation, route }) => {
-  const { homestay, bookingCode = 'ST-5894', user, token, bookingDetails } = route.params || {};
+  const { homestay, bookingCode = '', user, token, bookingDetails } = route.params || {};
 
   // Trạng thái Toast thông báo (CR_BOOK_06, CR_BOOK_08)
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info', duration: 2500 });
@@ -113,7 +114,7 @@ const BookingSuccessScreen = ({ navigation, route }) => {
           <View style={styles.passRatingRow}>
             <Ionicons name="star" size={12} color="#F6AD55" />
             <Text style={styles.passRatingVal}>
-              {homestay?.rating || 4.98} ({homestay?.reviewCount || 142})
+              {homestay?.rating || 0} ({homestay?.reviewCount || 0})
             </Text>
             <Text style={styles.passLocation}>
               {' '}• ĐÀ NẴNG • BÁN ĐẢO SƠN TRÀ
@@ -124,15 +125,15 @@ const BookingSuccessScreen = ({ navigation, route }) => {
           <Image
             source={{
               uri:
-                homestay?.images?.[0] ||
-                'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
+                resolveMediaUrl(homestay?.images?.[0]) ||
+                '',
             }}
             style={styles.passImage}
           />
 
           {/* Tên và địa chỉ */}
           <Text style={styles.passName} numberOfLines={2}>
-            {homestay?.title || homestay?.name || 'An Nhiên Eco Retreat Đà Nẵng'}
+            {homestay?.title || homestay?.name || ''}
           </Text>
           <Text style={styles.passSubName} numberOfLines={1}>
             {homestay?.subtitle || 'Nguyễn căn 2PN Ocean View Panorama'}
@@ -149,7 +150,7 @@ const BookingSuccessScreen = ({ navigation, route }) => {
                 <Text style={styles.timeLabel}>Nhận phòng</Text>
               </View>
               <Text style={styles.timeValue}>14:00</Text>
-              <Text style={styles.timeDate}>{bookingDetails?.checkIn || '15/05/2024'}</Text>
+              <Text style={styles.timeDate}>{bookingDetails?.checkIn || ''}</Text>
             </View>
             <View style={styles.nightsCenterBadge}>
               <Text style={styles.nightsCenterNum}>{bookingDetails?.nights || 3}</Text>
@@ -161,7 +162,7 @@ const BookingSuccessScreen = ({ navigation, route }) => {
                 <Ionicons name="exit-outline" size={13} color="#718096" style={{ marginLeft: 4 }} />
               </View>
               <Text style={styles.timeValue}>12:00</Text>
-              <Text style={styles.timeDate}>{bookingDetails?.checkOut || '18/05/2024'}</Text>
+              <Text style={styles.timeDate}>{bookingDetails?.checkOut || ''}</Text>
             </View>
           </View>
 
@@ -170,8 +171,8 @@ const BookingSuccessScreen = ({ navigation, route }) => {
 
           {/* Guest info row */}
           {(() => {
-            const guestFullName = bookingDetails?.fullName || user?.fullName || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '') || 'Linh Nguyễn';
-            const guestEmail = bookingDetails?.email || user?.email || 'linh.traveler@gmail.com';
+            const guestFullName = bookingDetails?.fullName || user?.fullName || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '') || '';
+            const guestEmail = bookingDetails?.email || user?.email || '';
             const guestInitials = guestFullName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'LN';
 
             return (
@@ -185,7 +186,7 @@ const BookingSuccessScreen = ({ navigation, route }) => {
                     <Text style={styles.guestDetail}>{bookingDetails?.guests || 2} khách</Text>
                   </View>
                   <View style={styles.roomBadgePill}>
-                    <Text style={styles.roomBadgeText}>Phòng {homestay?.roomNumber || '402'}</Text>
+                    <Text style={styles.roomBadgeText}>Phòng {homestay?.roomNumber || ''}</Text>
                   </View>
                 </View>
 
@@ -202,11 +203,11 @@ const BookingSuccessScreen = ({ navigation, route }) => {
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Tổng giá trị đặt phòng ({bookingDetails?.nights || 3} đêm)</Text>
-                  <Text style={styles.detailValue}>{bookingDetails?.totalAmount || '6.110.000đ'}</Text>
+                  <Text style={styles.detailValue}>{bookingDetails?.totalAmount || ''}</Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>✂ Đã thanh toán cọc (100%):</Text>
-                  <Text style={[styles.detailValue, { color: '#00796B' }]}>{bookingDetails?.totalAmount || '6.110.000đ'}</Text>
+                  <Text style={[styles.detailValue, { color: '#00796B' }]}>{bookingDetails?.totalAmount || ''}</Text>
                 </View>
                 <View style={styles.emailRow}>
                   <Ionicons name="mail-outline" size={13} color="#718096" />

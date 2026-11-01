@@ -1,8 +1,9 @@
+import Image from './MediaImage';
+import { resolveMediaUrl } from '../utils/config';
 import React, { useState } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   FlatList,
   StyleSheet,
@@ -28,13 +29,7 @@ export const HomestayCard = ({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Danh sách hình ảnh mẫu nếu phòng chưa có ảnh
-  const images = room.images && room.images.length > 0
-    ? room.images
-    : [
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
-        'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=80',
-        'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80',
-      ];
+  const images = (room.images || []).filter(Boolean);
 
   const formatPrice = (price) => {
     return (price || 0).toLocaleString('vi-VN') + 'đ';
@@ -65,7 +60,7 @@ export const HomestayCard = ({
           keyExtractor={(_, index) => String(index)}
           renderItem={({ item }) => (
             <Image
-              source={{ uri: item }}
+              source={{ uri: resolveMediaUrl(item) }}
               style={styles.slideImage}
               resizeMode="cover"
             />
@@ -121,8 +116,8 @@ export const HomestayCard = ({
           {/* Rating Badge */}
           <View style={styles.ratingBadge}>
             <Ionicons name="star" size={12} color="#FFB800" style={{ marginRight: 2 }} />
-            <Text style={styles.ratingScore}>{room.rating || 4.9}</Text>
-            <Text style={styles.reviewCount}>({room.reviewCount || 128})</Text>
+            <Text style={styles.ratingScore}>{room.rating || 0}</Text>
+            <Text style={styles.reviewCount}>({room.reviewCount || 0})</Text>
           </View>
         </View>
 

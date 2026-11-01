@@ -14,12 +14,19 @@ import {
     authenticateHostCredentials
 } from '../services/authService.js';
 
+// Registration keeps role-scoped accounts; mobile signs into the visitor UI.
+const authRole = (req) => {
+    if (req.body?.platform === 'mobile' || req.body?.clientType === 'mobile') return 'USER';
+    return req.body?.clientType === 'host' || req.body?.role === 'HOST' || req.query?.clientType === 'host' ? 'HOST' : 'USER';
+};
+
 const ACCES_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
 export const signUp = async (req, res) => {
     try {
-        const { password, role } = req.body;
+        const { password } = req.body;
+        const role = authRole(req);
         const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
         const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
         const firstName = typeof req.body.firstName === 'string' ? req.body.firstName.trim() : '';
@@ -34,7 +41,7 @@ export const signUp = async (req, res) => {
         }
     
         //kiem tra user ton tai chua
-        const duplicate = await User.findOne({ $or: [{ username }, { email }] });
+        const duplicate = await User.findOne({ role, $or: [{ username }, { email }] });
         if (duplicate) {
             const field = duplicate.username === username ? 'username' : 'email';
             return sendResponse(res, 400, field === 'username'
@@ -54,7 +61,7 @@ export const signUp = async (req, res) => {
             fullName: (req.body.fullName || `${firstName} ${lastName}`).trim(),
             firstName,
             lastName,
-            role: (role === 'HOST') ? 'HOST' : 'USER',
+            role,
             status: 'ACTIVE',
             wishlist: [],
         });
@@ -74,52 +81,37 @@ export const signUp = async (req, res) => {
 
 export const signIn = async (req, res) => {
     try {
-        const { username, password, clientType, role: requestedRole } = req.body;
+        const { password } = req.body;
+        const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+        const role = authRole(req);
+        const isHostClient = role === 'HOST';
 
         if (!username || !password) {
             return sendResponse(res, 400, "Không thể thiếu username, password");
         }
 
-        // Tìm user theo username, email hoặc phone
-        const user = await User.findOne({
-            $or: [
-                { username: username },
-                { email: username },
-                { phone: username }
-            ]
-        });
+        // Mobile accepts both account types; the host portal only accepts HOST.
+        // If an email has both accounts, prefer the visitor's matching password.
+        let user = null;
+        for (const accountRole of isHostClient ? ['HOST'] : ['USER', 'HOST']) {
+            const candidate = await User.findOne({
+                role: accountRole,
+                $or: [
+                    { username },
+                    { email: username.toLowerCase() },
+                    { phone: username }
+                ]
+            });
+            if (candidate && await bcrypt.compare(password, candidate.password)) {
+                user = candidate;
+                break;
+            }
+        }
 
         if (!user) {
             return sendResponse(res, 401, "Tài khoản hoặc mật khẩu không đúng");
         }
 
-        const passwordCorrect = await bcrypt.compare(password, user.password);
-        if (!passwordCorrect) {
-            return sendResponse(res, 401, "Tài khoản hoặc mật khẩu không đúng");
-        }
-
-        const isHostClient = clientType === 'host' || requestedRole === 'HOST' || req.query?.clientType === 'host';
-
-        if (isHostClient) {
-            if (user.role !== 'HOST') {
-                return res.status(403).json({
-                    message: "Tài khoản của bạn là Khách du lịch (USER). Cổng này chỉ dành riêng cho Đối tác Chủ phòng (HOST). Vui lòng đăng nhập bằng tài khoản Chủ phòng!",
-                    code: "NOT_HOST",
-                    role: user.role
-                });
-            }
-        } else {
-            // Chặn tài khoản HOST đăng nhập vào ứng dụng mobile dành cho khách du lịch
-            if (user.role === 'HOST') {
-                return res.status(403).json({
-                    message: "Tài khoản của bạn là Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!",
-                    code: "ROLE_NOT_PERMITTED_ON_MOBILE",
-                    role: user.role
-                });
-            }
-        }
-
-        // Tạo access token & refresh token session thống nhất qua Core Auth Service
         const { accessToken } = await createSessionAndTokens(user, res, { isHost: isHostClient });
 
         return sendResponse(res, 200, "Đăng nhập thành công", { accessToken });
@@ -141,10 +133,10 @@ export const signOut = async (req, res) => {
 
 export const forgotPassword = async (req, res) => {
     try {
-        const { email } = req.body;
+        const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
         if (!email) return sendResponse(res, 400, "Vui lòng cung cấp email");
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email, role: authRole(req) });
         if (!user) return sendResponse(res, 404, "Email không tồn tại");
 
         // Chống spam OTP: Nếu mã trước đó được tạo chưa quá 60 giây, yêu cầu chờ
@@ -239,6 +231,7 @@ export const verifyOtp = async (req, res) => {
         if (!token) return sendResponse(res, 400, "Vui lòng nhập mã OTP");
 
         const query = {
+            role: authRole(req),
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: Date.now() }
         };
@@ -264,6 +257,7 @@ export const resetPassword = async (req, res) => {
         if (newPassword.length < 6) return sendResponse(res, 400, "Mật khẩu mới phải có tối thiểu 6 ký tự");
 
         const user = await User.findOne({
+            role: authRole(req),
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: Date.now() } // Token phải còn hạn
         });
@@ -290,7 +284,9 @@ export const resetPassword = async (req, res) => {
 // ==========================================
 export const googleSignIn = async (req, res) => {
     try {
-        const { accessToken, clientType, role: requestedRole } = req.body;
+        const { accessToken } = req.body;
+        const role = authRole(req);
+        const isHostClient = role === 'HOST';
         if (!accessToken) {
             return sendResponse(res, 400, "Thiếu Google access token");
         }
@@ -307,14 +303,16 @@ export const googleSignIn = async (req, res) => {
             return sendResponse(res, 400, "Không lấy được email từ Google");
         }
 
-        const isHostClient = clientType === 'host' || requestedRole === 'HOST' || req.query?.clientType === 'host';
-        let user = await User.findOne({ email: email.toLowerCase() });
+        let user = await User.findOne({ email: email.trim().toLowerCase(), role });
+        if (!user && !isHostClient) {
+            user = await User.findOne({ email: email.trim().toLowerCase(), role: 'HOST' });
+        }
 
         if (!user) {
             const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
             let username = baseUsername;
             let counter = 1;
-            while (await User.findOne({ username })) {
+            while (await User.findOne({ username, role })) {
                 username = `${baseUsername}${counter++}`;
             }
 
@@ -331,24 +329,6 @@ export const googleSignIn = async (req, res) => {
                 status: 'ACTIVE',
                 wishlist: []
             });
-        } else {
-            if (isHostClient) {
-                if (user.role !== 'HOST') {
-                    return res.status(403).json({
-                        success: false,
-                        message: `Tài khoản (${email}) hiện đang là Khách du lịch (USER). Cổng này chỉ dành riêng cho Đối tác Chủ phòng (HOST).`,
-                        code: "NOT_HOST"
-                    });
-                }
-            } else {
-                if (user.role === 'HOST') {
-                    return res.status(403).json({
-                        message: "Tài khoản của bạn là Đối tác Chủ phòng (Host). Ứng dụng điện thoại chỉ dành riêng cho Khách du lịch đặt phòng. Vui lòng đăng nhập trên trang Web quản trị Host!",
-                        code: "ROLE_NOT_PERMITTED_ON_MOBILE",
-                        role: user.role
-                    });
-                }
-            }
         }
 
         const { accessToken: jwtToken } = await createSessionAndTokens(user, res, { isHost: isHostClient });
@@ -404,7 +384,7 @@ export const refreshTokenApi = async (req, res) => {
         if (!token) {
             return sendResponse(res, 401, "Thiếu refresh token");
         }
-        const result = await refreshSession(token, res);
+        const result = await refreshSession(token, res, { isHost: authRole(req) === 'HOST' });
         if (!result) {
             return sendResponse(res, 401, "Phiên làm việc đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.");
         }
