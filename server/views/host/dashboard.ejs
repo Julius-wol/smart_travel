@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter (Đồng bộ 100% với Mobile App) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --primary: #00685f;
+      --primary-dark: #008378;
+      --primary-light: #e6f4f2;
+      --primary-border: #b2dfdb;
+      --secondary: #4648d4;
+      --secondary-light: #eff4ff;
+      --text-heading: #0b1c30;
+      --text-body: #3d4947;
+      --text-muted: #64748b;
+      --screen-bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --border-subtle: #f1f5f9;
+      --warning-bg: #fffbeb;
+      --warning-border: #f59e0b;
+      --warning-text: #92400e;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--screen-bg);
+      color: var(--text-heading);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ============================================================
+       1. HOST SIDEBAR (GIỐNG HỆT HostSidebar.js TRÊN MOBILE APP)
+       ============================================================ */
+    .host-sidebar {
+      width: 250px;
+      background-color: #ffffff;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 50;
+      padding: 20px 14px;
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 0 4px;
+      gap: 10px;
+    }
+
+    .logo-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background-color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 18px;
+      box-shadow: 0 4px 10px rgba(0, 104, 95, 0.35);
+    }
+
+    .brand-text-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.3px;
+    }
+
+    .brand-subtitle {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.8px;
+      margin-top: 1px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.6px;
+      padding: 0 10px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .menu-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: #64748b;
+      font-weight: 500;
+      font-size: 13.5px;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .menu-item:hover {
+      background-color: #f1f5f9;
+      color: var(--text-heading);
+    }
+
+    .menu-item.active {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .menu-icon {
+      font-size: 17px;
+      width: 22px;
+      margin-right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .badge-pill {
+      margin-left: auto;
+      background-color: #f59e0b;
+      color: white;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    .bottom-help-container {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .bottom-help-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ============================================================
+       2. TOP NAVIGATION (GIỐNG HỆT HostTopNav.js TRÊN MOBILE APP)
+       ============================================================ */
+    .host-main {
+      margin-left: 250px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .top-nav {
+      background-color: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .breadcrumb-text {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .right-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .lang-switch-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background-color: #f1f5f9;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .lang-active { color: var(--primary); }
+    .lang-divider { color: #cbd5e1; font-weight: 400; }
+    .lang-inactive { color: #94a3b8; }
+
+    .icon-btn {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .notif-dot {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 1.5px solid #ffffff;
+    }
+
+    .user-profile-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px 4px 4px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .user-info-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-name-text {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-heading);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .user-email-text {
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================
+       3. WORKSPACE & TOAST BANNER
+       ============================================================ */
+    .content-area {
+      padding: 24px 32px 60px;
+    }
+
+    .toast-banner {
+      background-color: var(--primary);
+      color: white;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ============================================================
+       4. HEADER CHÀO MỪNG (HostDashboardHeader.js)
+       ============================================================ */
+    .dashboard-header-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .greeting-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.4px;
+    }
+
+    .greeting-subtext {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .period-dropdown {
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      background: white;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-heading);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-export {
+      background-color: var(--primary);
+      color: white;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .btn-export:hover {
+      background-color: var(--primary-dark);
+    }
+
+    /* ============================================================
+       5. SLA ALERT BANNER (HostSlaAlertBanner.js)
+       ============================================================ */
+    .sla-alert-banner {
+      background-color: var(--warning-bg);
+      border: 1px solid #fde68a;
+      border-left: 4px solid var(--warning-border);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sla-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sla-icon {
+      font-size: 20px;
+    }
+
+    .sla-msg strong {
+      color: var(--warning-text);
+      font-weight: 700;
+      font-size: 13.5px;
+    }
+
+    .sla-msg p {
+      color: #b45309;
+      font-size: 12.5px;
+      margin-top: 2px;
+    }
+
+    .sla-link {
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 13px;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 104, 95, 0.08);
+      white-space: nowrap;
+    }
+
+    /* ============================================================
+       6. 4 THẺ KPI (HostDashboardKpiCards.js)
+       ============================================================ */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kpi-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .kpi-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+    }
+
+    .kpi-icon-circ {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .kpi-card.teal .kpi-icon-circ { background: var(--primary-light); color: var(--primary); }
+    .kpi-card.blue .kpi-icon-circ { background: var(--secondary-light); color: var(--secondary); }
+    .kpi-card.indigo .kpi-icon-circ { background: #eef2ff; color: #4f46e5; }
+    .kpi-card.amber .kpi-icon-circ { background: #fffbeb; color: #d97706; }
+
+    .kpi-big-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .kpi-foot-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 18px;
+    }
+
+    .kpi-badge-pill {
+      background: #ecfdf5;
+      color: #059669;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    /* ============================================================
+       7. BIỂU ĐỒ DOANH THU & XU HƯỚNG (HostRevenueTrendChart.js)
+       ============================================================ */
+    .chart-panel {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chart-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .chart-heading-text h3 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-heading);
+      line-height: 1.3;
+      letter-spacing: -0.3px;
+    }
+
+    .chart-heading-text p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .chart-panel-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chart-mode-toggle {
+      display: flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: var(--radius-sm);
+    }
+
+    .mode-btn {
+      padding: 5px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .mode-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    .chart-container-box {
+      position: relative;
+      height: 290px;
+      width: 100%;
+    }
+
+    /* Floating Dark Card Tooltip giống hệt thiết kế hình mẫu */
+    .chart-custom-tooltip {
+      position: absolute;
+      top: 15px;
+      right: 40px;
+      background-color: #1e293b;
+      border-radius: 12px;
+      padding: 12px 18px;
+      color: #ffffff;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.4);
+      pointer-events: none;
+      z-index: 10;
+      min-width: 230px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tooltip-date {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #2dd4bf;
+      letter-spacing: 0.2px;
+      margin-bottom: 3px;
+    }
+
+    .tooltip-val {
+      font-size: 18.5px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.3px;
+      margin-bottom: 5px;
+    }
+
+    .tooltip-details {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .tooltip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #10b981;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .chart-stat-footer {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12.5px;
+    }
+
+    /* ============================================================
+       8. LỊCH NHẬN TRẢ & ĐÁNH GIÁ (2 CỘT)
+       ============================================================ */
+    .two-cols-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .sub-panel {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .sub-panel-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sub-panel-head h3 {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .sub-tabs-pill {
+      display: flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: var(--radius-sm);
+    }
+
+    .sub-tab-btn {
+      padding: 4px 10px;
+      border: none;
+      background: transparent;
+      border-radius: 4px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .sub-tab-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .sub-panel-body {
+      padding: 14px 20px;
+      max-height: 310px;
+      overflow-y: auto;
+    }
+
+    .guest-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border-subtle);
+    }
+
+    .guest-item:last-child {
+      border-bottom: none;
+    }
+
+    .guest-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar-circ {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+
+    .guest-info strong {
+      font-size: 13px;
+      color: var(--text-heading);
+    }
+
+    .guest-info p {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .time-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .time-badge.in { background: #dcfce7; color: #15803d; }
+    .time-badge.out { background: #eff6ff; color: #1d4ed8; }
+
+    .review-box {
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--border-subtle);
+    }
+
+    .review-box:last-child {
+      border-bottom: none;
+    }
+
+    .rev-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .rev-author {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text-heading);
+    }
+
+    .rev-stars {
+      color: #f59e0b;
+      font-size: 12.5px;
+    }
+
+    .rev-room {
+      font-size: 11.5px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .rev-text {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       1. HOST SIDEBAR (HostSidebar.js)
+       ============================================================ -->
+  <aside class="host-sidebar">
+    <!-- Brand Header -->
+    <div class="brand-container">
+      <div class="logo-icon-box">🏡</div>
+      <div class="brand-text-col">
+        <span class="brand-title">Smart Travel</span>
+        <span class="brand-subtitle">HOST PORTAL</span>
+      </div>
+    </div>
+
+    <!-- Section Header -->
+    <div class="section-title">QUẢN TRỊ CƠ SỞ</div>
+
+    <!-- Menu List -->
+    <div class="menu-list">
+      <a href="/host/dashboard" class="menu-item active">
+        <span class="menu-icon">📊</span>
+        <span>Tổng quan</span>
+      </a>
+      <a href="#roomSection" class="menu-item">
+        <span class="menu-icon">🏨</span>
+        <span>Quản lý phòng</span>
+      </a>
+      <a href="javascript:void(0)" class="menu-item">
+        <span class="menu-icon">📑</span>
+        <span>Đơn đặt phòng</span>
+        <span class="badge-pill">2</span>
+      </a>
+      <a href="/host/calendar" class="menu-item">
+        <span class="menu-icon">📅</span>
+        <span>Lịch phòng & Giá</span>
+      </a>
+      <a href="#reviewsSection" class="menu-item">
+        <span class="menu-icon">⭐</span>
+        <span>Đánh giá & Phản hồi</span>
+      </a>
+      <a href="#" class="menu-item" onclick="alert('Tính năng Doanh thu & Rút tiền đang phát triển')">
+        <span class="menu-icon">💰</span>
+        <span>Doanh thu & Rút tiền</span>
+      </a>
+      <a href="#" class="menu-item" onclick="alert('Tính năng Cài đặt cơ sở lưu trú đang phát triển')">
+        <span class="menu-icon">⚙️</span>
+        <span>Cài đặt cơ sở lưu trú</span>
+      </a>
+    </div>
+
+    <!-- Bottom Help -->
+    <div class="bottom-help-container">
+      <a href="#" class="bottom-help-btn" onclick="alert('Hotline hỗ trợ đối tác Host: 1900 6868')">
+        <span class="menu-icon">❓</span>
+        <span>Trợ giúp & Hỗ trợ</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       2. MAIN CONTENT (HostDashboardScreen.js)
+       ============================================================ */
+  -->
+  <main class="host-main">
+    <!-- Host Top Navigation -->
+    <header class="top-nav">
+      <div class="breadcrumb-text">
+        Tổng quan • Smart Travel Host Portal
+      </div>
+
+      <div class="right-actions">
+        <!-- Language Switcher -->
+        <div class="lang-switch-pill">
+          <span class="lang-active">VN</span>
+          <span class="lang-divider">|</span>
+          <span class="lang-inactive">EN</span>
+        </div>
+
+        <!-- Notification Bell -->
+        <div class="icon-btn" onclick="alert('Bạn có 1 thông báo đơn đặt phòng mới!')">
+          🔔
+          <div class="notif-dot"></div>
+        </div>
+
+        <!-- User Profile Chip -->
+        <div class="user-profile-chip">
+          <div class="user-avatar"><%= (typeof hostUser !== 'undefined' && hostUser?.initials) ? hostUser.initials : 'H' %></div>
+          <div class="user-info-col">
+            <div class="user-name-text">
+              <span><%= (typeof hostUser !== 'undefined' && hostUser?.name) ? hostUser.name : 'Chủ cơ sở Homestay' %></span>
+              <span style="color: var(--primary);">✓</span>
+            </div>
+            <span class="user-email-text"><%= (typeof hostUser !== 'undefined' && hostUser?.email) ? hostUser.email : 'host@smarttravel.vn' %></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Workspace Content Area -->
+    <div class="content-area">
+      <!-- 1. Header Chào Mừng, Bộ Lọc & Nút Xuất Báo Cáo (HostDashboardHeader.js) -->
+      <div class="dashboard-header-card">
+        <div>
+          <h2 class="greeting-title">Xin chào, <%= (typeof hostUser !== 'undefined' && hostUser?.name) ? hostUser.name : 'Chủ cơ sở' %> 👋</h2>
+          <p class="greeting-subtext">Đây là tình hình kinh doanh của bạn hôm nay</p>
+        </div>
+
+        <div class="header-controls">
+          <select class="period-dropdown" onchange="window.location.href='/host?period=' + this.value">
+            <option value="TODAY" <%= period === 'TODAY' ? 'selected' : '' %>>Hôm nay</option>
+            <option value="7_DAYS" <%= period === '7_DAYS' ? 'selected' : '' %>>7 ngày qua</option>
+            <option value="30_DAYS" <%= period === '30_DAYS' ? 'selected' : '' %>>30 ngày qua</option>
+            <option value="THIS_MONTH" <%= period === 'THIS_MONTH' ? 'selected' : '' %>>Tháng này</option>
+            <option value="LAST_MONTH" <%= period === 'LAST_MONTH' ? 'selected' : '' %>>Tháng trước</option>
+          </select>
+
+          <button class="btn-export" onclick="alert('Đang kết xuất báo cáo kinh doanh ra file Excel, quá trình tải xuống sẽ bắt đầu ngay. (DASH-EXPORT-SUCCESS)')">
+            📥 Xuất báo cáo
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. SLA Alert Banner (HostSlaAlertBanner.js) -->
+      <% if (typeof slaAlert !== 'undefined' && slaAlert && slaAlert.hasPending) { %>
+        <div class="sla-alert-banner">
+          <div class="sla-left">
+            <span class="sla-icon">⚠️</span>
+            <div class="sla-msg">
+              <strong>Yêu cầu đặt phòng cần duyệt gấp trong 24h!</strong>
+              <p><%= slaAlert.message %></p>
+            </div>
+          </div>
+          <a href="javascript:void(0)" class="sla-link">
+            Chuyển tới Duyệt đơn →
+          </a>
+        </div>
+      <% } %>
+
+      <!-- 3. Hàng 4 Thẻ KPI Cốt Lõi (HostDashboardKpiCards.js) -->
+      <div class="kpi-row">
+        <!-- Card 1: Doanh thu -->
+        <div class="kpi-card teal">
+          <div class="kpi-top-row">
+            <span class="kpi-tag">Doanh Thu</span>
+            <div class="kpi-icon-circ">💰</div>
+          </div>
+          <div class="kpi-big-value"><%= kpis.revenue.formatted %></div>
+          <div class="kpi-foot-text">
+            <span class="kpi-badge-pill">✓ Hoàn tất</span>
+            <span><%= kpis.revenue.subtext %></span>
+          </div>
+        </div>
+
+        <!-- Card 2: Đơn đặt mới -->
+        <div class="kpi-card blue">
+          <div class="kpi-top-row">
+            <span class="kpi-tag">Đơn Đặt Mới</span>
+            <div class="kpi-icon-circ">📑</div>
+          </div>
+          <div class="kpi-big-value"><%= kpis.newBookings.value %> đơn</div>
+          <div class="kpi-foot-text">
+            <span><%= kpis.newBookings.subtext %></span>
+          </div>
+        </div>
+
+        <!-- Card 3: Tỷ lệ lấp đầy -->
+        <div class="kpi-card indigo">
+          <div class="kpi-top-row">
+            <span class="kpi-tag">Tỷ Lệ Lấp Đầy</span>
+            <div class="kpi-icon-circ">📊</div>
+          </div>
+          <div class="kpi-big-value"><%= kpis.occupancyRate.value %>%</div>
+          <div class="kpi-foot-text">
+            <% if (kpis.occupancyRate && kpis.occupancyRate.subtext) { %>
+              <span><%= kpis.occupancyRate.subtext %></span>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Card 4: Điểm đánh giá TB -->
+        <div class="kpi-card amber">
+          <div class="kpi-top-row">
+            <span class="kpi-tag">Đánh Giá TB</span>
+            <div class="kpi-icon-circ">⭐</div>
+          </div>
+          <div class="kpi-big-value"><%= kpis.avgRating.value %> ★</div>
+          <div class="kpi-foot-text">
+            <span><%= kpis.avgRating.subtext %></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Biểu Đồ Doanh Thu & Xu Hướng (HostRevenueTrendChart.js) -->
+      <div class="chart-panel">
+        <div class="chart-panel-header">
+          <div class="chart-heading-text">
+            <h3>Biểu đồ doanh thu & xu hướng<br>đặt phòng</h3>
+            <p>Doanh thu theo ngày trong 30 ngày qua</p>
+          </div>
+
+          <div class="chart-panel-controls">
+            <div class="chart-mode-toggle">
+              <button class="mode-btn active" id="btnRev" onclick="toggleChartMode('REV')">Doanh thu (VNĐ)</button>
+              <button class="mode-btn" id="btnCount" onclick="toggleChartMode('COUNT')">Số đơn</button>
+            </div>
+
+            <select class="period-dropdown" style="padding: 5px 10px; font-size: 12px;">
+              <option value="ALL">Tất cả <%= (typeof hostRooms !== 'undefined' && hostRooms) ? hostRooms.length : 0 %> phòng</option>
+              <% ((typeof hostRooms !== 'undefined' && hostRooms) ? hostRooms : []).forEach(function(r) { %>
+                <option value="<%= r._id %>"><%= r.title %></option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+
+        <div class="chart-container-box">
+          <!-- Floating Dark Tooltip Card (Thiết kế đồng bộ 100% với UI Mobile / Figma) -->
+          <div id="chartTooltipCard" class="chart-custom-tooltip">
+            <div class="tooltip-date" id="ttDate">15/10/2026</div>
+            <div class="tooltip-val" id="ttVal">5.000.000 đ</div>
+            <div class="tooltip-details">
+              <span class="tooltip-dot"></span>
+              <span id="ttDesc">2 đơn (Villa Mộng Mơ & Ocean View)</span>
+            </div>
+          </div>
+          <canvas id="revChart"></canvas>
+        </div>
+
+        <div class="chart-stat-footer">
+          <div>🟢 Trung bình ngày: <strong><%= (typeof chartSummary !== 'undefined' && chartSummary?.dailyAverageFormatted) ? chartSummary.dailyAverageFormatted : '1.506.000 đ' %></strong></div>
+          <div>🟣 Đỉnh doanh thu: <strong><%= (typeof chartSummary !== 'undefined' && chartSummary?.peakRevenueFormatted) ? chartSummary.peakRevenueFormatted : '7.500.000 đ' %></strong> (Ngày <%= (typeof chartSummary !== 'undefined' && chartSummary?.peakDate) ? chartSummary.peakDate : '20/10' %>)</div>
+        </div>
+      </div>
+
+      <!-- 5. Hai Khối: Lịch Nhận/Trả Phòng & Đánh Giá Mới Nhất -->
+      <div class="two-cols-row">
+        <!-- Khối 1: Lịch Nhận / Trả Phòng (HostCheckInOutSchedule.js) -->
+        <div class="sub-panel">
+          <div class="sub-panel-head">
+            <h3>Lịch Nhận / Trả phòng theo ngày</h3>
+            <div class="sub-tabs-pill">
+              <button class="sub-tab-btn active" id="btnToday" onclick="setSchedTab('today')">
+                Hôm nay (<%= schedule.today.checkIns.length + schedule.today.checkOuts.length %>)
+              </button>
+              <button class="sub-tab-btn" id="btnTomorrow" onclick="setSchedTab('tomorrow')">
+                Ngày mai (<%= schedule.tomorrow.checkIns.length + schedule.tomorrow.checkOuts.length %>)
+              </button>
+            </div>
+          </div>
+
+          <div class="sub-panel-body" id="schedToday">
+            <% schedule.today.checkIns.forEach(function(g) { %>
+              <div class="guest-item">
+                <div class="guest-left">
+                  <div class="avatar-circ"><%= g.initials %></div>
+                  <div class="guest-info">
+                    <strong><%= g.guestName %></strong>
+                    <p><%= g.roomTitle %> • <%= g.phoneMasked %></p>
+                  </div>
+                </div>
+                <span class="time-badge in">Nhận phòng 14:00</span>
+              </div>
+            <% }); %>
+
+            <% schedule.today.checkOuts.forEach(function(g) { %>
+              <div class="guest-item">
+                <div class="guest-left">
+                  <div class="avatar-circ" style="background:#eff6ff; color:#1d4ed8;"><%= g.initials %></div>
+                  <div class="guest-info">
+                    <strong><%= g.guestName %></strong>
+                    <p><%= g.roomTitle %> • <%= g.phoneMasked %></p>
+                  </div>
+                </div>
+                <span class="time-badge out">Trả phòng 12:00</span>
+              </div>
+            <% }); %>
+          </div>
+
+          <div class="sub-panel-body" id="schedTomorrow" style="display: none;">
+            <% schedule.tomorrow.checkIns.forEach(function(g) { %>
+              <div class="guest-item">
+                <div class="guest-left">
+                  <div class="avatar-circ"><%= g.initials %></div>
+                  <div class="guest-info">
+                    <strong><%= g.guestName %></strong>
+                    <p><%= g.roomTitle %> • <%= g.phoneMasked %></p>
+                  </div>
+                </div>
+                <span class="time-badge in">Nhận phòng 14:00</span>
+              </div>
+            <% }); %>
+
+            <% schedule.tomorrow.checkOuts.forEach(function(g) { %>
+              <div class="guest-item">
+                <div class="guest-left">
+                  <div class="avatar-circ" style="background:#eff6ff; color:#1d4ed8;"><%= g.initials %></div>
+                  <div class="guest-info">
+                    <strong><%= g.guestName %></strong>
+                    <p><%= g.roomTitle %> • <%= g.phoneMasked %></p>
+                  </div>
+                </div>
+                <span class="time-badge out">Trả phòng 12:00</span>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+
+        <!-- Khối 2: Đánh Giá Mới Nhất (HostRecentReviews.js) -->
+        <div class="sub-panel" id="reviewsSection">
+          <div class="sub-panel-head">
+            <h3>Đánh giá mới nhất</h3>
+            <span style="font-size: 12px; color: var(--primary); font-weight: 700;">
+              ★ <%= kpis.avgRating.value %> / 5.0
+            </span>
+          </div>
+
+          <div class="sub-panel-body">
+            <% recentReviews.forEach(function(r) { %>
+              <div class="review-box">
+                <div class="rev-top">
+                  <span class="rev-author"><%= r.userId?.fullName || 'Khách du lịch' %></span>
+                  <span class="rev-stars">
+                    <% for(let i=0; i<Math.round(r.rating || 5); i++) { %>★<% } %>
+                  </span>
+                </div>
+                <div class="rev-room"><%= r.roomId?.title || 'Cơ sở lưu trú' %></div>
+                <p class="rev-text">"<%= r.comment || 'Không gian rất đẹp và sạch sẽ!' %>"</p>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Tab Lịch nhận/trả phòng
+    function setSchedTab(tab) {
+      document.getElementById('schedToday').style.display = (tab === 'today') ? 'block' : 'none';
+      document.getElementById('schedTomorrow').style.display = (tab === 'tomorrow') ? 'block' : 'none';
+      document.getElementById('btnToday').classList.toggle('active', tab === 'today');
+      document.getElementById('btnTomorrow').classList.toggle('active', tab === 'tomorrow');
+    }
+
+    // Biểu đồ Doanh thu & Xu hướng Chart.js (SMART-110)
+    let myChart = null;
+    let currentChartMode = 'REV';
+
+    const TIMELINE_DATA = <%- JSON.stringify(typeof chartTimeline !== 'undefined' ? chartTimeline : [
+      { label: '22/09', fullDate: '22/09/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
+      { label: '26/09', fullDate: '26/09/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
+      { label: '30/09', fullDate: '30/09/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
+      { label: '04/10', fullDate: '04/10/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
+      { label: '08/10', fullDate: '08/10/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
+      { label: '12/10', fullDate: '12/10/2026', revenue: 200000, bookingsCount: 1, details: '1 đơn (The Muse Studio)' },
+      { label: '16/10', fullDate: '15/10/2026', revenue: 5000000, bookingsCount: 2, details: '2 đơn (Villa Mộng Mơ & Ocean View)' },
+      { label: '20/10', fullDate: '20/10/2026', revenue: 7500000, bookingsCount: 3, details: '3 đơn (An Nhiên Eco & West Lake)', isPeak: true }
+    ]) %>;
+
+    let activePointIndex = 7; // Mặc định hiển thị mốc ngày 20/10
+
+    // Plugin vẽ đường kẻ dọc nét đứt (Vertical Dashed Guide Line) tại điểm đang chọn giống hình
+    const verticalDashedGuidePlugin = {
+      id: 'verticalDashedGuide',
+      afterDatasetsDraw(chart) {
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data) return;
+        const targetIdx = (activePointIndex !== null && activePointIndex >= 0 && activePointIndex < meta.data.length)
+          ? activePointIndex
+          : meta.data.length - 1;
+
+        const pt = meta.data[targetIdx];
+        if (!pt) return;
+
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = '#00685f';
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(pt.x, chart.chartArea.top);
+        ctx.lineTo(pt.x, chart.chartArea.bottom);
+        ctx.stroke();
+        ctx.restore();
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('revChart')?.getContext('2d');
+      if (ctx) {
+        const grad = ctx.createLinearGradient(0, 0, 0, 260);
+        grad.addColorStop(0, 'rgba(0, 104, 95, 0.15)');
+        grad.addColorStop(1, 'rgba(0, 104, 95, 0.0)');
+
+        const labels = TIMELINE_DATA.map(d => d.label);
+        const revData = TIMELINE_DATA.map(d => d.revenue);
+
+        myChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Doanh thu (VNĐ)',
+              data: revData,
+              borderColor: '#00685f',
+              backgroundColor: grad,
+              fill: true,
+              tension: 0.38,
+              borderWidth: 2.2,
+              pointBackgroundColor: '#00685f',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              pointRadius: (context) => (context.dataIndex === 7 ? 4 : 0),
+              pointHoverRadius: 6,
+              pointHoverBackgroundColor: '#00685f',
+              pointHoverBorderColor: '#ffffff',
+              pointHoverBorderWidth: 3,
+            }]
+          },
+          plugins: [verticalDashedGuidePlugin],
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: false,
+                external: function(context) {
+                  const tooltipModel = context.tooltip;
+                  const card = document.getElementById('chartTooltipCard');
+                  if (!card) return;
+
+                  if (tooltipModel.opacity === 0) {
+                    return;
+                  }
+
+                  const idx = tooltipModel.dataPoints?.[0]?.dataIndex;
+                  if (idx !== undefined && TIMELINE_DATA[idx]) {
+                    activePointIndex = idx;
+                    const item = TIMELINE_DATA[idx];
+                    document.getElementById('ttDate').innerText = item.fullDate || (item.label + '/2026');
+                    if (currentChartMode === 'REV') {
+                      document.getElementById('ttVal').innerText = new Intl.NumberFormat('vi-VN').format(item.revenue) + ' đ';
+                    } else {
+                      document.getElementById('ttVal').innerText = item.bookingsCount + ' đơn';
+                    }
+                    document.getElementById('ttDesc').innerText = item.details || (item.bookingsCount + ' đơn đặt phòng');
+
+                    const chartRect = context.chart.canvas.getBoundingClientRect();
+                    const pointX = tooltipModel.caretX;
+                    if (pointX < chartRect.width / 2) {
+                      card.style.right = '40px';
+                      card.style.left = 'auto';
+                    } else {
+                      card.style.right = 'auto';
+                      card.style.left = Math.max(20, pointX - 260) + 'px';
+                    }
+                    context.chart.draw();
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                min: 0,
+                max: 8000000,
+                ticks: {
+                  stepSize: 2000000,
+                  font: { family: 'Plus Jakarta Sans', size: 12, weight: '500' },
+                  color: '#64748b',
+                  callback: function(v) {
+                    if (currentChartMode === 'REV') {
+                      return (v / 1000000).toFixed(0) + 'tr';
+                    } else {
+                      return v + ' đơn';
+                    }
+                  }
+                },
+                grid: {
+                  color: '#eff6ff',
+                  borderDash: [4, 4],
+                  drawBorder: false,
+                }
+              },
+              x: {
+                ticks: {
+                  font: function(context) {
+                    const lbl = context.tick.label;
+                    return {
+                      family: 'Plus Jakarta Sans',
+                      size: 12,
+                      weight: (lbl === '12/10' || lbl === '20/10') ? '700' : '500'
+                    };
+                  },
+                  color: function(context) {
+                    const lbl = context.tick.label;
+                    if (lbl === '12/10') return '#00685f';
+                    if (lbl === '20/10') return '#4648d4';
+                    return '#64748b';
+                  },
+                  padding: 8
+                },
+                grid: {
+                  display: false,
+                  drawBorder: true,
+                  borderColor: '#e2e8f0',
+                }
+              }
+            }
+          }
+        });
+      }
+    });
+
+    function toggleChartMode(mode) {
+      if (!myChart) return;
+      currentChartMode = mode;
+      document.getElementById('btnRev').classList.toggle('active', mode === 'REV');
+      document.getElementById('btnCount').classList.toggle('active', mode === 'COUNT');
+
+      if (mode === 'REV') {
+        myChart.data.datasets[0].label = 'Doanh thu (VNĐ)';
+        myChart.data.datasets[0].data = TIMELINE_DATA.map(d => d.revenue);
+        myChart.options.scales.y.max = 8000000;
+        myChart.options.scales.y.ticks.stepSize = 2000000;
+        const cur = TIMELINE_DATA[activePointIndex] || TIMELINE_DATA[7];
+        document.getElementById('ttVal').innerText = new Intl.NumberFormat('vi-VN').format(cur.revenue) + ' đ';
+      } else {
+        myChart.data.datasets[0].label = 'Số lượng đơn';
+        myChart.data.datasets[0].data = TIMELINE_DATA.map(d => d.bookingsCount);
+        myChart.options.scales.y.max = 4;
+        myChart.options.scales.y.ticks.stepSize = 1;
+        const cur = TIMELINE_DATA[activePointIndex] || TIMELINE_DATA[7];
+        document.getElementById('ttVal').innerText = cur.bookingsCount + ' đơn';
+      }
+      myChart.update();
+    }
+  </script>
+</body>
+</html>

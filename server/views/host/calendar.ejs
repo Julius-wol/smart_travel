@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter (Đồng bộ 100% với Mobile App) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #00685f;
+      --primary-dark: #008378;
+      --primary-light: #e6f4f2;
+      --secondary: #4648d4;
+      --secondary-light: #eff4ff;
+      --text-heading: #0b1c30;
+      --text-body: #3d4947;
+      --text-muted: #64748b;
+      --screen-bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --border-subtle: #f1f5f9;
+
+      /* Calendar Status Tokens theo theme.js */
+      --cal-available-bg: #e8fbf4;
+      --cal-available-text: #00513b;
+      --cal-booked-bg: #e1e0ff;
+      --cal-booked-text: #4648d4;
+      --cal-pending-bg: #fff0d4;
+      --cal-pending-text: #d97706;
+      --cal-blocked-bg: #ffecec;
+      --cal-blocked-text: #ba1a1a;
+      --cal-weekend-bg: #eff4ff;
+      --cal-sunday-text: #ea580c;
+      --cal-past-text: #bcc9c6;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--screen-bg);
+      color: var(--text-heading);
+      display: flex;
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ============================================================
+       1. HOST SIDEBAR (HostSidebar.js)
+       ============================================================ */
+    .host-sidebar {
+      width: 250px;
+      background-color: #ffffff;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 50;
+      padding: 20px 14px;
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 0 4px;
+      gap: 10px;
+    }
+
+    .logo-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background-color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 18px;
+      box-shadow: 0 4px 10px rgba(0, 104, 95, 0.35);
+    }
+
+    .brand-text-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-heading);
+      letter-spacing: -0.3px;
+    }
+
+    .brand-subtitle {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 0.8px;
+      margin-top: 1px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.6px;
+      padding: 0 10px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .menu-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: #64748b;
+      font-weight: 500;
+      font-size: 13.5px;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .menu-item:hover {
+      background-color: #f1f5f9;
+      color: var(--text-heading);
+    }
+
+    .menu-item.active {
+      background-color: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .menu-icon {
+      font-size: 17px;
+      width: 22px;
+      margin-right: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .badge-pill {
+      margin-left: auto;
+      background-color: #f59e0b;
+      color: white;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    .bottom-help-container {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .bottom-help-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ============================================================
+       2. TOP NAVIGATION (HostTopNav.js)
+       ============================================================ */
+    .host-main {
+      margin-left: 250px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .top-nav {
+      background-color: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .breadcrumb-text {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .right-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .lang-switch-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background-color: #f1f5f9;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .lang-active { color: var(--primary); }
+    .lang-divider { color: #cbd5e1; font-weight: 400; }
+    .lang-inactive { color: #94a3b8; }
+
+    .icon-btn {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .notif-dot {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 1.5px solid #ffffff;
+    }
+
+    .user-profile-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 10px 4px 4px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .user-info-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-name-text {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-heading);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .user-email-text {
+      font-size: 10.5px;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================
+       3. WORKSPACE CONTAINER
+       ============================================================ */
+    .content-area {
+      padding: 24px 32px 60px;
+    }
+
+    /* Toast Notification Banner */
+    .toast-banner {
+      background-color: var(--primary);
+      color: white;
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 18px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ============================================================
+       4. CALENDAR HEADER (CalendarHeader.js)
+       ============================================================ */
+    .cal-header-panel {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .room-selector-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .room-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background-color: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .room-dropdown-select {
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-heading);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .room-sub-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .cal-controls-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .month-stepper {
+      display: flex;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: var(--radius-md);
+      gap: 6px;
+    }
+
+    .stepper-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .stepper-btn:hover {
+      background: white;
+    }
+
+    .month-label-text {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-heading);
+      padding: 0 10px;
+      white-space: nowrap;
+    }
+
+    .btn-today {
+      background: white;
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-heading);
+      cursor: pointer;
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .btn-block-action {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+
+    .btn-block-action:hover {
+      background: var(--primary-dark);
+    }
+
+    /* ============================================================
+       5. CALENDAR KPI CARDS (CalendarKpiCards.js)
+       ============================================================ */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .kpi-card-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+    }
+
+    .kpi-icon-circ {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .kpi-card-value {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    .kpi-sub-badge {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================
+       6. CALENDAR LEGEND (CalendarLegend.js)
+       ============================================================ */
+    .legend-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 10px 18px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .legend-status-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .legend-title-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.6px;
+    }
+
+    .legend-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .pill-avail { background: var(--cal-available-bg); color: var(--cal-available-text); }
+    .pill-booked { background: var(--cal-booked-bg); color: var(--cal-booked-text); }
+    .pill-pending { background: var(--cal-pending-bg); color: var(--cal-pending-text); }
+    .pill-blocked { background: var(--cal-blocked-bg); color: var(--cal-blocked-text); }
+
+    .dot-sym {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .price-note-text {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================
+       7. CALENDAR GRID MATRIX (CalendarGridMatrix.js)
+       ============================================================ */
+    .matrix-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .matrix-header-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .matrix-col-header {
+      padding: 12px 14px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-heading);
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .matrix-col-header:last-child {
+      border-right: none;
+    }
+
+    .matrix-col-header.sat {
+      background-color: var(--cal-weekend-bg);
+      color: #1d4ed8;
+    }
+
+    .matrix-col-header.sun {
+      background-color: var(--cal-weekend-bg);
+      color: var(--cal-sunday-text);
+    }
+
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+
+    .day-cell {
+      min-height: 105px;
+      border-right: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background-color: #ffffff;
+    }
+
+    .day-cell:nth-child(7n) {
+      border-right: none;
+    }
+
+    .day-cell:hover:not(.past):not(.filler) {
+      box-shadow: inset 0 0 0 2px var(--primary);
+      z-index: 5;
+    }
+
+    .day-cell.sat, .day-cell.sun {
+      background-color: #fafcff;
+    }
+
+    .day-cell.filler {
+      background-color: #f8fafc;
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .day-cell.past {
+      background-color: #f8fafc;
+      color: var(--cal-past-text);
+    }
+
+    .cell-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .day-number {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--text-heading);
+    }
+
+    .day-cell.past .day-number {
+      color: var(--cal-past-text);
+    }
+
+    .day-price {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .day-cell.past .day-price {
+      color: var(--cal-past-text);
+    }
+
+    .status-badge-box {
+      margin-top: auto;
+      border-radius: var(--radius-sm);
+      padding: 5px 8px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .status-badge-box.avail {
+      background-color: var(--cal-available-bg);
+      color: var(--cal-available-text);
+      font-weight: 600;
+    }
+
+    .status-badge-box.booked {
+      background-color: var(--cal-booked-bg);
+      color: var(--cal-booked-text);
+      font-weight: 700;
+    }
+
+    .status-badge-box.pending {
+      background-color: var(--cal-pending-bg);
+      color: var(--cal-pending-text);
+      font-weight: 700;
+    }
+
+    .status-badge-box.blocked {
+      background-color: var(--cal-blocked-bg);
+      color: var(--cal-blocked-text);
+      font-weight: 700;
+    }
+
+    .badge-sub {
+      font-size: 10px;
+      font-weight: 500;
+      opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ============================================================
+       8. MODALS & POPOVER (BlockDateModal & QuickBookingPopover)
+       ============================================================ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(11, 28, 48, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: white;
+      width: 480px;
+      max-width: 90vw;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: 24px;
+      animation: popIn 0.2s ease-out;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .modal-head h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text-heading);
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 6px;
+    }
+
+    .form-select, .form-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-heading);
+      outline: none;
+    }
+
+    .form-select:focus, .form-input:focus {
+      border-color: var(--primary);
+    }
+
+    .modal-btns {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      border: none;
+      padding: 9px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-confirm-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-confirm-danger {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================
+       1. HOST SIDEBAR (HostSidebar.js)
+       ============================================================ -->
+  <aside class="host-sidebar">
+    <div class="brand-container">
+      <div class="logo-icon-box">🏡</div>
+      <div class="brand-text-col">
+        <span class="brand-title">Smart Travel</span>
+        <span class="brand-subtitle">HOST PORTAL</span>
+      </div>
+    </div>
+
+    <div class="section-title">QUẢN TRỊ CƠ SỞ</div>
+
+    <div class="menu-list">
+      <a href="/host/dashboard" class="menu-item">
+        <span class="menu-icon">📊</span>
+        <span>Tổng quan</span>
+      </a>
+      <a href="/host/dashboard#roomSection" class="menu-item">
+        <span class="menu-icon">🏨</span>
+        <span>Quản lý phòng</span>
+      </a>
+      <a href="javascript:void(0)" class="menu-item">
+        <span class="menu-icon">📑</span>
+        <span>Đơn đặt phòng</span>
+        <span class="badge-pill">2</span>
+      </a>
+      <a href="/host/calendar" class="menu-item active">
+        <span class="menu-icon">📅</span>
+        <span>Lịch phòng & Giá</span>
+      </a>
+      <a href="/host/dashboard#reviewsSection" class="menu-item">
+        <span class="menu-icon">⭐</span>
+        <span>Đánh giá & Phản hồi</span>
+      </a>
+      <a href="#" class="menu-item" onclick="alert('Tính năng Doanh thu & Rút tiền đang phát triển')">
+        <span class="menu-icon">💰</span>
+        <span>Doanh thu & Rút tiền</span>
+      </a>
+      <a href="#" class="menu-item" onclick="alert('Tính năng Cài đặt cơ sở lưu trú đang phát triển')">
+        <span class="menu-icon">⚙️</span>
+        <span>Cài đặt cơ sở lưu trú</span>
+      </a>
+    </div>
+
+    <div class="bottom-help-container">
+      <a href="#" class="bottom-help-btn" onclick="alert('Hotline hỗ trợ đối tác Host: 1900 6868')">
+        <span class="menu-icon">❓</span>
+        <span>Trợ giúp & Hỗ trợ</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       2. MAIN CONTENT (HostCalendarScreen.js)
+       ============================================================ -->
+  <main class="host-main">
+    <!-- Top Navigation (HostTopNav.js) -->
+    <header class="top-nav">
+      <div class="breadcrumb-text">
+        Lịch phòng & Trạng thái trống • Smart Travel Host Portal
+      </div>
+
+      <div class="right-actions">
+        <div class="lang-switch-pill">
+          <span class="lang-active">VN</span>
+          <span class="lang-divider">|</span>
+          <span class="lang-inactive">EN</span>
+        </div>
+
+        <div class="icon-btn" onclick="alert('Bạn có 1 thông báo đơn chờ duyệt!')">
+          🔔
+          <div class="notif-dot"></div>
+        </div>
+
+        <div class="user-profile-chip">
+          <div class="user-avatar"><%= (typeof hostUser !== 'undefined' && hostUser?.initials) ? hostUser.initials : 'H' %></div>
+          <div class="user-info-col">
+            <div class="user-name-text">
+              <span><%= (typeof hostUser !== 'undefined' && hostUser?.name) ? hostUser.name : 'Chủ cơ sở Homestay' %></span>
+              <span style="color: var(--primary);">✓</span>
+            </div>
+            <span class="user-email-text"><%= (typeof hostUser !== 'undefined' && hostUser?.email) ? hostUser.email : 'host@smarttravel.vn' %></span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <!-- Toast Banner -->
+      <div class="toast-banner" id="calToast"></div>
+
+      <!-- 1. CALENDAR HEADER (CalendarHeader.js) -->
+      <div class="cal-header-panel">
+        <div class="room-selector-box">
+          <div class="room-icon-box">🏡</div>
+          <div>
+            <select class="room-dropdown-select" onchange="onSelectRoom(this.value)">
+              <% rooms.forEach(function(r) { %>
+                <option value="<%= r._id %>" <%= String(r._id) === String(selectedRoom?._id) ? 'selected' : '' %>>
+                  <%= r.title %> (<%= r.code || r.roomCode || '#P-001' %>)
+                </option>
+              <% }); %>
+            </select>
+            <div class="room-sub-meta">
+              Mã căn: <%= selectedRoom?.code || selectedRoom?.roomCode || '#P-VL204' %> • <%= selectedRoom?.specs?.bedroom || '2 phòng ngủ • 2 giường' %>
+            </div>
+          </div>
+        </div>
+
+        <div class="cal-controls-right">
+          <!-- Month Stepper -->
+          <div class="month-stepper">
+            <a href="/host/calendar?roomId=<%= selectedRoom?._id %>&month=<%= currentMonth === 1 ? 12 : currentMonth - 1 %>&year=<%= currentMonth === 1 ? currentYear - 1 : currentYear %>" class="stepper-btn">‹</a>
+            <span class="month-label-text">Tháng <%= currentMonth %>, <%= currentYear %></span>
+            <a href="/host/calendar?roomId=<%= selectedRoom?._id %>&month=<%= currentMonth === 12 ? 1 : currentMonth + 1 %>&year=<%= currentMonth === 12 ? currentYear + 1 : currentYear %>" class="stepper-btn">›</a>
+          </div>
+
+          <a href="/host/calendar?roomId=<%= selectedRoom?._id %>" class="btn-today">Hôm nay</a>
+
+          <button class="btn-block-action" onclick="openBlockModalToday()">
+            + Khóa ngày
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. 4 THẺ KPI LỊCH (CalendarKpiCards.js) -->
+      <div class="kpi-grid">
+        <!-- 1. TỶ LỆ LẤP ĐẦY -->
+        <div class="kpi-card">
+          <div class="kpi-head-row">
+            <span class="kpi-card-label">TỶ LỆ LẤP ĐẦY</span>
+            <div class="kpi-icon-circ" style="background:#e8fbf4; color:#00685f;">📊</div>
+          </div>
+          <div class="kpi-card-value" style="color:#00685f;"><%= kpi.occupancyRate %>%</div>
+          <span class="kpi-sub-badge">Dựa trên số đêm khả dụng</span>
+        </div>
+
+        <!-- 2. ĐÃ BÁN -->
+        <div class="kpi-card">
+          <div class="kpi-head-row">
+            <span class="kpi-card-label">ĐÃ BÁN</span>
+            <div class="kpi-icon-circ" style="background:#eff4ff; color:#4648d4;">🛏️</div>
+          </div>
+          <div class="kpi-card-value" style="color:#4648d4;"><%= kpi.soldNights %> đêm</div>
+          <span class="kpi-sub-badge">Đã xác nhận & thanh toán</span>
+        </div>
+
+        <!-- 3. NGÀY TRỐNG -->
+        <div class="kpi-card">
+          <div class="kpi-head-row">
+            <span class="kpi-card-label">NGÀY TRỐNG</span>
+            <div class="kpi-icon-circ" style="background:#e6f4f2; color:#008378;">📅</div>
+          </div>
+          <div class="kpi-card-value"><%= kpi.availableNights %> đêm</div>
+          <span class="kpi-sub-badge">Sẵn sàng đón khách tức thì</span>
+        </div>
+
+        <!-- 4. DOANH THU DỰ TÍNH -->
+        <div class="kpi-card">
+          <div class="kpi-head-row">
+            <span class="kpi-card-label">DOANH THU DỰ TÍNH</span>
+            <div class="kpi-icon-circ" style="background:#fffbeb; color:#d97706;">💰</div>
+          </div>
+          <div class="kpi-card-value">
+            <%= (kpi.estimatedRevenue / 1000000).toFixed(1) %>M đ
+          </div>
+          <span class="kpi-sub-badge">Ước tính tháng hiện tại</span>
+        </div>
+      </div>
+
+      <!-- 3. THƯỚC ĐO MÀU SẮC (CalendarLegend.js) -->
+      <div class="legend-card">
+        <div class="legend-status-row">
+          <span class="legend-title-text">TRẠNG THÁI:</span>
+          <span class="legend-pill pill-avail"><span class="dot-sym" style="background:#008378;"></span> Trống</span>
+          <span class="legend-pill pill-booked"><span class="dot-sym" style="background:#4648d4;"></span> Đã đặt</span>
+          <span class="legend-pill pill-pending"><span class="dot-sym" style="background:#d97706;"></span> Chờ duyệt</span>
+          <span class="legend-pill pill-blocked"><span class="dot-sym" style="background:#ba1a1a;"></span> Đã khóa / Bảo trì</span>
+        </div>
+        <div class="price-note-text">
+          Giá hiển thị: <strong>VNĐ / đêm</strong> (Tự động tăng vào Thứ 6 – Chủ Nhật)
+        </div>
+      </div>
+
+      <!-- 4. MA TRẬN LƯỚI LỊCH 7 CỘT (CalendarGridMatrix.js) -->
+      <div class="matrix-card">
+        <!-- 7 Cột Header Thứ trong tuần -->
+        <div class="matrix-header-row">
+          <div class="matrix-col-header">Thứ 2 (T2)</div>
+          <div class="matrix-col-header">Thứ 3 (T3)</div>
+          <div class="matrix-col-header">Thứ 4 (T4)</div>
+          <div class="matrix-col-header">Thứ 5 (T5)</div>
+          <div class="matrix-col-header">Thứ 6 (T6)</div>
+          <div class="matrix-col-header sat">Thứ 7 (T7)</div>
+          <div class="matrix-col-header sun">Chủ Nhật (CN)</div>
+        </div>
+
+        <!-- Lưới Ma Trận Các Ngày -->
+        <div class="matrix-grid">
+          <!-- Ngày mờ của tháng trước (Filler Days) -->
+          <% prevMonthFillerDays.forEach(function(filler) { %>
+            <div class="day-cell filler <%= filler.isSaturday ? 'sat' : '' %>">
+              <div class="cell-top-row">
+                <span class="day-number"><%= filler.dayOfMonth %></span>
+                <span class="day-price"><%= (filler.price / 1000000).toFixed(1) %>tr</span>
+              </div>
+            </div>
+          <% }); %>
+
+          <!-- Các ngày trong tháng -->
+          <% calendarDays.forEach(function(d) { %>
+            <div 
+              class="day-cell <%= d.isSaturday ? 'sat' : (d.isSunday ? 'sun' : '') %> <%= d.isPast ? 'past' : '' %>"
+              onclick="handleDayClick('<%= d.date %>')"
+            >
+              <div class="cell-top-row">
+                <span class="day-number"><%= d.dayOfMonth %></span>
+                <span class="day-price"><%= (d.price / 1000000).toFixed(1) %>tr</span>
+              </div>
+
+              <% if (d.status === 'AVAILABLE') { %>
+                <div class="status-badge-box avail">
+                  <span>🟢 Trống</span>
+                </div>
+              <% } else if (d.status === 'BOOKED') { %>
+                <div class="status-badge-box booked">
+                  <span>🔵 Đã đặt</span>
+                  <span class="badge-sub"><%= d.booking?.customerName || '#BK' %></span>
+                </div>
+              <% } else if (d.status === 'PENDING') { %>
+                <div class="status-badge-box pending">
+                  <span>🟡 Chờ duyệt</span>
+                  <span class="badge-sub"><%= d.booking?.customerName || 'SLA 24h' %></span>
+                </div>
+              <% } else if (d.status === 'BLOCKED') { %>
+                <div class="status-badge-box blocked">
+                  <span>🔒 Đã khóa</span>
+                  <span class="badge-sub"><%= d.block?.reasonLabel || 'Bảo trì' %></span>
+                </div>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================
+       MODAL 1: KHÓA LỊCH PHÒNG (BlockDateModal.js)
+       ============================================================ -->
+  <div class="modal-overlay" id="blockModal" onclick="closeOnBackdrop(event, 'blockModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Khóa lịch đón khách</h3>
+          <p style="font-size:12px; color:var(--text-muted); margin-top:2px;" id="blockDateRangeText">
+            Khoảng ngày được chọn
+          </p>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('blockModal')">✕</button>
+      </div>
+
+      <form id="blockForm" onsubmit="submitBlockDate(event)">
+        <input type="hidden" id="bStartDate" name="startDate">
+        <input type="hidden" id="bEndDate" name="endDate">
+        <input type="hidden" id="bRoomId" name="roomId" value="<%= selectedRoom?._id %>">
+
+        <div class="form-group">
+          <label class="form-label">Lý do khóa phòng <span style="color:#ef4444;">*</span></label>
+          <select class="form-select" id="bReason" name="reason" required>
+            <option value="">-- Chọn lý do khóa --</option>
+            <option value="MAINTENANCE">Sửa chữa / Bảo trì định kỳ</option>
+            <option value="EXTERNAL_GUEST">Giữ chỗ cho khách đặt ngoài hệ thống</option>
+            <option value="HOLIDAY_PERSONAL">Nghỉ lễ / Gia đình sử dụng</option>
+            <option value="OTHER">Khác</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Ghi chú nội bộ (Tùy chọn, tối đa 100 ký tự)</label>
+          <input type="text" class="form-input" id="bNote" name="internalNote" maxlength="100" placeholder="Ví dụ: Thay đệm mới, sơn lại tường...">
+        </div>
+
+        <div class="modal-btns">
+          <button type="button" class="btn-secondary" onclick="closeModal('blockModal')">Hủy bỏ</button>
+          <button type="submit" class="btn-confirm-primary">Xác nhận khóa phòng</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL 2: MỞ KHÓA NGÀY (UnblockDateModal.js)
+       ============================================================ -->
+  <div class="modal-overlay" id="unblockModal" onclick="closeOnBackdrop(event, 'unblockModal')">
+    <div class="modal-card" style="text-align: center;">
+      <div style="font-size: 38px; margin-bottom: 12px;">🔓</div>
+      <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 6px;">Mở lại ngày đón khách</h3>
+      <p style="font-size: 13px; color: var(--primary); font-weight: 700; margin-bottom: 12px;" id="unblockTargetDateText">
+        Ngày: 2026-11-20
+      </p>
+      <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 22px;">
+        Bạn có chắc muốn mở lại ngày này? Phòng sẽ được hiển thị công khai trên ứng dụng để du khách đặt chỗ. (CAL-CONFIRM-UNBLOCK)
+      </p>
+
+      <div class="modal-btns" style="justify-content: center;">
+        <button type="button" class="btn-secondary" onclick="closeModal('unblockModal')">Hủy bỏ</button>
+        <button type="button" class="btn-confirm-primary" onclick="submitUnblockDate()">Mở lại ngày</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       POPOVER: DUYỆT NHANH ĐƠN CHỜ (QuickBookingPopover.js)
+       ============================================================ -->
+  <div class="modal-overlay" id="popoverModal" onclick="closeOnBackdrop(event, 'popoverModal')">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span style="background:#fff0d4; color:#d97706; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700;">CHỜ DUYỆT SLA</span>
+          <strong style="margin-left: 8px; font-size: 14px;" id="popBookingCode">#BK-9821</strong>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal('popoverModal')">✕</button>
+      </div>
+
+      <div style="padding: 10px 0; border-bottom: 1px dashed var(--border-color); margin-bottom: 14px;">
+        <strong style="font-size: 14px;" id="popCustomerName">Nguyễn Khánh Huyền</strong>
+        <p style="font-size: 12px; color: var(--text-muted);" id="popPhone">📞 0912.***.678</p>
+      </div>
+
+      <div style="font-size: 13px; line-height: 1.8; margin-bottom: 18px;">
+        <div>📅 <strong>Thời gian:</strong> <span id="popDates">2026-11-15 → 2026-11-17 (2 đêm)</span></div>
+        <div>👥 <strong>Khách:</strong> <span id="popGuests">2 người lớn</span></div>
+        <div>💰 <strong>Tổng tiền:</strong> <strong style="color:var(--primary); font-size:15px;" id="popPrice">5.000.000 đ</strong></div>
+        <div>📝 <strong>Ghi chú:</strong> <span id="popNote" style="color:var(--text-muted);">Khách xin nhận phòng sớm</span></div>
+      </div>
+
+      <div class="modal-btns">
+        <button type="button" class="btn-secondary" style="color:#ef4444;" onclick="alert('Đã từ chối đơn theo quy định hoàn tiền!')">Từ chối</button>
+        <button type="button" class="btn-confirm-primary" onclick="submitApproveBooking()">✓ Duyệt đơn ngay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC CALENDAR (SMART-105) -->
+  <script>
+    const CALENDAR_DAYS = <%- JSON.stringify(calendarDays || []) %>;
+    let currentSelectedDate = '';
+    let currentPendingBookingId = '';
+
+    // Hiển thị toast
+    function showToast(msg) {
+      const toast = document.getElementById('calToast');
+      toast.innerText = msg;
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3500);
+    }
+
+    // Đổi phòng
+    function onSelectRoom(rId) {
+      window.location.href = '/host/calendar?roomId=' + rId + '&month=<%= currentMonth %>&year=<%= currentYear %>';
+    }
+
+    // Mở modal khóa ngày hôm nay
+    function openBlockModalToday() {
+      const today = new Date().toISOString().slice(0, 10);
+      openBlockModal(today);
+    }
+
+    // Xử lý click ngày trên ma trận
+    function handleDayClick(dateStr) {
+      const day = CALENDAR_DAYS.find(function(item) { return item.date === dateStr; });
+      if (!day) return;
+
+      if (day.isPast) {
+        showToast('Không thể thực hiện thao tác khóa hoặc mở ngày cho các mốc thời gian trong quá khứ. (CAL-NAV-PAST)');
+        return;
+      }
+
+      if (day.status === 'AVAILABLE') {
+        openBlockModal(dateStr);
+      } else if (day.status === 'BLOCKED') {
+        openUnblockModal(dateStr);
+      } else if (day.status === 'PENDING') {
+        openQuickBookingPopover(day.booking);
+      } else if (day.status === 'BOOKED') {
+        alert('Phòng đã được đặt bởi: ' + (day.booking?.customerName || 'Khách') + ' (Mã đơn: ' + (day.booking?.bookingCode || '') + ')');
+      }
+    }
+
+    // Modal Khóa ngày
+    function openBlockModal(dateStr) {
+      currentSelectedDate = dateStr;
+      document.getElementById('bStartDate').value = dateStr;
+      document.getElementById('bEndDate').value = dateStr;
+      document.getElementById('blockDateRangeText').innerText = 'Khóa lịch cho ngày: ' + dateStr + ' (1 đêm)';
+      document.getElementById('blockModal').classList.add('open');
+    }
+
+    // Modal Mở khóa ngày
+    function openUnblockModal(dateStr) {
+      currentSelectedDate = dateStr;
+      document.getElementById('unblockTargetDateText').innerText = 'Ngày: ' + dateStr;
+      document.getElementById('unblockModal').classList.add('open');
+    }
+
+    // Popover Duyệt đơn chờ
+    function openQuickBookingPopover(booking) {
+      if (!booking) return;
+      currentPendingBookingId = booking.id;
+      document.getElementById('popBookingCode').innerText = booking.bookingCode;
+      document.getElementById('popCustomerName').innerText = booking.customerName;
+      document.getElementById('popPhone').innerText = '📞 ' + booking.phoneNumber;
+      document.getElementById('popDates').innerText = booking.checkIn + ' → ' + booking.checkOut + ' (' + booking.nights + ' đêm)';
+      document.getElementById('popGuests').innerText = booking.guestCount + ' người';
+      document.getElementById('popPrice').innerText = new Intl.NumberFormat('vi-VN').format(booking.totalAmount) + ' đ';
+      document.getElementById('popNote').innerText = booking.guestNote || 'Không có ghi chú thêm';
+      document.getElementById('popoverModal').classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function closeOnBackdrop(e, id) {
+      if (e.target.id === id) {
+        closeModal(id);
+      }
+    }
+
+    // Submit Khóa ngày
+    async function submitBlockDate(e) {
+      e.preventDefault();
+      const roomId = document.getElementById('bRoomId').value;
+      const startDate = document.getElementById('bStartDate').value;
+      const endDate = document.getElementById('bEndDate').value;
+      const reason = document.getElementById('bReason').value;
+      const internalNote = document.getElementById('bNote').value;
+
+      try {
+        const res = await fetch('/host/calendar/block', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId, startDate, endDate, reason, internalNote })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeModal('blockModal');
+          showToast(data.message);
+          setTimeout(() => window.location.reload(), 1200);
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert('Lỗi khi gửi yêu cầu khóa phòng: ' + err.message);
+      }
+    }
+
+    // Submit Mở khóa ngày
+    async function submitUnblockDate() {
+      const roomId = '<%= selectedRoom?._id %>';
+      try {
+        const res = await fetch('/host/calendar/unblock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ roomId, targetDate: currentSelectedDate })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeModal('unblockModal');
+          showToast(data.message);
+          setTimeout(() => window.location.reload(), 1200);
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert('Lỗi khi mở khóa: ' + err.message);
+      }
+    }
+
+    // Submit Duyệt đơn
+    async function submitApproveBooking() {
+      try {
+        const res = await fetch('/host/calendar/approve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId: currentPendingBookingId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          closeModal('popoverModal');
+          showToast(data.message);
+          setTimeout(() => window.location.reload(), 1200);
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert('Lỗi khi duyệt đơn: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>
+

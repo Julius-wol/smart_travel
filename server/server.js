@@ -11,7 +11,7 @@ import userRoute from './src/routes/userRoute.js';
 import roomRoute from './src/routes/roomRoute.js';
 import bookingRoute from './src/routes/bookingRoute.js';
 import reviewRoute from './src/routes/reviewRoute.js';
-import adminRoute from './src/routes/admin.js';
+import hostWebRoute from './src/routes/hostWebRoute.js';
 import wishlistRoute from './src/routes/wishlistRoute.js';
 import hostCalendarRoutes from './src/routes/hostCalendarRoutes.js';
 import hostDashboardRoutes from './src/routes/hostDashboardRoutes.js';
@@ -30,10 +30,23 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
-// 2. EJS View Engine (Web Admin)
+// Chống trùng lặp tiền tố /api/api từ axios client
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/api/')) {
+    req.url = req.url.replace('/api/api/', '/api/');
+  }
+  next();
+});
+
+// 2. EJS View Engine (Host Portal Web)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Trang chủ tự động chuyển tiếp tới Host Portal
+app.get('/', (req, res) => {
+  res.redirect('/host');
+});
 
 // Welcome API
 app.get(['/api', '/api/v1'], (req, res) => {
@@ -65,8 +78,8 @@ app.use('/api/v1/wishlist', wishlistRoute);
 app.use('/api/v1/host/dashboard', hostDashboardRoutes);
 app.use('/api/v1/host', hostCalendarRoutes);
 
-// Web Admin
-app.use('/admin', adminRoute);
+// Host Partner Portal
+app.use('/host', hostWebRoute);
 
 // 4. Kết nối MongoDB
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_travel')
@@ -76,7 +89,8 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_trave
 // 5. Khởi động Server
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server đang chạy tại http://0.0.0.0:${PORT} (Truy cập qua mạng LAN: http://${process.env.HOST_IP || '192.168.102.37'}:${PORT})`);
+    console.log(`🚀 Host Portal đang chạy tại: http://localhost:${PORT}/host`);
+    console.log(`   (Truy cập qua mạng LAN: http://${process.env.HOST_IP || '192.168.102.37'}:${PORT}/host)`);
   });
 }
 
