@@ -1,4 +1,25 @@
 # 🔐 QUY TRÌNH HOẠT ĐỘNG AUTHENTICATION (JWT & GOOGLE OAUTH)
+
+Tài khoản được phân biệt theo `(email, role)`: visitor trên mobile dùng `USER`,
+đối tác trên web dùng `HOST`. Cùng email/username được đăng ký ở cả hai role;
+mỗi tài khoản có `_id`, mật khẩu và phiên đăng nhập riêng. Đăng ký kiểm tra trùng
+trong role được chọn. Mobile cho phép cả USER và HOST đăng nhập, luôn mở màn
+`Home` và giao diện đặt phòng visitor; không mở CMS. Nếu cùng email có hai tài
+khoản, kiểm tra mật khẩu USER trước rồi HOST; giữ nguyên role và `_id` của tài
+khoản khớp. Web CMS chỉ đăng nhập HOST. Đăng ký lại trong cùng role vẫn trả
+HTTP 400, không ghi đè mật khẩu.
+
+Các API `/api/auth/signin`, `/signup`, `/google`, `/forgot-password`, `/verify-otp`
+và `/reset-password` mặc định dùng `USER`; `clientType: "host"` hoặc `role: "HOST"`
+chọn `HOST`. `platform: "mobile"` chọn giao diện visitor và mặc định đăng ký
+`USER`, nhưng đăng nhập được bằng tài khoản HOST hiện có. Các endpoint
+`/api/auth/host/*` và `/host/*` luôn dùng `HOST`. Google trên mobile ưu tiên USER,
+sau đó tài khoản HOST hiện có; nếu chưa có cả hai thì tạo USER. Phiên mobile
+không cấp cookie CMS `hostToken`, kể cả khi tài khoản có role HOST.
+
+Database cũ cần chạy `npm run migrate:auth-roles --workspace=server` một lần.
+Lệnh tạo unique index `(email, role)` và `(username, role)` trước khi bỏ unique
+index email/username toàn cục; không thay đổi hoặc xóa dữ liệu tài khoản.
 **Dự án:** Smart Travel Platform (Node.js/Express + MongoDB + React Native Expo)
 
 ---
@@ -191,3 +212,11 @@ sequenceDiagram
 3. **Cơ chế chống brute-force / spam mã OTP:**
    - Tại API `/api/auth/forgot-password`, hệ thống kiểm tra thời gian gửi mã trước đó. Nếu chưa qua 60 giây, trả về HTTP status `429 Too Many Requests`.
    - Mã OTP tự động vô hiệu hóa sau 15 phút.
+
+
+| `POST` | `/api/auth/refresh` | Public / Cookie | Làm mới Access Token qua Refresh Token | `{ refreshToken? }` hoặc gửi qua Cookie |
+| `POST` | `/api/auth/host/signin` | Public (Host) | Đăng nhập dành riêng cho Host qua REST API | `{ emailOrPhone, password }` |
+| `POST` | `/api/auth/host/signup` | Public (Host) | Đăng ký tài khoản Đối tác Chủ phòng | `{ username, email, phone, firstName, lastName, password }` |
+
+---
+

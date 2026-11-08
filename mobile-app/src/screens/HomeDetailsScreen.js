@@ -1,8 +1,9 @@
+import Image from '../components/MediaImage';
+import { resolveMediaUrl } from '../utils/config';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  Image,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
@@ -250,18 +251,11 @@ const HomeDetailsScreen = ({ navigation, route }) => {
   const [showAllAmenities, setShowAllAmenities] = useState(false);
 
   // State đánh giá thời gian thực từ MongoDB
-  const [reviewsList, setReviewsList] = useState(data.reviews || []);
+  const [reviewsList, setReviewsList] = useState([]);
   const [ratingSummary, setRatingSummary] = useState({
-    rating: data.rating || 4.9,
-    reviewCount: data.reviewCount || 128,
-    breakdown: data.ratingBreakdown || {
-      overall: 4.9,
-      cleanliness: 5.0,
-      location: 4.9,
-      service: 4.9,
-      amenities: 4.8,
-      value: 4.9,
-    },
+    rating: 0,
+    reviewCount: 0,
+    breakdown: {},
   });
 
   // Gọi API lấy đánh giá mới nhất từ máy chủ
@@ -289,19 +283,18 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           bookingCode: r.bookingCode,
           isReal: true,
         }));
-        // Kết hợp review thực tế lên đầu, kèm fallback mock data
         setReviewsList(mapped);
       }
 
       if (sumRes.ok && sumJson.success && sumJson.data) {
         setRatingSummary({
-          rating: sumJson.data.rating || data.rating,
-          reviewCount: sumJson.data.reviewCount || data.reviewCount,
-          breakdown: sumJson.data.ratingBreakdown || data.ratingBreakdown,
+          rating: sumJson.data.rating ?? 0,
+          reviewCount: sumJson.data.reviewCount ?? 0,
+          breakdown: sumJson.data.ratingBreakdown ?? {},
         });
       }
     } catch (e) {
-      // Giữ mock reviews nếu offline
+      // Keep the last fetched reviews when the connection is unavailable.
     }
   };
 
@@ -398,7 +391,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
     hasCustomGuests && Number(guestConfig.rooms) > 0 ? Number(guestConfig.rooms) : 1;
 
   // Tính tổng giá theo số đêm đã chọn
-  const basePricePerNight = Number(data.price) || 1450000;
+  const basePricePerNight = Number(data.price) || 0;
   const totalPrice = basePricePerNight * nightsCount;
   const totalPriceFormatted = new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ';
 
@@ -409,15 +402,58 @@ const HomeDetailsScreen = ({ navigation, route }) => {
         homestay: data,
         user,
         token,
-        checkIn: checkInDate.toISOString(),
-        checkOut: checkOutDate.toISOString(),
-        nights: nightsCount,
+        hasCustomDates,
+        checkIn: hasCustomDates ? checkInDate.toISOString() : null,
+        checkOut: hasCustomDates ? checkOutDate.toISOString() : null,
+        nights: hasCustomDates ? nightsCount : 0,
         guests: totalGuests,
         roomCount: roomsCount,
       });
     } catch (err) {
       console.error('Lỗi khi chuyển tới Checkout:', err);
       showToast('Có lỗi xảy ra khi mở trang đặt phòng. Vui lòng thử lại!', 'error');
+    }
+  };
+
+  // Ràng buộc chỉ khi đã ở (qua thời gian check-out) mới được viết đánh giá
+  const handleWriteReviewPress = async () => {
+    if (!user) {
+      showToast('Vui lòng đăng nhập để thực hiện đánh giá phòng.', 'info');
+      return;
+    }
+
+    try {
+      const userId = user._id || user.id;
+      const res = await fetch(`${API_URL}/bookings/my-bookings`, { headers: { Authorization: `Bearer ${token}` } });
+      const json = await res.json();
+
+      if (json.success && Array.isArray(json.data)) {
+        const roomId = data._id || data.id;
+        const now = new Date();
+        const completedBooking = json.data.find((b) => {
+          const bRoomId = b.roomId?._id || b.roomId;
+          const checkOutDate = b.checkOut ? new Date(b.checkOut) : null;
+          return String(bRoomId) === String(roomId) && checkOutDate && now > checkOutDate;
+        });
+
+        if (completedBooking) {
+          navigation.navigate('WriteReview', {
+            homestay: data,
+            bookingCode: completedBooking.bookingCode,
+            bookingId: completedBooking._id,
+            user,
+            token,
+          });
+          return;
+        }
+      }
+
+      showToast(
+        'Bạn chỉ có thể đánh giá phòng sau khi đã hoàn tất kỳ nghỉ (qua thời gian trả phòng)!',
+        'error'
+      );
+    } catch (err) {
+      showToast('Bạn chỉ có thể đánh giá phòng sau khi đã hoàn tất kỳ nghỉ!', 'error');
     }
   };
 
@@ -475,7 +511,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             }}
           >
             {data.images.map((imgUri, index) => (
-              <Image key={`hero-img-${index}`} source={{ uri: imgUri }} style={styles.heroImage} />
+              <Image key={index} source={{ uri: resolveMediaUrl(imgUri) }} style={styles.heroImage} />
             ))}
           </ScrollView>
 
@@ -490,7 +526,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           {/* 3 Thumbnails nhỏ bên dưới */}
           <View style={styles.thumbnailRow}>
             {data.images.slice(0, 3).map((imgUri, index) => (
-              <Image key={`thumb-img-${index}`} source={{ uri: imgUri }} style={styles.thumbnailImg} />
+              <Image key={index} source={{ uri: resolveMediaUrl(imgUri) }} style={styles.thumbnailImg} />
             ))}
             <TouchableOpacity style={styles.moreImagesBtn} activeOpacity={0.8}>
               <Text style={styles.moreImagesText}>+{data.images.length - 3} ảnh</Text>
@@ -517,9 +553,9 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           {/* Section 7: Rating & Review link (Click cuộn mượt xuống review) */}
           <TouchableOpacity style={styles.ratingRow} onPress={scrollToReviews} activeOpacity={0.7}>
             <Ionicons name="star" size={16} color="#ECC94B" />
-            <Text style={styles.ratingNumber}>{data.rating}</Text>
+            <Text style={styles.ratingNumber}>{ratingSummary.rating}</Text>
             <Text style={styles.ratingDot}>•</Text>
-            <Text style={styles.reviewLinkText}>{data.reviewCount} đánh giá</Text>
+            <Text style={styles.reviewLinkText}>{ratingSummary.reviewCount} đánh giá</Text>
             <Ionicons name="chevron-forward" size={14} color="#00796B" style={{ marginLeft: 4 }} />
           </TouchableOpacity>
 
@@ -640,9 +676,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             </View>
             <TouchableOpacity
               style={styles.writeReviewHeaderBtn}
-              onPress={() =>
-                navigation.navigate('WriteReview', { homestay: data, user, token })
-              }
+              onPress={handleWriteReviewPress}
               activeOpacity={0.8}
             >
               <Ionicons name="create-outline" size={15} color="#00796B" style={{ marginRight: 4 }} />
@@ -653,13 +687,13 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           <View style={styles.overallScoreCard}>
             <View style={styles.overallScoreLeft}>
               <Text style={styles.overallBigScore}>
-                {(ratingSummary.rating || 5.0).toFixed(1)}
+                {(ratingSummary.rating ?? 0).toFixed(1)}
               </Text>
               <View style={styles.starsRow}>
                 {[1, 2, 3, 4, 5].map((s) => (
                   <Ionicons
-                    key={`star-${s}`}
-                    name={s <= Math.round(ratingSummary.rating || 5) ? 'star' : 'star-outline'}
+                    key={s}
+                    name={s <= Math.round(ratingSummary.rating ?? 0) ? 'star' : 'star-outline'}
                     size={14}
                     color="#ECC94B"
                     style={{ marginRight: 2 }}
@@ -667,7 +701,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                 ))}
               </View>
               <Text style={styles.overallComment}>
-                Xuất sắc ({ratingSummary.reviewCount} đánh giá)
+                {ratingSummary.reviewCount} đánh giá
               </Text>
             </View>
 
@@ -682,14 +716,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.cleanliness || 5.0) / 5) * 100
+                          ((ratingSummary.breakdown?.cleanliness ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.cleanliness || 5.0).toFixed(1)}
+                  {(ratingSummary.breakdown?.cleanliness ?? 0).toFixed(1)}
                 </Text>
               </View>
               <View style={styles.scoreBarRow}>
@@ -701,14 +735,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.location || 4.9) / 5) * 100
+                          ((ratingSummary.breakdown?.location ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.location || 4.9).toFixed(1)}
+                  {(ratingSummary.breakdown?.location ?? 0).toFixed(1)}
                 </Text>
               </View>
               <View style={styles.scoreBarRow}>
@@ -720,14 +754,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.service || 4.9) / 5) * 100
+                          ((ratingSummary.breakdown?.service ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.service || 4.9).toFixed(1)}
+                  {(ratingSummary.breakdown?.service ?? 0).toFixed(1)}
                 </Text>
               </View>
               <View style={styles.scoreBarRow}>
@@ -739,14 +773,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.amenities || 4.8) / 5) * 100
+                          ((ratingSummary.breakdown?.amenities ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.amenities || 4.8).toFixed(1)}
+                  {(ratingSummary.breakdown?.amenities ?? 0).toFixed(1)}
                 </Text>
               </View>
               <View style={styles.scoreBarRow}>
@@ -758,14 +792,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
                       {
                         width: `${Math.min(
                           100,
-                          ((ratingSummary.breakdown?.value || 4.9) / 5) * 100
+                          ((ratingSummary.breakdown?.value ?? 0) / 5) * 100
                         )}%`,
                       },
                     ]}
                   />
                 </View>
                 <Text style={styles.barScore}>
-                  {(ratingSummary.breakdown?.value || 4.9).toFixed(1)}
+                  {(ratingSummary.breakdown?.value ?? 0).toFixed(1)}
                 </Text>
               </View>
             </View>
@@ -801,45 +835,41 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               <Text style={styles.emptyReviewsText}>Chưa có đánh giá nào phù hợp bộ lọc.</Text>
             </View>
           ) : (
-            filteredReviews.map((rev, revIdx) => (
-              <View
-                key={rev.id || rev._id ? `review-${rev.id || rev._id}-${revIdx}` : `review-idx-${revIdx}`}
-                style={styles.reviewCard}
-              >
-                <View style={styles.reviewAuthorRow}>
-                  <Image source={{ uri: rev.avatar }} style={styles.reviewerAvatar} />
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <Text style={styles.reviewerName}>{rev.author}</Text>
-                      {rev.bookingCode ? (
-                        <View style={styles.verifiedBookingBadge}>
-                          <Ionicons name="checkmark-circle" size={12} color="#00796B" />
-                          <Text style={styles.verifiedBookingText}>Đã ở</Text>
-                        </View>
-                      ) : null}
+            filteredReviews.map((rev, index) => {
+              const revKey = rev.id || rev._id || `review-${index}`;
+              return (
+                <View key={revKey} style={styles.reviewCard}>
+                  <View style={styles.reviewAuthorRow}>
+                    <Image source={{ uri: rev.avatar }} style={styles.reviewerAvatar} />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text style={styles.reviewerName}>{rev.author}</Text>
+                        {rev.bookingCode ? (
+                          <View style={styles.verifiedBookingBadge}>
+                            <Ionicons name="checkmark-circle" size={12} color="#00796B" />
+                            <Text style={styles.verifiedBookingText}>Đã ở</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={styles.reviewerDate}>{rev.date}</Text>
                     </View>
-                    <Text style={styles.reviewerDate}>{rev.date}</Text>
+                    <View style={styles.ratingBadge}>
+                      <Ionicons name="star" size={12} color="#ECC94B" />
+                      <Text style={styles.ratingBadgeText}>{rev.rating}</Text>
+                    </View>
                   </View>
-                  <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={12} color="#ECC94B" />
-                    <Text style={styles.ratingBadgeText}>{rev.rating}</Text>
-                  </View>
-                </View>
-                <Text style={styles.reviewComment}>{rev.comment}</Text>
+                  <Text style={styles.reviewComment}>{rev.comment}</Text>
 
-                {rev.images && rev.images.length > 0 && (
-                  <View style={styles.reviewThumbnailsRow}>
-                    {rev.images.map((img, i) => (
-                      <Image
-                        key={`rev-img-${rev.id || rev._id || revIdx}-${i}`}
-                        source={{ uri: img }}
-                        style={styles.reviewThumbImg}
-                      />
-                    ))}
-                  </View>
-                )}
-              </View>
-            ))
+                  {rev.images && rev.images.length > 0 && (
+                    <View style={styles.reviewThumbnailsRow}>
+                      {rev.images.map((img, i) => (
+                        <Image key={i} source={{ uri: img }} style={styles.reviewThumbImg} />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })
           )}
 
           {/* Section 14 & 15: Booking Policy */}
@@ -852,7 +882,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               <Ionicons name="log-in-outline" size={20} color="#00796B" />
               <Text style={styles.checkLabel}>Nhận phòng</Text>
               <Text style={styles.checkTime}>14:00</Text>
-              <Text style={styles.checkNote}>Khóa thông minh Smart Lock</Text>
+              <Text style={styles.checkNote}>Gặp nhân viên lễ tân</Text>
             </View>
             <View style={styles.checkDividerVertical} />
             <View style={styles.checkCol}>

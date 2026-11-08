@@ -36,10 +36,10 @@ const initialState = {
   isRefreshing: false,
   error: null,
   filters: {
-    city: 'Đà Nẵng, Sơn Trà',
+    city: '',
     checkIn: null,
     checkOut: null,
-    nights: 3,
+    nights: 0,
     guests: 2,
     roomsCount: 1,
     minPrice: null,

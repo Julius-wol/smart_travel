@@ -1,185 +1,155 @@
+import { sendResponse } from '../utils/apiResponse.js';
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import Session from '../models/Session.js';
+import {
+    createSessionAndTokens,
+    revokeSession,
+    refreshSession,
+    verifyGoogleToken,
+    registerHostUser,
+    authenticateHostCredentials
+} from '../services/authService.js';
+
+// Registration keeps role-scoped accounts; mobile signs into the visitor UI.
+const authRole = (req) => {
+    if (req.body?.platform === 'mobile' || req.body?.clientType === 'mobile') return 'USER';
+    return req.body?.clientType === 'host' || req.body?.role === 'HOST' || req.query?.clientType === 'host' ? 'HOST' : 'USER';
+};
 
 const ACCES_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
-export const signUp = async (req, res) =>{
+export const signUp = async (req, res) => {
     try {
-        const { password, role } = req.body;
+        const { password } = req.body;
+        const role = authRole(req);
         const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
         const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
         const firstName = typeof req.body.firstName === 'string' ? req.body.firstName.trim() : '';
         const lastName = typeof req.body.lastName === 'string' ? req.body.lastName.trim() : '';
         const phone = typeof req.body.phone === 'string' ? req.body.phone.trim() : '';
         if (!username || !password || !email || !firstName || !lastName) {
-            return res.status(400).json({ message: "Không thể thiếu username, password, email, firstName, lastName" });
+            return sendResponse(res, 400, "Không thể thiếu username, password, email, firstName, lastName");
         }
 
         if (typeof password !== 'string' || password.length < 6) {
-            return res.status(400).json({ message: "Mật khẩu phải có tối thiểu 6 ký tự" });
+            return sendResponse(res, 400, "Mật khẩu phải có tối thiểu 6 ký tự");
         }
     
         //kiem tra user ton tai chua
-const duplicate = await User.findOne({ $or: [{ username }, { email }] });
-if (duplicate) {
-    const field = duplicate.username === username ? 'username' : 'email';
-    return res.status(400).json({
-        field,
-        message: field === 'username'
-            ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
-            : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.',
-    });
-}
+        const duplicate = await User.findOne({ role, $or: [{ username }, { email }] });
+        if (duplicate) {
+            const field = duplicate.username === username ? 'username' : 'email';
+            return sendResponse(res, 400, field === 'username'
+                ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
+                : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', { field });
+        }
 
         //ma hoa pass
-
-const hashedPassword = await bcrypt.hash(password, 10); // số 10 là 2 mũ 10 số lần mã hóa, số càng lớn thì càng an toàn nhưng tốn tài nguyên cua hacker
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         // tao user moi
-await User.create({
-    username,
-    password: hashedPassword,
-    email,
-    phone,
-    firstName,
-    lastName,
-    role: (role === 'HOST') ? 'HOST' : 'USER',
-});
+        await User.create({
+            username,
+            password: hashedPassword,
+            email,
+            phone,
+            fullName: (req.body.fullName || `${firstName} ${lastName}`).trim(),
+            firstName,
+            lastName,
+            role,
+            status: 'ACTIVE',
+            wishlist: [],
+        });
 
-        //return
-
-    return res.status(201).json({ message: "Đăng ký thành công" });
+        return sendResponse(res, 201, "Đăng ký thành công");
     } catch (error) {
         if (error.code === 11000) {
             const field = error.keyPattern?.username ? 'username' : 'email';
-            return res.status(400).json({
-                field,
-                message: field === 'username'
-                    ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
-                    : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.',
-            });
+            return sendResponse(res, 400, field === 'username'
+                ? 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác hoặc đăng nhập.'
+                : 'Email đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.', { field });
         }
-        console.error("Lỗi khi gọi signUp", error)
-        return res.status(500).json ({message:"Lỗi hệ thống"});
-        
+        console.error("Lỗi khi gọi signUp", error);
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
-
 };
 
-export const signIn = async (req,res) => {
+export const signIn = async (req, res) => {
     try {
-
-        //lấy inputs
-        const {username, password } = req.body;
+        const { password } = req.body;
+        const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+        const role = authRole(req);
+        const isHostClient = role === 'HOST';
 
         if (!username || !password) {
-            return res.status(400).json({ message: "Không thể thiếu username, password" });
+            return sendResponse(res, 400, "Không thể thiếu username, password");
         }
 
-
-
-        //lấy hashed password trong db so với pass input
-        const user = await User.findOne({
-            $or: [
-                { username: username },
-                { email: username },
-                { phone: username }
-            ]
-        });
+        // Mobile accepts both account types; the host portal only accepts HOST.
+        // If an email has both accounts, prefer the visitor's matching password.
+        let user = null;
+        for (const accountRole of isHostClient ? ['HOST'] : ['USER', 'HOST']) {
+            const candidate = await User.findOne({
+                role: accountRole,
+                $or: [
+                    { username },
+                    { email: username.toLowerCase() },
+                    { phone: username }
+                ]
+            });
+            if (candidate && await bcrypt.compare(password, candidate.password)) {
+                user = candidate;
+                break;
+            }
+        }
 
         if (!user) {
-            return res.status(401).json({ message: "Tài khoản hoặc mật khẩu không đúng" });
+            return sendResponse(res, 401, "Tài khoản hoặc mật khẩu không đúng");
         }
 
-//kiem tra pass
-        const passwordCorrect = await bcrypt.compare(password, user.password);
-        if (!passwordCorrect) {
-            return res.status(401).json({ message: "Tài khoản hoặc mật khẩu không đúng" });
-        }
-        
-        //neu khop, tạo accesToken với JWT
-        const accessToken = jwt.sign({ userId: user._id }, process.env.ACCES_TOKEN_SECRET || 'secret_key', { expiresIn: ACCES_TOKEN_TTL  });
+        const { accessToken } = await createSessionAndTokens(user, res, { isHost: isHostClient });
 
-        // Tạo  refreshtoken
-        const refreshToken = crypto.randomBytes(64).toString("hex")
-
-       //tạo session mới để lưu refresh token
-await Session.create({
-    userId: user._id,
-    refreshToken,
-    expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-})
-
-
-
-       // trả refresh token về trong cookie
-
-res.cookie("refreshToken", refreshToken,{
-    httpOnly: true,
-    secure: true,
-    sameSite: "none", 
-    maxAge: REFRESH_TOKEN_TTL_MS,
-    
-})
-
-
-
-        
-
-        // tra access token ve trong res
-        return res.status(200).json({ message:"Đăng nhập thành công" ,
-            accessToken,
-        });
-        
+        return sendResponse(res, 200, "Đăng nhập thành công", { accessToken });
     } catch (error) {
-        console.error("Lỗi khi gọi signIn", error)
-        return res.status(500).json ({message: "Lỗi hệ thống"});
+        console.error("Lỗi khi gọi signIn", error);
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
 };
 
-export const signOut = async (req,res) => {
-    try{
-        // lấy refreshtoken từ cookie
-        const token = req.cookies?.refreshToken;
-        if (token) {
-            //xoa refresh token khoi session
-            await Session.deleteOne({ refreshToken: token });
-            
-            //xoa cookie
-            res.clearCookie("refreshToken");
-        
-        };
-        // trả về
-        return res.status(200).json({ message: "Đăng xuất thành công" });
+export const signOut = async (req, res) => {
+    try {
+        await revokeSession(req, res);
+        return sendResponse(res, 200, "Đăng xuất thành công");
     } catch (error) {
-        console.error("Lỗi khi gọi signOut", error)
-        return res.status(500).json ({message: "Lỗi hệ thống"});
+        console.error("Lỗi khi gọi signOut", error);
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
-}
+};
 
 export const forgotPassword = async (req, res) => {
     try {
-        const { email } = req.body;
-        if (!email) return res.status(400).json({ message: "Vui lòng cung cấp email" });
+        const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+        if (!email) return sendResponse(res, 400, "Vui lòng cung cấp email");
 
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: "Email không tồn tại" });
+        const user = await User.findOne({ email, role: authRole(req) });
+        if (!user) return sendResponse(res, 404, "Email không tồn tại");
 
         // Chống spam OTP: Nếu mã trước đó được tạo chưa quá 60 giây, yêu cầu chờ
         if (user.resetPasswordExpires && (user.resetPasswordExpires - Date.now() > 14 * 60 * 1000)) {
             const waitSeconds = Math.ceil((user.resetPasswordExpires - (Date.now() + 14 * 60 * 1000)) / 1000);
-            return res.status(429).json({ 
-                message: `Vui lòng đợi ${waitSeconds > 0 ? waitSeconds : 60} giây trước khi yêu cầu gửi lại mã!` 
-            });
+            return sendResponse(res, 429, `Vui lòng đợi ${waitSeconds > 0 ? waitSeconds : 60} giây trước khi yêu cầu gửi lại mã!`);
         }
 
         // Tạo mã OTP 6 số
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        if (!user.fullName) {
+            user.fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User';
+        }
         user.resetPasswordToken = otp;
         user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 phút
         await user.save();
@@ -247,37 +217,65 @@ export const forgotPassword = async (req, res) => {
         console.log("Hãy lấy mã này nhập vào App để test nhé!");
         console.log("=========================================");
 
-        return res.status(200).json({ 
-            message: "Mã OTP đã được gửi đến email của bạn"
-        });
+        return sendResponse(res, 200, "Mã OTP đã được gửi đến email của bạn");
     } catch (error) {
         console.error("Lỗi forgotPassword:", error);
-        return res.status(500).json({ message: "Lỗi hệ thống" });
+        return sendResponse(res, 500, "Lỗi hệ thống");
+    }
+};
+
+export const verifyOtp = async (req, res) => {
+    try {
+        const token = (req.body.otp || req.body.token || '').toString().trim();
+        const email = (req.body.email || '').toString().trim().toLowerCase();
+        if (!token) return sendResponse(res, 400, "Vui lòng nhập mã OTP");
+
+        const query = {
+            role: authRole(req),
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        };
+        if (email) {
+            query.email = email;
+        }
+
+        const user = await User.findOne(query);
+
+        if (!user) return sendResponse(res, 400, "Mã OTP không đúng hoặc đã hết hạn");
+
+        return sendResponse(res, 200, "Xác thực mã OTP thành công", { valid: true });
+    } catch (error) {
+        console.error("Lỗi verifyOtp:", error);
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
 };
 
 export const resetPassword = async (req, res) => {
     try {
         const { token, newPassword } = req.body;
-        if (!token || !newPassword) return res.status(400).json({ message: "Vui lòng cung cấp token và mật khẩu mới" });
-        if (newPassword.length < 6) return res.status(400).json({ message: "Mật khẩu mới phải có tối thiểu 6 ký tự" });
+        if (!token || !newPassword) return sendResponse(res, 400, "Vui lòng cung cấp token và mật khẩu mới");
+        if (newPassword.length < 6) return sendResponse(res, 400, "Mật khẩu mới phải có tối thiểu 6 ký tự");
 
         const user = await User.findOne({
+            role: authRole(req),
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: Date.now() } // Token phải còn hạn
         });
 
-        if (!user) return res.status(400).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+        if (!user) return sendResponse(res, 400, "Token không hợp lệ hoặc đã hết hạn");
 
+        if (!user.fullName) {
+            user.fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'User';
+        }
         user.password = await bcrypt.hash(newPassword, 10);
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;
         await user.save();
 
-        return res.status(200).json({ message: "Đổi mật khẩu thành công" });
+        return sendResponse(res, 200, "Đổi mật khẩu thành công");
     } catch (error) {
         console.error("Lỗi resetPassword:", error);
-        return res.status(500).json({ message: "Lỗi hệ thống" });
+        return sendResponse(res, 500, "Lỗi hệ thống");
     }
 };
 
@@ -287,80 +285,112 @@ export const resetPassword = async (req, res) => {
 export const googleSignIn = async (req, res) => {
     try {
         const { accessToken } = req.body;
+        const role = authRole(req);
+        const isHostClient = role === 'HOST';
         if (!accessToken) {
-            return res.status(400).json({ message: "Thiếu Google access token" });
+            return sendResponse(res, 400, "Thiếu Google access token");
         }
 
-        // Xác minh token với Google & lấy thông tin user
-        const googleRes = await fetch(
-            `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
-        );
-
-        if (!googleRes.ok) {
-            return res.status(401).json({ message: "Google token không hợp lệ" });
+        let googleUser;
+        try {
+            googleUser = await verifyGoogleToken(accessToken);
+        } catch (err) {
+            return sendResponse(res, 401, err.message || "Google token không hợp lệ");
         }
 
-        const googleUser = await googleRes.json();
-        const { email, given_name, family_name, picture, sub: googleId } = googleUser;
-
+        const { email, given_name, family_name, picture } = googleUser;
         if (!email) {
-            return res.status(400).json({ message: "Không lấy được email từ Google" });
+            return sendResponse(res, 400, "Không lấy được email từ Google");
         }
 
-        // Tìm hoặc tạo user mới (auto-register nếu chưa có)
-        let user = await User.findOne({ email });
+        let user = await User.findOne({ email: email.trim().toLowerCase(), role });
+        if (!user && !isHostClient) {
+            user = await User.findOne({ email: email.trim().toLowerCase(), role: 'HOST' });
+        }
 
         if (!user) {
-            // Tạo username từ email (bỏ phần @...)
             const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
             let username = baseUsername;
             let counter = 1;
-            while (await User.findOne({ username })) {
+            while (await User.findOne({ username, role })) {
                 username = `${baseUsername}${counter++}`;
             }
 
+            const fullName = `${given_name || ''} ${family_name || ''}`.trim() || username;
             user = await User.create({
                 username,
-                email,
-                firstName: given_name || 'User',
+                fullName,
+                email: email.toLowerCase(),
+                firstName: given_name || (isHostClient ? 'Chủ phòng' : 'User'),
                 lastName: family_name || '',
-                password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10), // random pass
+                password: await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10),
                 avatar: picture || '',
-                role: 'USER',
+                role: isHostClient ? 'HOST' : 'USER',
+                status: 'ACTIVE',
+                wishlist: []
             });
-
-            console.log(`✅ Tạo tài khoản Google mới: ${email}`);
         }
 
-        // Tạo JWT access token
-        const jwtToken = jwt.sign(
-            { userId: user._id },
-            process.env.ACCES_TOKEN_SECRET || 'secret_key',
-            { expiresIn: ACCES_TOKEN_TTL }
-        );
-
-        // Tạo refresh token session
-        const refreshToken = crypto.randomBytes(64).toString('hex');
-        await Session.create({
-            userId: user._id,
-            refreshToken,
-            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-        });
-
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: REFRESH_TOKEN_TTL_MS,
-        });
-
-        return res.status(200).json({
-            message: "Đăng nhập Google thành công",
-            accessToken: jwtToken,
-        });
-
+        const { accessToken: jwtToken } = await createSessionAndTokens(user, res, { isHost: isHostClient });
+        return sendResponse(res, 200, "Đăng nhập Google thành công", { accessToken: jwtToken });
     } catch (error) {
         console.error("Lỗi googleSignIn:", error);
-        return res.status(500).json({ message: "Lỗi hệ thống" });
+        return sendResponse(res, 500, "Lỗi hệ thống");
+    }
+};
+
+// ==========================================
+// DEDICATED HOST REST APIs
+// ==========================================
+export const hostSignInApi = async (req, res) => {
+    try {
+        const { emailOrPhone, username, password } = req.body;
+        const query = emailOrPhone || username;
+        const user = await authenticateHostCredentials(query, password);
+        const { accessToken } = await createSessionAndTokens(user, res, { isHost: true });
+        return sendResponse(res, 200, "Đăng nhập Host thành công", { accessToken, role: user.role });
+    } catch (error) {
+        if (error.code === 'USER_NOT_FOUND' || error.code === 'INVALID_PASSWORD') {
+            return sendResponse(res, 401, error.message);
+        }
+        if (error.code === 'NOT_HOST') {
+            return sendResponse(res, 403, error.message);
+        }
+        console.error("Lỗi hostSignInApi:", error);
+        return sendResponse(res, 500, error.message || "Lỗi hệ thống khi đăng nhập Host");
+    }
+};
+
+export const hostSignUpApi = async (req, res) => {
+    try {
+        const newUser = await registerHostUser(req.body);
+        const { accessToken } = await createSessionAndTokens(newUser, res, { isHost: true });
+        return sendResponse(res, 201, "Đăng ký tài khoản Host thành công", { accessToken, role: newUser.role });
+    } catch (error) {
+        if (error.code === 'MISSING_FIELDS' || error.code === 'PASSWORD_TOO_SHORT') {
+            return sendResponse(res, 400, error.message);
+        }
+        if (error.code === 'DUPLICATE_USER') {
+            return sendResponse(res, 400, error.message, { field: error.field });
+        }
+        console.error("Lỗi hostSignUpApi:", error);
+        return sendResponse(res, 500, "Lỗi hệ thống khi đăng ký Host");
+    }
+};
+
+export const refreshTokenApi = async (req, res) => {
+    try {
+        const token = req.cookies?.refreshToken || req.body?.refreshToken;
+        if (!token) {
+            return sendResponse(res, 401, "Thiếu refresh token");
+        }
+        const result = await refreshSession(token, res, { isHost: authRole(req) === 'HOST' });
+        if (!result) {
+            return sendResponse(res, 401, "Phiên làm việc đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.");
+        }
+        return sendResponse(res, 200, "Làm mới token thành công", { accessToken: result.accessToken });
+    } catch (error) {
+        console.error("Lỗi refreshTokenApi:", error);
+        return sendResponse(res, 500, "Lỗi hệ thống khi làm mới token");
     }
 };

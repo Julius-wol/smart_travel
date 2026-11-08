@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from '../constants/theme';
 
 export const formatCleanDateRange = (str) => {
-  if (!str) return '15/05 – 18/05';
+  if (!str) return '';
 
   // 1. Matches '15 Th05 – 18 Th05', '15 thg 5 – 18 thg 5', '15/05 – 18/05'
   const matchTh = str.match(
@@ -36,7 +36,7 @@ export const formatCleanDateRange = (str) => {
 };
 
 export const formatCleanNights = (str) => {
-  if (!str) return '3 đêm';
+  if (!str) return '';
   const match = str.match(/(\d+\s*đêm)/i);
   if (match) {
     return match[1];
@@ -45,10 +45,10 @@ export const formatCleanNights = (str) => {
 };
 
 export const SearchFilterBox = ({
-  city = 'Đà Nẵng, Sơn Trà',
+  city = '',
   onCityChange,
-  dateRangeText = '15/05 – 18/05',
-  nightsText = '3 đêm',
+  dateRangeText = '',
+  nightsText = '',
   onDatePress,
   guestRoomText = '2 khách • 1 phòng',
   onGuestPress,

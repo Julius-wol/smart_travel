@@ -68,7 +68,56 @@ cp .env.example .env
 
 ---
 
-## 🏃 3. Hướng dẫn chạy dự án (Run dev)
+## 🗄 3. Hướng dẫn Khởi tạo MongoDB Atlas & Nạp Dữ Liệu Mẫu (Seed Data)
+
+Hệ thống sử dụng **MongoDB Schema v2.0** chuẩn hoá phục vụ cả **Host Web Portal** và **Visitor Mobile App**. Để tạo cơ sở dữ liệu riêng hoặc làm mới dữ liệu cho toàn bộ thành viên:
+
+### A. Khởi tạo MongoDB Atlas mới (Free M0 Cluster)
+1. Đăng ký/Đăng nhập tại [mongodb.com/atlas](https://www.mongodb.com/atlas).
+2. Chọn **Create Database** -> Chọn gói **M0 Free (Shared)** -> Chọn vùng **AWS Singapore (`ap-southeast-1`)** để đạt tốc độ cao nhất từ Việt Nam.
+3. **Tạo Database User**: Nhập `Username` và `Password` (lưu lại mật khẩu).
+4. **Cấu hình Network Access**: Thêm IP `0.0.0.0/0` (Allow Access from Anywhere) để các thành viên và thiết bị Mobile đều truy cập được.
+5. **Lấy chuỗi kết nối (Connection String)**:
+   - Vào tab **Database** -> Nhấn nút **Connect** -> Chọn **Drivers** (Node.js).
+   - Copy chuỗi có dạng:
+     ```text
+     mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/smart_travel?retryWrites=true&w=majority
+     ```
+   - Thay `<username>` và `<password>` của bạn vào chuỗi trên, sau đó dán vào biến `MONGO_URI` trong file `server/.env`.
+
+### B. Nạp Dữ Liệu Mẫu Tự Động (1 Lệnh Duy Nhất)
+Tại thư mục gốc của dự án, mở Terminal và chạy:
+```bash
+npm run seed
+```
+> Lệnh này sẽ tự động khởi tạo toàn bộ dữ liệu mẫu chuẩn Schema v2.0 bao gồm: Tài khoản định danh, Homestay/Villa đa vùng miền, Đơn đặt phòng có mã `ST-XXXX`, Đánh giá đa tiêu chí (có `amenities`), Lịch khóa phòng `RoomAvailability`, và Danh sách yêu thích `Wishlist`.
+
+### C. Danh sách Tài khoản & Dữ liệu Mẫu để Test
+
+| Vai trò | Email đăng nhập | Mật khẩu | Mục đích kiểm thử |
+| :--- | :--- | :---: | :--- |
+| **HOST (Chủ nhà)** | `host@smarttravel.com` | `123456` | Kiểm tra **Host Portal**: Dashboard thống kê doanh thu, duyệt/từ chối booking, quản lý phòng. |
+| **USER 1 (Khách du lịch)** | `user@smarttravel.com` | `123456` | Kiểm tra **Mobile App**: Đặt phòng, xem vé e-Pass, xem phòng yêu thích (Wishlist). |
+| **USER 2 (Khách du lịch)** | `guest@smarttravel.com` | `123456` | Kiểm tra tạo booking mới, viết đánh giá và phản hồi phòng. |
+| **ADMIN (Quản trị viên)** | `admin@smarttravel.com` | `123456` | Kiểm tra trang Quản trị hệ thống (Admin Web Panel). |
+
+**Mã Đặt Phòng (UI ID - ST-XXXX) có sẵn trong hệ thống:**
+* `ST-9821`: Đơn **ĐÃ HOÀN THÀNH (COMPLETED)** — Có sẵn Review đánh giá thực tế.
+* `ST-5894`: Đơn **ĐÃ DUYỆT (CONFIRMED)** — Dùng để kiểm tra hiển thị Vé điện tử e-Pass trên Mobile App.
+* `ST-3344`: Đơn **CHỜ DUYỆT (PENDING)** — Dùng để kiểm tra tính năng Duyệt đặt phòng trên Host Portal.
+* `ST-4412`: Đơn **ĐÃ HỦY (CANCELLED)** — Có lý do và ghi chú hủy phòng.
+
+**Mã Cơ Sở Lưu Trú (UI ID - RoomCode):**
+* `DN-01`: *An Nhiên Eco Retreat Đà Nẵng* (Sơn Trà - Biển Mỹ Khê)
+* `DN-02`: *The Muse Bohemian Studio* (An Thượng - Ngũ Hành Sơn)
+* `DN-03`: *Mộc Garden Villa & Private Pool* (Villa hồ bơi riêng Đà Nẵng)
+* `DL-01`: *Mây Valley Pine Bungalow Đà Lạt* (Đồi thông săn mây Khe Sanh)
+* `HA-01`: *Hội An Riverside Heritage Retreat* (Nhà cổ ven sông Hoài)
+* `HN-01`: *West Lake Sunset Luxury Loft Hà Nội* (Penthouse panorama Hồ Tây)
+
+---
+
+## 🏃 4. Hướng dẫn chạy dự án (Run dev)
 
 Dự án được cấu trúc theo dạng Monorepo. Bạn có thể khởi chạy từ thư mục gốc nhờ vào các scripts đã được định nghĩa trong `package.json`.
 
@@ -85,7 +134,7 @@ Nếu chỉ muốn chạy riêng rẽ, bạn mở Terminal ở thư mục gốc 
 
 ---
 
-## 🌳 4. Quy trình làm việc nhóm (Git Workflow)
+## 🌳 5. Quy trình làm việc nhóm (Git Workflow)
 
 Để hạn chế conflict, team thống nhất tuân thủ quy tắc sau:
 1. Nhánh chính (`main` hoặc `master`) chỉ chứa code đã hoàn thiện và chạy ổn định.
@@ -97,7 +146,7 @@ Nếu chỉ muốn chạy riêng rẽ, bạn mở Terminal ở thư mục gốc 
 4. Push nhánh của bạn lên repo và tạo **Pull Request (PR)** để review code.
 
 ---
-## 📋 5. Quy trình phát triển Spec-Driven Development (Spec Kit)
+## 📋 6. Quy trình phát triển Spec-Driven Development (Spec Kit)
 
 Dự án đã tích hợp công cụ **Spec Kit** (`github/spec-kit`) nhằm chuẩn hóa quy trình phát triển có sự hỗ trợ của AI Agent theo phương pháp **Spec-Driven Development (SDD)**:
 
@@ -106,7 +155,7 @@ Dự án đã tích hợp công cụ **Spec Kit** (`github/spec-kit`) nhằm chu
 
 ---
 
-## 📚 6. Tài liệu kỹ thuật & Kiến trúc (Documentation)
+## 📚 7. Tài liệu kỹ thuật & Kiến trúc (Documentation)
 
 - [Quy trình hoạt động Authentication (JWT & Google OAuth)](docs/JWT_AUTH_WORKFLOW.md)
 - [Đặc tả Giao diện Chi tiết Nơi lưu trú (Home Details Screen)](docs/HOME_DETAILS_SPEC.md)

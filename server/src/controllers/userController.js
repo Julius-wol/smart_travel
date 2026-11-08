@@ -1,12 +1,13 @@
+import { sendResponse } from '../utils/apiResponse.js';
 export const authMe = async (req, res) => {
 try{
  const user = req.user; //lấy từ midd
 
- return res.status(200).json(user);
+ return sendResponse(res, 200, 'Lấy thông tin người dùng thành công', user);
 
 }catch(error){
     console.error("Lỗi khi gọi authMe", error);
-    return res.status(500).json({ message: "Lỗi hệ thống"});
+    return sendResponse(res, 500, "Lỗi hệ thống");
 }
 
 }
@@ -15,14 +16,25 @@ import User from '../models/User.js';
 
 export const updateProfile = async (req, res) => {
     try {
-        const { firstName, lastName, phone, avatar } = req.body;
+        const { fullName, firstName, lastName, phone, avatar, hostProfile } = req.body;
         const userId = req.user._id;
+
+        const updateData = {};
+        if (fullName) updateData.fullName = fullName.trim();
+        else if (firstName || lastName) {
+            updateData.fullName = `${firstName || ''} ${lastName || ''}`.trim();
+        }
+        if (firstName) updateData.firstName = firstName.trim();
+        if (lastName) updateData.lastName = lastName.trim();
+        if (phone !== undefined) updateData.phone = phone;
+        if (avatar !== undefined) updateData.avatar = avatar;
+        if (hostProfile !== undefined) updateData.hostProfile = hostProfile;
 
         // Cập nhật user
         const updatedUser = await User.findByIdAndUpdate(
             userId,
-            { $set: { firstName, lastName, phone, avatar } },
-            { new: true, runValidators: true }
+            { $set: updateData },
+            { returnDocument: 'after', runValidators: true }
         ).select("-password -resetPasswordToken -resetPasswordExpires");
 
         if (!updatedUser) {
@@ -52,7 +64,7 @@ export const updateAvatar = async (req, res) => {
         const updatedUser = await User.findByIdAndUpdate(
             userId,
             { $set: { avatar: avatarUrl } },
-            { new: true }
+            { returnDocument: 'after' }
         ).select("-password");
 
         return res.status(200).json({

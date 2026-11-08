@@ -15,6 +15,7 @@ import hostWebRoute from './src/routes/hostWebRoute.js';
 import wishlistRoute from './src/routes/wishlistRoute.js';
 import hostCalendarRoutes from './src/routes/hostCalendarRoutes.js';
 import { toggleWishlist } from './src/controllers/wishlistController.js';
+import hostRoute from './src/routes/hostRoute.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ const PORT = process.env.PORT || 5000;
 // 1. Middlewares cơ bản
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Chống trùng lặp tiền tố /api/api từ axios client
@@ -37,14 +39,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// 2. EJS View Engine (Host Portal Web)
+// 2. EJS View Engine (Web Admin & Host Portal)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Trang chủ tự động chuyển tiếp tới Host Portal
 app.get('/', (req, res) => {
-  res.redirect('/host');
+  res.redirect('/host/rooms');
 });
 
 // Welcome API
@@ -76,18 +78,21 @@ app.use('/api/v1/wishlist', wishlistRoute);
 app.use('/api/v1/host', hostCalendarRoutes);
 
 // Host Partner Portal
+app.use('/host', hostRoute);
 app.use('/host', hostWebRoute);
 
-// 4. Kết nối MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_travel')
-  .then(() => console.log('✅ Kết nối MongoDB thành công!'))
-  .catch((err) => console.error('❌ Lỗi kết nối MongoDB:', err));
-
-// 5. Khởi động Server
+// 4. Kết nối MongoDB (Chỉ auto-connect khi không phải môi trường test)
 if (process.env.NODE_ENV !== 'test') {
+  mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smart_travel')
+      .then(async () => {
+          console.log('✅ Kết nối MongoDB thành công!');
+      })
+      .catch((err) => console.error('❌ Lỗi kết nối MongoDB:', err));
+
+  // 5. Khởi động Server
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Host Portal đang chạy tại: http://localhost:${PORT}/host`);
-    console.log(`   (Truy cập qua mạng LAN: http://${process.env.HOST_IP || '192.168.102.37'}:${PORT}/host)`);
+    const lanIp = process.env.HOST_IP || 'localhost';
+    console.log(`🚀 Server đang chạy tại http://0.0.0.0:${PORT} (Truy cập máy tính: http://localhost:${PORT} | Mạng LAN: http://${lanIp}:${PORT})`);
   });
 }
 

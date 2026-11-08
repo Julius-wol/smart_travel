@@ -1,3 +1,6 @@
+import Image from '../components/MediaImage';
+import { bookingNotifications } from '../utils/bookingHistory';
+import { resolveMediaUrl } from '../utils/config';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -5,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
-  Image,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -23,6 +25,7 @@ import ToastNotification from '../components/ToastNotification';
  * Đã kết nối 100% dữ liệu thực từ MongoDB Atlas qua API Node.js
  */
 const HomeScreen = ({ navigation, route }) => {
+  const hasTabNavigator = navigation?.getState?.()?.type === 'tab';
   const user = route.params?.user;
   const token = route.params?.token;
 
@@ -88,129 +91,17 @@ const HomeScreen = ({ navigation, route }) => {
   // State Thông báo (Notification Center)
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [notificationFilter, setNotificationFilter] = useState('all'); // 'all' | 'unread'
-  const [notifications, setNotifications] = useState([
-    {
-      id: 'notif-promo',
-      type: 'promo',
-      title: 'Tặng bạn Voucher 500.000đ',
-      message: 'Mã SMART2026 giảm ngay 500.000đ cho đơn đặt villa từ 2 đêm tại Bán đảo Sơn Trà.',
-      time: 'Hôm qua',
-      read: true,
-      badgeText: 'ƯU ĐÃI',
-      badgeColor: '#FEE2E2',
-      badgeTextColor: '#DC2626',
-      icon: 'gift',
-      iconColor: '#DC2626',
-      actionType: 'copy_voucher',
-      voucherCode: 'SMART2026',
-    },
-    {
-      id: 'notif-ai',
-      type: 'ai_trip',
-      title: 'Lịch trình AI Đà Nẵng 3N2Đ đã sẵn sàng',
-      message: 'Trợ lý AI đã chuẩn bị xong kế hoạch ăn chơi, ngắm hoàng hôn và quán cà phê đẹp gần villa.',
-      time: '2 ngày trước',
-      read: true,
-      badgeText: 'AI PLANNER',
-      badgeColor: '#EDE9FE',
-      badgeTextColor: '#7C3AED',
-      icon: 'sparkles',
-      iconColor: '#7C3AED',
-      actionType: 'ai_trip',
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
 
   // Đồng bộ danh sách đơn đặt phòng thực tế từ MongoDB Atlas vào chuông thông báo
   const fetchRealNotifications = async () => {
+    if (!token) { setNotifications([]); return; }
     try {
-      const email = user?.email || '';
-      const url = email
-        ? `${API_URL}/bookings/my-bookings?email=${encodeURIComponent(email)}`
-        : `${API_URL}/bookings/my-bookings`;
-
-      const res = await fetch(url);
-      const json = await res.json();
-
-      if (json.success && json.data && json.data.length > 0) {
-        const bookingNotifs = json.data.slice(0, 5).map((b, idx) => {
-          const roomObj = b.roomId || {};
-          const roomName = roomObj.title || roomObj.name || 'Villa Sơn Trà Đà Nẵng';
-          const roomNum = roomObj.roomNumber || '402';
-
-          const lockCode = b.bookingCode ? b.bookingCode.replace('ST-', '82') : '829411';
-
-          return [
-            {
-              id: `booking-${b._id || b.bookingCode}`,
-              type: 'booking',
-              title: `Đặt phòng thành công #${b.bookingCode}`,
-              message: `Chuyến nghỉ dưỡng tại ${roomName} đã được xác nhận (${b.nights || 2} đêm). Bấm để xem vé e-Pass!`,
-              time: idx === 0 ? 'Vừa xong' : `${idx + 1} ngày trước`,
-              read: idx !== 0, // Đơn mới nhất luôn là CHƯA ĐỌC để chuông hiện chấm đỏ
-              badgeText: 'ĐẶT PHÒNG',
-              badgeColor: '#E6FFFA',
-              badgeTextColor: '#00796B',
-              icon: 'checkmark-circle',
-              iconColor: '#00796B',
-              actionType: 'view_booking',
-              bookingCode: b.bookingCode,
-              rawBooking: b,
-            },
-            {
-              id: `lock-${b._id || b.bookingCode}`,
-              type: 'smart_lock',
-              title: `Mã mở khóa phòng Smart Lock #${roomNum}`,
-              message: `Mã số tự động cho đơn ${b.bookingCode} là ${lockCode} (Có hiệu lực từ 14:00 ngày nhận phòng).`,
-              time: idx === 0 ? 'Vừa xong' : `${idx + 1} ngày trước`,
-              read: idx !== 0,
-              badgeText: 'MÃ KHÓA',
-              badgeColor: '#FEF3C7',
-              badgeTextColor: '#D97706',
-              icon: 'key',
-              iconColor: '#D97706',
-              actionType: 'copy_lock',
-              lockCode: lockCode,
-            },
-          ];
-        }).flat();
-
-        const defaultPromos = [
-          {
-            id: 'notif-promo',
-            type: 'promo',
-            title: 'Tặng bạn Voucher 500.000đ',
-            message: 'Mã SMART2026 giảm ngay 500.000đ cho đơn đặt villa từ 2 đêm tại Bán đảo Sơn Trà.',
-            time: 'Hôm qua',
-            read: true,
-            badgeText: 'ƯU ĐÃI',
-            badgeColor: '#FEE2E2',
-            badgeTextColor: '#DC2626',
-            icon: 'gift',
-            iconColor: '#DC2626',
-            actionType: 'copy_voucher',
-            voucherCode: 'SMART2026',
-          },
-          {
-            id: 'notif-ai',
-            type: 'ai_trip',
-            title: 'Lịch trình AI Đà Nẵng 3N2Đ đã sẵn sàng',
-            message: 'Trợ lý AI đã chuẩn bị xong kế hoạch ăn chơi, ngắm hoàng hôn và quán cà phê đẹp gần villa.',
-            time: '2 ngày trước',
-            read: true,
-            badgeText: 'AI PLANNER',
-            badgeColor: '#EDE9FE',
-            badgeTextColor: '#7C3AED',
-            icon: 'sparkles',
-            iconColor: '#7C3AED',
-            actionType: 'ai_trip',
-          },
-        ];
-
-        setNotifications([...bookingNotifs, ...defaultPromos]);
-      }
-    } catch (err) {
-      console.log('Chưa đồng bộ thông báo booking:', err);
-    }
+      const response = await fetch(API_URL + '/bookings/my-bookings', { headers: { Authorization: 'Bearer ' + token } });
+      const result = await response.json();
+      if (!response.ok || !result.success || !Array.isArray(result.data)) throw new Error(result.message);
+      setNotifications(previous => bookingNotifications(result.data, previous));
+    } catch { setNotifications([]); }
   };
 
   // Tự động tải thông báo thực tế khi vào màn hình Home
@@ -222,15 +113,14 @@ const HomeScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (route.params?.recentBooking) {
       const rb = route.params.recentBooking;
-      const bCode = rb.bookingCode || 'ST-5894';
-      const rName = rb.homestay?.title || rb.homestay?.name || 'Villa Sơn Trà Đà Nẵng';
-      const lockCode = bCode.replace('ST-', '82');
+      const bCode = rb.bookingCode || '';
+      const rName = rb.homestay?.title || rb.homestay?.name || '';
 
       const newBookingNotif = {
         id: `recent-book-${bCode}`,
         type: 'booking',
         title: `Đặt phòng thành công #${bCode}`,
-        message: `Chuyến nghỉ dưỡng tại ${rName} đã được xác nhận. Bấm để xem vé e-Pass ngay!`,
+        message: `Chuyến nghỉ dưỡng tại ${rName} đã được xác nhận. Quý khách vui lòng xuất trình mã đơn tại quầy lễ tân khi nhận phòng. Bấm để xem vé e-Pass!`,
         time: 'Vừa xong',
         read: false,
         badgeText: 'ĐẶT PHÒNG',
@@ -256,27 +146,11 @@ const HomeScreen = ({ navigation, route }) => {
         },
       };
 
-      const newLockNotif = {
-        id: `recent-lock-${bCode}`,
-        type: 'smart_lock',
-        title: `Mã mở khóa phòng Smart Lock #${rb.homestay?.roomNumber || '402'}`,
-        message: `Mã số vào cửa tự động cho đơn ${bCode} là ${lockCode} (Có hiệu lực từ 14:00).`,
-        time: 'Vừa xong',
-        read: false,
-        badgeText: 'MÃ KHÓA',
-        badgeColor: '#FEF3C7',
-        badgeTextColor: '#D97706',
-        icon: 'key',
-        iconColor: '#D97706',
-        actionType: 'copy_lock',
-        lockCode: lockCode,
-      };
-
       setNotifications((prev) => {
         const filtered = prev.filter(
-          (item) => item.bookingCode !== bCode && item.id !== `recent-book-${bCode}`
+          (item) => item.bookingCode !== bCode && item.id !== `recent-book-${bCode}` && !item.id.includes('lock')
         );
-        return [newBookingNotif, newLockNotif, ...filtered];
+        return [newBookingNotif, ...filtered];
       });
 
       showToast(`Đã nhận thông báo mới cho đơn đặt phòng #${bCode}!`, 'success');
@@ -291,31 +165,23 @@ const HomeScreen = ({ navigation, route }) => {
       prev.map((item) => (item.id === notif.id ? { ...item, read: true } : item))
     );
 
-    if (notif.actionType === 'copy_lock') {
-      showToast(`Mã Smart Lock ${notif.lockCode} đã sẵn sàng sử dụng`, 'success');
-    } else if (notif.actionType === 'copy_voucher') {
+    if (notif.actionType === 'copy_voucher') {
       showToast(`Đã lưu mã ưu đãi ${notif.voucherCode} (Giảm 500.000đ)!`, 'success');
     } else if (notif.actionType === 'view_booking') {
       setShowNotificationModal(false);
 
       const b = notif.rawBooking || {};
-      const targetHomestay = b.roomId || rooms[0] || {
-        _id: '6ace59ef30cddf9c0815f9bc',
-        title: 'An Nhiên Eco Retreat Đà Nẵng',
-        name: 'An Nhiên Eco Retreat Đà Nẵng',
-        pricePerNight: 1450000,
-        roomNumber: '402',
-      };
+      const targetHomestay = b.roomId || {};
 
       const checkInStr = b.checkIn
         ? (typeof b.checkIn === 'string' && b.checkIn.includes('/') ? b.checkIn : formatDateVN(b.checkIn))
-        : '17/10/2026';
+        : '';
       const checkOutStr = b.checkOut
         ? (typeof b.checkOut === 'string' && b.checkOut.includes('/') ? b.checkOut : formatDateVN(b.checkOut))
-        : '19/10/2026';
+        : '';
       const totalAmountStr = b.totalPrice
         ? (typeof b.totalPrice === 'number' ? new Intl.NumberFormat('vi-VN').format(b.totalPrice) + 'đ' : String(b.totalPrice))
-        : '2.550.000đ';
+        : '';
 
       navigation.navigate('BookingSuccess', {
         homestay: targetHomestay,
@@ -324,8 +190,8 @@ const HomeScreen = ({ navigation, route }) => {
         token,
         bookingDetails: {
           fullName: b.fullName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Nguyễn Văn Nam'),
-          phoneNumber: b.phoneNumber || '0912345678',
-          email: b.email || user?.email || 'namnguyen@gmail.com',
+          phoneNumber: b.phoneNumber || '',
+          email: b.email || user?.email || '',
           totalAmount: totalAmountStr,
           checkIn: checkInStr,
           checkOut: checkOutStr,
@@ -334,6 +200,16 @@ const HomeScreen = ({ navigation, route }) => {
           dates: b.dates || `${checkInStr} - ${checkOutStr} (${b.nights || 2} đêm)`,
           bookingTime: b.bookingTime || (b.createdAt ? formatDateVN(b.createdAt) : 'Hôm nay'),
         },
+      });
+    } else if (notif.actionType === 'write_review') {
+      setShowNotificationModal(false);
+      const targetHomestay = b.roomId || {};
+      navigation.navigate('WriteReview', {
+        homestay: targetHomestay,
+        bookingCode: notif.bookingCode,
+        bookingId: notif.bookingId,
+        user,
+        token,
       });
     } else if (notif.actionType === 'ai_trip') {
       showToast('Lịch trình du lịch AI đã được đồng bộ với chuyến đi!', 'info');
@@ -591,7 +467,7 @@ const HomeScreen = ({ navigation, route }) => {
   const renderHomestayCard = ({ item }) => {
     const roomId = item._id || item.id;
     const isLiked = !!favorites[roomId];
-    const imageUri = item.images?.[0] || 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80';
+    const imageUri = item.images?.[0] || '';
     const priceFormatted = item.pricePerNight 
       ? new Intl.NumberFormat('vi-VN').format(item.pricePerNight) + 'đ' 
       : '1.450.000đ';
@@ -612,7 +488,7 @@ const HomeScreen = ({ navigation, route }) => {
       >
         {/* Hình ảnh homestay thực tế từ DB */}
         <View style={styles.imageContainer}>
-          <Image source={{ uri: imageUri }} style={styles.cardImage} />
+          <Image source={{ uri: resolveMediaUrl(imageUri) }} style={styles.cardImage} />
 
           {item.badge ? (
             <View style={styles.badgeWrapper}>
@@ -658,7 +534,7 @@ const HomeScreen = ({ navigation, route }) => {
             </View>
             <View style={styles.miniTag}>
               <Ionicons name="star" size={13} color="#ECC94B" />
-              <Text style={styles.ratingText}>{item.rating || 4.9} ({item.reviewCount || 128})</Text>
+              <Text style={styles.ratingText}>{item.rating || 0} ({item.reviewCount || 0})</Text>
             </View>
           </View>
 
@@ -723,7 +599,7 @@ const HomeScreen = ({ navigation, route }) => {
 
           <TouchableOpacity
             style={styles.avatarCircle}
-            onPress={() => navigation.navigate('Profile', { user, token })}
+            onPress={() => navigation.navigate(hasTabNavigator ? 'Account' : 'Profile', { user, token })}
           >
             {user?.avatar ? (
               <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
@@ -949,6 +825,7 @@ const HomeScreen = ({ navigation, route }) => {
       )}
 
       {/* 6. Bottom Navigation Bar (Chuẩn Figma Node 29:1190) */}
+      {!hasTabNavigator && (
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.navItem}
@@ -970,7 +847,7 @@ const HomeScreen = ({ navigation, route }) => {
 
         <TouchableOpacity
           style={styles.navItem}
-          onPress={() => setActiveTab('booking')}
+          onPress={() => navigation.navigate(hasTabNavigator ? 'Booking' : 'BookingDiscovery', { user, token })}
           activeOpacity={0.7}
         >
           <Ionicons
@@ -1005,7 +882,7 @@ const HomeScreen = ({ navigation, route }) => {
           style={styles.navItem}
           onPress={() => {
             setActiveTab('account');
-            navigation.navigate('Profile', { user, token });
+            navigation.navigate(hasTabNavigator ? 'Account' : 'Profile', { user, token });
           }}
           activeOpacity={0.7}
         >
@@ -1019,6 +896,7 @@ const HomeScreen = ({ navigation, route }) => {
           </Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {/* 7. Toast Notification tự ẩn */}
       <ToastNotification

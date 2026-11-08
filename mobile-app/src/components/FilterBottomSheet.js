@@ -1,3 +1,4 @@
+import { defaultStayDates } from '../utils/stayDates';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -29,9 +30,9 @@ export const FilterBottomSheet = ({
   const [minRating, setMinRating] = useState(initialFilters.minRating || null);
   const [guests, setGuests] = useState(initialFilters.guests || 2);
   const [roomsCount, setRoomsCount] = useState(initialFilters.roomsCount || 1);
-  const [checkIn, setCheckIn] = useState(initialFilters.checkIn || '2026-10-25');
-  const [checkOut, setCheckOut] = useState(initialFilters.checkOut || '2026-10-28');
-  const [nights, setNights] = useState(initialFilters.nights || 3);
+  const [checkIn, setCheckIn] = useState(initialFilters.checkIn || defaultStayDates().checkIn);
+  const [checkOut, setCheckOut] = useState(initialFilters.checkOut || defaultStayDates().checkOut);
+  const [nights, setNights] = useState(initialFilters.nights || 1);
 
   // Đồng bộ khi mở modal với bộ lọc hiện tại
   useEffect(() => {
@@ -48,9 +49,9 @@ export const FilterBottomSheet = ({
       setMinRating(initialFilters.minRating || null);
       setGuests(initialFilters.guests || 2);
       setRoomsCount(initialFilters.roomsCount || 1);
-      setCheckIn(initialFilters.checkIn || '2026-10-25');
-      setCheckOut(initialFilters.checkOut || '2026-10-28');
-      setNights(initialFilters.nights || 3);
+      setCheckIn(initialFilters.checkIn || defaultStayDates().checkIn);
+      setCheckOut(initialFilters.checkOut || defaultStayDates().checkOut);
+      setNights(initialFilters.nights || 1);
     }
   }, [visible, initialFilters]);
 
@@ -101,18 +102,18 @@ export const FilterBottomSheet = ({
     setMinRating(null);
     setGuests(2);
     setRoomsCount(1);
-    setCheckIn('2026-10-25');
-    setCheckOut('2026-10-28');
-    setNights(3);
+    setCheckIn(defaultStayDates().checkIn);
+    setCheckOut(defaultStayDates().checkOut);
+    setNights(1);
     onApply({
       minPrice: null,
       maxPrice: null,
       minRating: null,
       guests: 2,
       roomsCount: 1,
-      checkIn: '2026-10-25',
-      checkOut: '2026-10-28',
-      nights: 3,
+      checkIn: defaultStayDates().checkIn,
+      checkOut: defaultStayDates().checkOut,
+      nights: 1,
     });
     onClose();
   };
