@@ -4,6 +4,7 @@ import request from 'supertest';
 import Booking from '../src/models/Booking.js';
 import Room from '../src/models/Room.js';
 import RoomAvailability from '../src/models/RoomAvailability.js';
+import RoomBlock from '../src/models/RoomBlock.js';
 import { createBooking, checkAvailability } from '../src/controllers/bookingController.js';
 
 const userId = '607f1f77bcf86cd799439001';
@@ -44,9 +45,10 @@ beforeEach(() => {
   }];
   jest.spyOn(Booking, 'findOne').mockImplementation(async query => records.find(record => matches(record, query)) || null);
   jest.spyOn(Booking, 'create').mockImplementation(async data => ({ ...data, _id: 'new-booking' }));
-  jest.spyOn(Room, 'findById').mockResolvedValue({ _id: roomId });
+  jest.spyOn(Room, 'findById').mockResolvedValue({ _id: roomId, pricePerNight: 1000000 });
   jest.spyOn(RoomAvailability, 'findOne').mockResolvedValue(null);
-  jest.spyOn(RoomAvailability, 'findOneAndUpdate').mockResolvedValue({});
+  jest.spyOn(RoomAvailability, 'findOneAndUpdate').mockResolvedValue({ _id: 'reserved-day' });
+  jest.spyOn(RoomBlock, 'findOne').mockResolvedValue(null);
   jest.spyOn(console, 'log').mockImplementation(() => {});
 });
 afterEach(() => jest.restoreAllMocks());
@@ -72,6 +74,107 @@ test.each([
   const response = await request(app).post('/bookings').send({ ...payload, checkIn, checkOut });
   expect(response.status).toBe(409);
   expect(Booking.create).not.toHaveBeenCalled();
+});
+
+test('a Vietnamese check-in timestamp later in the day still conflicts with a midnight calendar block', async () => {
+  records = [];
+  const lockedDate = new Date('2026-11-12T00:00:00.000Z');
+  jest.spyOn(RoomAvailability, 'findOne').mockImplementation(async query => {
+    const range = query.date;
+    return range?.$gte <= lockedDate && lockedDate < range?.$lt
+      ? { date: lockedDate, status: 'BLOCKED' }
+      : null;
+  });
+  const localStay = {
+    ...payload,
+    checkIn: '2026-11-12T07:00:00.000Z',
+    checkOut: '2026-11-13T05:00:00.000Z',
+  };
+
+  const preflight = await request(app).get('/availability').query(localStay);
+  const submit = await request(app).post('/bookings').send(localStay);
+
+  expect(preflight.status).toBe(200);
+  expect(preflight.body.available).toBe(false);
+  expect(submit.status).toBe(409);
+  expect(submit.body).toMatchObject({ conflict: true, code: 'ROOM_BLOCKED' });
+  expect(Booking.create).not.toHaveBeenCalled();
+});
+
+test('availability check explains that the selected date is Host-blocked', async () => {
+  records = [];
+  const blockedDate = new Date('2026-11-12T00:00:00.000Z');
+  jest.spyOn(RoomAvailability, 'findOne').mockImplementation(async query => {
+    const range = query.date;
+    return range?.$gte <= blockedDate && blockedDate < range?.$lt
+      ? { date: blockedDate, status: 'BLOCKED' }
+      : null;
+  });
+
+  const response = await request(app).get('/availability').query({
+    ...payload,
+    checkIn: '2026-11-12T07:00:00.000Z',
+    checkOut: '2026-11-13T05:00:00.000Z',
+  });
+
+  expect(response.status).toBe(200);
+  expect(response.body).toMatchObject({
+    available: false,
+    conflict: true,
+    code: 'ROOM_BLOCKED',
+    message: expect.stringContaining('đã bị chủ nhà khóa'),
+  });
+});
+
+test('booking submission reports a blocked date instead of claiming another guest paid', async () => {
+  records = [];
+  const blockedDate = new Date('2026-11-12T00:00:00.000Z');
+  jest.spyOn(RoomAvailability, 'findOne').mockImplementation(async query => {
+    const range = query.date;
+    return range?.$gte <= blockedDate && blockedDate < range?.$lt
+      ? { date: blockedDate, status: 'BLOCKED' }
+      : null;
+  });
+
+  const response = await request(app).post('/bookings').send({
+    ...payload,
+    checkIn: '2026-11-12T07:00:00.000Z',
+    checkOut: '2026-11-13T05:00:00.000Z',
+  });
+
+  expect(response.status).toBe(409);
+  expect(response.body).toMatchObject({
+    available: false,
+    conflict: true,
+    code: 'ROOM_BLOCKED',
+    message: expect.stringContaining('đã bị chủ nhà khóa'),
+  });
+  expect(Booking.create).not.toHaveBeenCalled();
+});
+
+test('new bookings are confirmed immediately and reserve Vietnamese local nights', async () => {
+  records = [];
+  const localStay = {
+    ...payload,
+    checkIn: '2026-11-12T07:00:00.000Z',
+    checkOut: '2026-11-13T05:00:00.000Z',
+  };
+  const response = await request(app).post('/bookings').send(localStay);
+  expect(response.status).toBe(201);
+  expect(response.body).toMatchObject({
+    success: true,
+    message: 'Đặt phòng đã được xác nhận.',
+    data: { status: 'CONFIRMED', paymentStatus: 'UNPAID' },
+  });
+  expect(Booking.create).toHaveBeenCalledWith(expect.objectContaining({
+    status: 'CONFIRMED',
+    paymentStatus: 'UNPAID',
+  }));
+  expect(RoomAvailability.findOneAndUpdate).toHaveBeenCalledWith(
+    expect.objectContaining({ roomId, date: new Date('2026-11-12T00:00:00.000Z') }),
+    expect.any(Object),
+    expect.any(Object),
+  );
 });
 
 test.each(['CANCELLED', 'REJECTED', 'EXPIRED', 'COMPLETED'])('%s booking does not block a new booking', async status => {

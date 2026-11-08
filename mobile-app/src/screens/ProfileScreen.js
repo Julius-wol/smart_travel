@@ -1,5 +1,5 @@
 import Image from '../components/MediaImage';
-import { formatBookingHistory, nextUpcomingBooking, bookingNotifications } from '../utils/bookingHistory';
+import { formatBookingHistory, nextUpcomingBooking, bookingNotifications, recentBookingRecord } from '../utils/bookingHistory';
 import { resolveMediaUrl } from '../utils/config';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -23,6 +23,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { BASE_URL, API_URL } from '../utils/config';
 import ToastNotification from '../components/ToastNotification';
 import { toggleWishlistThunk } from '../store/slices/wishlistSlice';
+import { setRecentBooking } from '../store/slices/bookingSessionSlice';
 import { fetchRoomDetailApi } from '../services/roomService';
 
 /**
@@ -39,6 +40,7 @@ const ProfileScreen = ({ route, navigation }) => {
   const dispatch = useDispatch();
   const passedUser = route.params?.user;
   const token = route.params?.token;
+  const sessionRecentBooking = useSelector((state) => state.bookingSession?.recentBooking);
 
   // Lấy dữ liệu wishlist từ Redux store
   const savedRoomIds = useSelector((state) => state.wishlist?.savedRoomIds || {});
@@ -158,29 +160,104 @@ const ProfileScreen = ({ route, navigation }) => {
   useEffect(() => {
     let active = true;
     let latestRequest = 0;
-    setBookedRooms([]);
-    setUpcomingTrip(null);
+    const currentRecentBooking = sessionRecentBooking || route.params?.recentBooking;
+    const localBooking = recentBookingRecord(currentRecentBooking);
+    const localFormatted = localBooking ? formatBookingHistory([localBooking]) : [];
+    setBookedRooms(localFormatted);
+    setUpcomingTrip(nextUpcomingBooking(localFormatted));
+    setBookingsError('');
+
+    const mergeNotifications = (remoteBookings, previous, effectiveLocalBooking = localBooking) => {
+      const remote = bookingNotifications(remoteBookings, previous);
+      if (!effectiveLocalBooking) return remote;
+      const notificationId = `booking-${effectiveLocalBooking._id}`;
+      const existing = previous.find(item => item.id === notificationId);
+      const localStatusLabel = {
+        PENDING: 'CHỜ DUYỆT',
+        CONFIRMED: 'ĐÃ XÁC NHẬN',
+        CHECKED_IN: 'ĐANG LƯU TRÚ',
+        COMPLETED: 'ĐÃ HOÀN THÀNH',
+        REJECTED: 'ĐÃ TỪ CHỐI',
+        CANCELLED: 'ĐÃ HỦY',
+        EXPIRED: 'ĐÃ HẾT HẠN',
+      }[effectiveLocalBooking.status] || effectiveLocalBooking.status;
+      const title = effectiveLocalBooking.status === 'PENDING'
+        ? `Đã gửi yêu cầu đặt phòng #${effectiveLocalBooking.bookingCode}`
+        : effectiveLocalBooking.status === 'CONFIRMED'
+          ? `Đặt phòng đã xác nhận #${effectiveLocalBooking.bookingCode}`
+          : `${localStatusLabel} #${effectiveLocalBooking.bookingCode}`;
+      const localNotification = {
+        id: notificationId,
+        type: 'booking',
+        title,
+        message: `${effectiveLocalBooking.roomId?.title || 'Phòng đã đặt'} • ${
+          effectiveLocalBooking.status === 'PENDING'
+            ? 'Đang chờ chủ nhà xác nhận.'
+            : effectiveLocalBooking.status === 'CONFIRMED'
+              ? 'Phòng đã được xác nhận.'
+              : 'Trạng thái đơn đã được cập nhật.'
+        }`,
+        time: 'Vừa xong',
+        read: existing?.read ?? false,
+        badgeText: localStatusLabel,
+        badgeColor: '#E6FFFA',
+        badgeTextColor: '#00796B',
+        icon: 'calendar-outline',
+        iconColor: '#00796B',
+        actionType: 'view_booking',
+        bookingCode: effectiveLocalBooking.bookingCode,
+        rawBooking: effectiveLocalBooking,
+      };
+      return [localNotification, ...remote.filter(item => item.bookingCode !== effectiveLocalBooking.bookingCode)];
+    };
+
     const fetchUserBookings = async () => {
       const requestId = ++latestRequest;
-      setBookingsLoading(true);
+      setBookingsLoading(Boolean(token));
       setBookingsError('');
+      if (!token) {
+        setNotifications(previous => mergeNotifications([], previous));
+        return;
+      }
+
       try {
-        if (!token) throw new Error('Vui lòng đăng nhập lại để xem booking.');
         const res = await fetch(API_URL + '/bookings/my-bookings', {
           headers: { Authorization: 'Bearer ' + token },
         });
         const json = await res.json();
         if (!res.ok || !json.success || !Array.isArray(json.data)) throw new Error(json.message || 'Không thể tải danh sách đặt phòng.');
         if (!active || requestId !== latestRequest) return;
-        const formatted = formatBookingHistory(json.data);
-        setNotifications(previous => bookingNotifications(json.data, previous));
+        const authoritativeBooking = localBooking
+          ? json.data.find(item => item.bookingCode === localBooking.bookingCode)
+          : null;
+        const effectiveLocalBooking = authoritativeBooking
+          ? { ...localBooking, ...authoritativeBooking, roomId: authoritativeBooking.roomId || localBooking.roomId }
+          : localBooking;
+        if (authoritativeBooking && currentRecentBooking &&
+          (currentRecentBooking.bookingStatus !== authoritativeBooking.status ||
+            currentRecentBooking.booking?.status !== authoritativeBooking.status)) {
+          dispatch(setRecentBooking({
+            ...currentRecentBooking,
+            booking: authoritativeBooking,
+            bookingStatus: authoritativeBooking.status,
+            homestay: authoritativeBooking.roomId || currentRecentBooking.homestay,
+          }));
+        }
+        const remoteBookings = json.data.filter(item => item.bookingCode !== effectiveLocalBooking?.bookingCode);
+        const mergedBookings = effectiveLocalBooking ? [effectiveLocalBooking, ...remoteBookings] : remoteBookings;
+        const formatted = formatBookingHistory(mergedBookings);
+        setNotifications(previous => mergeNotifications(remoteBookings, previous, effectiveLocalBooking));
         setBookedRooms(formatted);
         setUpcomingTrip(nextUpcomingBooking(formatted));
       } catch (err) {
         if (!active || requestId !== latestRequest) return;
-        setBookedRooms([]);
-        setUpcomingTrip(null);
-        setBookingsError(err.message);
+        if (localFormatted.length) {
+          setNotifications(previous => mergeNotifications([], previous));
+        } else {
+          setBookedRooms([]);
+          setUpcomingTrip(null);
+          setBookingsError(err.message);
+        }
       } finally {
         if (active && requestId === latestRequest) setBookingsLoading(false);
       }
@@ -188,7 +265,15 @@ const ProfileScreen = ({ route, navigation }) => {
     fetchUserBookings();
     const unsubscribe = navigation.addListener?.('focus', fetchUserBookings);
     return () => { active = false; unsubscribe?.(); };
-  }, [token, passedUser?._id, passedUser?.id, navigation, bookingsReloadKey]);
+  }, [
+    token,
+    passedUser?._id,
+    passedUser?.id,
+    navigation,
+    bookingsReloadKey,
+    route.params?.recentBooking,
+    sessionRecentBooking,
+  ]);
 
   const savedWishlistKey = Object.keys(savedRoomIds).sort().join(',');
   useEffect(() => {
@@ -369,6 +454,7 @@ const ProfileScreen = ({ route, navigation }) => {
       homestay: targetTrip.rawRoom || { _id: targetTrip.roomId, title: targetTrip.title, images: [targetTrip.thumbnail].filter(Boolean) },
       bookingDetails: {
         paymentStatus: targetTrip.paymentStatus,
+        status: targetTrip.status,
         fullName: targetTrip.contact.fullName || user.fullName,
         email: targetTrip.contact.email || user.email,
         phone: targetTrip.contact.phone || user.phone,
@@ -580,7 +666,7 @@ const ProfileScreen = ({ route, navigation }) => {
           </View>
 
         {/* Trip Hero Card Container */}
-        {upcomingTrip && !bookingsLoading && !bookingsError ? (
+        {upcomingTrip && !bookingsLoading ? (
           <View style={styles.tripHeroCard}>
             <View style={styles.tripMainRow}>
               {/* Thumbnail Image */}
@@ -758,7 +844,7 @@ const ProfileScreen = ({ route, navigation }) => {
           <Text style={styles.sectionTitle}>Quản lý Đối tác cho thuê (Host)</Text>
           <TouchableOpacity
             style={[styles.updateBtn, { backgroundColor: '#00685F', marginTop: 10 }]}
-            onPress={() => navigation.navigate('HostCalendar')}
+            onPress={() => navigation.navigate('HostCalendar', { user, token })}
           >
             <Ionicons name="calendar-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
             <Text style={styles.updateBtnText}>Lịch phòng & Trạng thái trống</Text>
@@ -1022,7 +1108,7 @@ const ProfileScreen = ({ route, navigation }) => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-              {bookingsLoading || bookingsError || bookedRooms.length === 0 ? (
+              {bookingsLoading || bookedRooms.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   {bookingsLoading ? <ActivityIndicator color="#00685F" /> : <Ionicons name="bed-outline" size={36} color="#64748B" />}
                   <Text style={styles.emptyTitle}>

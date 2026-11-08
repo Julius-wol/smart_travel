@@ -255,7 +255,7 @@
                 const avatarClass = rev.isNegative ? 'rev-avatar-coral' : avatarColors[idx % avatarColors.length];
               %>
               <!-- 2.1 - 2.6 REVIEW CARD -->
-              <div class="rev-card <%= rev.isNegative ? 'rev-card-warning' : '' %>" data-review-id="<%= rev._id %>">
+              <div class="rev-card <%= rev.isNegative ? 'rev-card-warning' : '' %>" id="review-<%= rev._id %>" data-review-id="<%= rev._id %>">
                 <div class="rev-card-header">
                   <!-- 2.2 Avatar + Badges -->
                   <div class="rev-avatar <%= avatarClass %>">
@@ -670,7 +670,7 @@
       }
 
       html += `
-        <div class="rev-card ${rev.isNegative ? 'rev-card-warning' : ''}" data-review-id="${rev._id}">
+        <div class="rev-card ${rev.isNegative ? 'rev-card-warning' : ''}" id="review-${rev._id}" data-review-id="${rev._id}">
           <div class="rev-card-header">
             <div class="rev-avatar ${avatarClass}">${rev.initials}</div>
             <div class="rev-card-header-main">
@@ -699,6 +699,9 @@
     });
 
     container.innerHTML = html;
+    if (location.hash.startsWith('#review-')) {
+      document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView({ block: 'center' });
+    }
   }
 
   // 6. RENDER PAGINATION BAR

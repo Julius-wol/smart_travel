@@ -319,7 +319,7 @@
       <div id="googleErrorText"><%= typeof error !== 'undefined' && error ? error : '' %></div>
     </div>
 
-    <form action="/host/login" method="POST">
+    <form id="hostLoginForm" action="/host/login" method="POST">
       <!-- Email / Phone Field -->
       <label class="field-label" for="emailOrPhoneInput">Email / Số điện thoại</label>
       <div class="mobile-input-wrap">
@@ -364,7 +364,7 @@
       </div>
 
       <!-- Login Submit Button -->
-      <button type="submit" class="btn-login-main">
+      <button type="submit" class="btn-login-main" id="btnHostLogin">
         <span>Đăng nhập ngay</span>
         <span>→</span>
       </button>
@@ -401,6 +401,43 @@
 </div>
 
 <script>
+  const hostLoginForm = document.getElementById('hostLoginForm');
+  hostLoginForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const loginButton = document.getElementById('btnHostLogin');
+    const errorBox = document.getElementById('googleErrorBox');
+    const errorText = document.getElementById('googleErrorText');
+    const emailOrPhone = document.getElementById('emailOrPhoneInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+
+    loginButton.disabled = true;
+    errorBox.style.display = 'none';
+
+    try {
+      const response = await fetch('/api/auth/host/signin', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailOrPhone, password })
+      });
+      const result = await response.json();
+
+      if (response.ok && result.data?.accessToken) {
+        window.location.assign('/host/rooms');
+        return;
+      }
+
+      errorText.textContent = result.message || 'Đăng nhập Host thất bại';
+      errorBox.style.display = 'flex';
+    } catch (error) {
+      errorText.textContent = 'Không thể kết nối máy chủ. Vui lòng thử lại.';
+      errorBox.style.display = 'flex';
+    } finally {
+      loginButton.disabled = false;
+    }
+  });
+
   const toggleBtn = document.getElementById('btnToggleEye');
   const passInput = document.getElementById('passwordInput');
   if (toggleBtn && passInput) {

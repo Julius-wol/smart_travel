@@ -1,4 +1,5 @@
 import hostCalendarReducer, {
+  fetchHostCalendar,
   setSelectedRoom,
   changeMonth,
   resetToCurrentMonth,
@@ -31,10 +32,22 @@ describe('hostCalendarSlice reducer', () => {
     error: null,
   };
 
-  test('should return initial state with default month 11 and year 2026', () => {
+  test('should return initial state with current month and year', () => {
     const state = hostCalendarReducer(undefined, { type: 'unknown' });
-    expect(state.currentMonth).toBe(11);
-    expect(state.currentYear).toBe(2026);
+    expect(state.currentMonth).toBe(new Date().getMonth() + 1);
+    expect(state.currentYear).toBe(new Date().getFullYear());
+  });
+
+  test('ignores a late calendar response after switching rooms', () => {
+    const state = { ...initialState, selectedRoom: { _id: 'room-2' } };
+    const action = fetchHostCalendar.fulfilled(
+      { room: { _id: 'room-1' }, days: [{ date: '2026-11-01' }] },
+      'request-1',
+      { roomId: 'room-1', month: 11, year: 2026 }
+    );
+    const next = hostCalendarReducer(state, action);
+    expect(next.selectedRoom._id).toBe('room-2');
+    expect(next.calendarDays).toEqual([]);
   });
 
   test('should change month forward and backward', () => {
@@ -53,8 +66,8 @@ describe('hostCalendarSlice reducer', () => {
 
   test('should reset to current month', () => {
     let state = hostCalendarReducer({ ...initialState, currentMonth: 3, currentYear: 2027 }, resetToCurrentMonth());
-    expect(state.currentMonth).toBe(11);
-    expect(state.currentYear).toBe(2026);
+    expect(state.currentMonth).toBe(new Date().getMonth() + 1);
+    expect(state.currentYear).toBe(new Date().getFullYear());
   });
 
   test('should toggle block and unblock modals', () => {
