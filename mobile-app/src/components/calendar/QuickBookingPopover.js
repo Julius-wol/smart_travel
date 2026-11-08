@@ -56,7 +56,7 @@ const QuickBookingPopover = ({
             <View style={styles.customerInfo}>
               <Text style={styles.customerName}>{booking.customerName}</Text>
               <Text style={styles.customerPhone}>
-                <Ionicons name="call-outline" size={12} color={COLORS.textBody} /> {booking.phoneNumber || '0912.***.678'}
+                <Ionicons name="call-outline" size={12} color={COLORS.textBody} /> {booking.phoneNumber || 'Chưa cung cấp'}
               </Text>
             </View>
           </View>
@@ -75,7 +75,7 @@ const QuickBookingPopover = ({
               <MaterialCommunityIcons name="account-group-outline" size={16} color={COLORS.secondary} style={{ marginRight: 6 }} />
               <Text style={styles.detailLabel}>Số khách:</Text>
               <Text style={styles.detailValue}>
-                {booking.guests || 2} người lớn
+                {booking.guestCount || 2} người lớn
               </Text>
             </View>
 
@@ -83,16 +83,16 @@ const QuickBookingPopover = ({
               <MaterialCommunityIcons name="cash-multiple" size={16} color="#059669" style={{ marginRight: 6 }} />
               <Text style={styles.detailLabel}>Tổng tiền:</Text>
               <Text style={styles.totalPriceValue}>
-                {booking.totalPrice?.toLocaleString('vi-VN')} VNĐ
+                {booking.totalAmount?.toLocaleString('vi-VN')} VNĐ
               </Text>
             </View>
           </View>
 
           {/* 4. Yêu cầu đặc biệt của khách */}
-          {booking.specialRequest ? (
+          {booking.guestNote ? (
             <View style={styles.noteBox}>
               <Text style={styles.noteTitle}>Yêu cầu của khách:</Text>
-              <Text style={styles.noteContent}>"{booking.specialRequest}"</Text>
+              <Text style={styles.noteContent}>"{booking.guestNote}"</Text>
             </View>
           ) : null}
 

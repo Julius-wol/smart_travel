@@ -11,9 +11,9 @@ import {
 // Async Thunks
 export const fetchHostRooms = createAsyncThunk(
   'hostCalendar/fetchRooms',
-  async (ownerId, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const response = await getHostRoomsApi(ownerId);
+      const response = await getHostRoomsApi();
       return response.data;
     } catch (error) {
       return rejectWithValue(error);
@@ -93,13 +93,33 @@ export const quickApproveBookingThunk = createAsyncThunk(
   }
 );
 
+export const quickRejectBookingThunk = createAsyncThunk(
+  'hostCalendar/rejectBooking',
+  async ({ bookingId, rejectReason }, { rejectWithValue, dispatch, getState }) => {
+    try {
+      const response = await quickRejectBookingApi(bookingId, rejectReason);
+      const state = getState().hostCalendar;
+      if (state.selectedRoom) {
+        dispatch(fetchHostCalendar({
+          roomId: state.selectedRoom._id,
+          month: state.currentMonth,
+          year: state.currentYear,
+        }));
+      }
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
 const now = new Date();
 
 const initialState = {
   rooms: [],
   selectedRoom: null,
-  currentMonth: 11, // Tháng 11 theo đúng thiết kế Figma SMART-105
-  currentYear: 2026,
+  currentMonth: now.getMonth() + 1,
+  currentYear: now.getFullYear(),
   kpi: {
     occupancyRate: 0,
     soldNights: 0,
@@ -177,12 +197,19 @@ const hostCalendarSlice = createSlice({
       .addCase(fetchHostRooms.fulfilled, (state, action) => {
         state.loading = false;
         state.rooms = action.payload;
-        if (!state.selectedRoom && action.payload.length > 0) {
-          state.selectedRoom = action.payload[0];
+        const stillOwned = action.payload.find(room => room._id === state.selectedRoom?._id);
+        if (!stillOwned) {
+          state.selectedRoom = action.payload[0] || null;
+          state.calendarDays = [];
+          state.kpi = initialState.kpi;
         }
       })
       .addCase(fetchHostRooms.rejected, (state, action) => {
         state.loading = false;
+        state.rooms = [];
+        state.selectedRoom = null;
+        state.calendarDays = [];
+        state.kpi = initialState.kpi;
         state.error = action.payload?.message || 'Không thể tải danh sách phòng';
       });
 
@@ -193,6 +220,9 @@ const hostCalendarSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchHostCalendar.fulfilled, (state, action) => {
+        if (action.meta.arg.roomId !== state.selectedRoom?._id ||
+            action.meta.arg.month !== state.currentMonth ||
+            action.meta.arg.year !== state.currentYear) return;
         state.loading = false;
         state.calendarDays = action.payload.days || [];
         state.kpi = action.payload.kpi || initialState.kpi;

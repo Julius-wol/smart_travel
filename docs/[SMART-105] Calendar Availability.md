@@ -42,7 +42,7 @@ Tôi muốn xem giao diện lịch (Calendar) theo từng phòng và có thể c
 | 3.6 | Popover Footer | Nút `✓ Duyệt đơn` | Button (Primary Teal/Green) | Yes | Enabled | • Click xác nhận duyệt đơn trực tiếp ngay trên lịch.• Cập nhật ngày từ `Chờ duyệt` sang `🔵 Đã đặt`, gửi phản hồi thành công `[BOOK-APPROVE-SUCCESS]`. |
 | **IV** | **Khóa / Mở ngày thủ công** |  |  |  |  |  |
 | 4.1 | Modal Block Header | Tiêu đề Modal | Typography | Yes | `Khóa lịch đón khách` | • Hiển thị tiêu đề và khoảng ngày được chọn: `Từ ngày [Start] đến ngày [End] ([X] đêm)`. |
-| 4.2 | Modal Block Body | Dropdown "Lý do khóa" | Select Dropdown | **Yes** | Placeholder: "Chọn lý do..." | • Danh mục: Sửa chữa / Bảo trì định kỳ, Giữ chỗ cho khách đặt ngoài hệ thống, Nghỉ lễ / Gia đình sử dụng, Khác.• Chưa chọn mà bấm Lưu: Hiển thị cảnh báo `[CAL-BLOCK-REASON-REQ]`. |
+| 4.2 | Modal Block Body | Dropdown "Lý do khóa" | Select Dropdown | **Yes** | Placeholder: "Chọn lý do..." | • Danh mục: Sửa chữa / Bảo trì định kỳ, Giữ chỗ cho khách đặt ngoài hệ thống, Nghỉ lễ / Gia đình sử dụng, Khác.• Chưa chọn mà bấm Lưu: Hiển thị nội dung thông báo theo mã `CAL-BLOCK-REASON-REQ` trong Common Message. |
 | 4.3 | Modal Block Body | Ghi chú nội bộ | Text Input | No | Tối đa 100 ký tự | • Nhập ghi chú ngắn (vd: "Thay hệ thống bồn vệ sinh cho phòng số 2"). Nội dung này sẽ hiển thị trên ô ngày. |
 | 4.4 | Modal Block Footer | Nút `Xác nhận khóa` | Button (Danger Solid) | Yes | Enabled | • Kiểm tra xung đột: Nếu dải ngày có booking `Confirmed`, chặn và báo lỗi `[CAL-BLOCK-CONFLICT]`.• Thành công: Cập nhật các ô ngày sang màu đỏ và thông báo `[CAL-BLOCK-SUCCESS]`. |
 | 4.5 | Modal Unblock | Hộp thoại Mở bán lại | Confirm Modal | Yes | `Mở lại ngày đón khách` | • Hiển thị nội dung xác nhận: `[CAL-CONFIRM-UNBLOCK]`.• Host bấm đồng ý: Chuyển ngày từ Đã khóa sang `🟢 Trống` và thông báo `[CAL-UNBLOCK-SUCCESS]`. |
@@ -81,7 +81,7 @@ Tôi muốn xem giao diện lịch (Calendar) theo từng phòng và có thể c
 
 - **Thao tác Khóa ngày đón khách thủ công:**
     - Host có thể click vào một ô ngày trống hoặc kéo chuột chọn một dải ngày trống liên tiếp (ví dụ từ ngày 8 đến ngày 10/11) để mở hộp thoại `MODAL-BLOCK-DATE`.
-    - Host bắt buộc phải chọn Lý do khóa (Bảo trì, Đón khách ngoài, Việc gia đình...) từ danh mục hệ thống. Nếu để trống, hệ thống hiển thị cảnh báo `[CAL-BLOCK-REASON-REQ]`.
+    - Host bắt buộc phải chọn Lý do khóa (Bảo trì, Đón khách ngoài, Việc gia đình...) từ danh mục hệ thống. Nếu để trống, hệ thống hiển thị nội dung thông báo theo mã `CAL-BLOCK-REASON-REQ` trong Common Message.
     - **Ngăn chặn xung đột lịch (Conflict Prevention):** Khi bấm xác nhận khóa, hệ thống kiểm tra toàn bộ dải ngày được chọn. Nếu có bất kỳ ngày nào đã tồn tại đơn đặt phòng ở trạng thái `Confirmed`, hệ thống lập tức từ chối thao tác khóa và hiển thị cảnh báo nghiêm ngặt `[CAL-BLOCK-CONFLICT]`.
     - Khi khóa thành công, các ô ngày được cập nhật ngay lập tức sang màu đỏ và hệ thống phản hồi `[CAL-BLOCK-SUCCESS]`.
 - **Thao tác Mở bán lại ngày đã khóa:**
@@ -104,9 +104,9 @@ Tôi muốn xem giao diện lịch (Calendar) theo từng phòng và có thể c
 ### 5. Xử lý các tình huống ngoại lệ & Ngoại vi 
 
 - **Thao tác trên các mốc thời gian trong quá khứ:**
-    - Các ngày đã trôi qua trước ngày hiện tại được làm mờ (Disabled). Nếu Host cố tình click hoặc thao tác khóa/mở các ngày trong quá khứ, hệ thống sẽ chặn thao tác và hiển thị thông báo `[CAL-NAV-PAST]`.
+    - Các ngày đã trôi qua trước ngày hiện tại được làm mờ (Disabled). Nếu Host cố tình click hoặc thao tác khóa/mở các ngày trong quá khứ, hệ thống sẽ chặn thao tác và hiển thị nội dung thông báo theo mã `CAL-NAV-PAST` trong Common Message.
 - **Trường hợp không tìm thấy dữ liệu phòng:**
-    - Nếu Host chọn một phòng mới tạo ở trạng thái `Draft` chưa cấu hình giá hoặc phòng bị lỗi dữ liệu, bảng lịch hiển thị trạng thái rỗng kèm gợi ý `[EMPTY-ROOM-CAL]`.
+    - Nếu Host chọn một phòng mới tạo ở trạng thái `Draft` chưa cấu hình giá hoặc phòng bị lỗi dữ liệu, bảng lịch hiển thị trạng thái rỗng với nội dung theo mã `EMPTY-ROOM-CAL` trong Common Message.
 - **Đồng bộ hóa đa thiết bị (Real-time Sync):**
     - Nếu Host đang mở màn hình lịch trên máy tính trong khi khách hàng thực hiện đặt phòng thành công trên Mobile, hệ thống sử dụng WebSocket để tự động vẽ lại ô ngày đó sang trạng thái `🟡 Chờ duyệt` ngay lập tức mà Host không cần bấm F5 tải lại trang.
 
