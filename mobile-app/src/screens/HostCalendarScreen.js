@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   Modal,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +22,7 @@ import {
   blockDatesThunk,
   unblockDatesThunk,
   quickApproveBookingThunk,
+  quickRejectBookingThunk,
   setSelectedRoom,
   changeMonth,
   resetToCurrentMonth,
@@ -41,6 +43,7 @@ import BlockDateModal from '../components/calendar/BlockDateModal';
 import UnblockDateModal from '../components/calendar/UnblockDateModal';
 import QuickBookingPopover from '../components/calendar/QuickBookingPopover';
 import { COLORS, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from '../constants/theme';
+import { setHostCalendarToken } from '../services/hostCalendarService';
 
 const HostCalendarScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -69,6 +72,9 @@ const HostCalendarScreen = ({ navigation, route }) => {
   const [isBlocking, setIsBlocking] = useState(false);
   const [isUnblocking, setIsUnblocking] = useState(false);
   const [mobileDrawerVisible, setMobileDrawerVisible] = useState(false);
+  const [rejectBookingId, setRejectBookingId] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [isRejecting, setIsRejecting] = useState(false);
 
   // Hiển thị toast thông báo tự ẩn
   const showToast = (message, type = 'success') => {
@@ -81,8 +87,10 @@ const HostCalendarScreen = ({ navigation, route }) => {
 
   // 1. Tải danh sách phòng khi mount
   useEffect(() => {
+    setHostCalendarToken(route?.params?.token);
     dispatch(fetchHostRooms());
-  }, [dispatch]);
+    return () => setHostCalendarToken(null);
+  }, [dispatch, route?.params?.token]);
 
   // 2. Tải lịch khi selectedRoom hoặc tháng/năm thay đổi
   useEffect(() => {
@@ -116,7 +124,7 @@ const HostCalendarScreen = ({ navigation, route }) => {
   // Handler khi click ngày trong quá khứ
   const handlePastDateClick = () => {
     showToast(
-      'Không thể thực hiện thao tác khóa hoặc mở ngày cho các mốc thời gian trong quá khứ. (CAL-NAV-PAST)',
+      'Không thể thực hiện thao tác khóa hoặc mở ngày cho các mốc thời gian trong quá khứ.',
       'info'
     );
   };
@@ -139,7 +147,7 @@ const HostCalendarScreen = ({ navigation, route }) => {
     if (blockDatesThunk.fulfilled.match(resultAction)) {
       dispatch(closeBlockModal());
       showToast(
-        resultAction.payload?.message || 'Đã khóa phòng thành công cho các ngày được chọn. (CAL-BLOCK-SUCCESS)',
+        resultAction.payload?.message || 'Đã khóa phòng thành công cho các ngày được chọn.',
         'success'
       );
     } else {
@@ -147,7 +155,7 @@ const HostCalendarScreen = ({ navigation, route }) => {
       if (err?.code === 'CAL-BLOCK-CONFLICT') {
         Alert.alert(
           'Xung đột lịch phòng!',
-          err?.message || 'Không thể khóa ngày! Khoảng thời gian này đã có đơn đặt phòng đã xác nhận. Vui lòng kiểm tra lại. (CAL-BLOCK-CONFLICT)',
+          err?.message || 'Không thể khóa ngày! Khoảng thời gian này đã có đơn đặt phòng đã xác nhận. Vui lòng kiểm tra lại.',
           [{ text: 'Đã hiểu', style: 'cancel' }]
         );
       } else {
@@ -171,7 +179,7 @@ const HostCalendarScreen = ({ navigation, route }) => {
     if (unblockDatesThunk.fulfilled.match(resultAction)) {
       dispatch(closeUnblockModal());
       showToast(
-        resultAction.payload?.message || 'Đã mở bán lại phòng thành công. Phòng đã sẵn sàng đón khách. (CAL-UNBLOCK-SUCCESS)',
+        resultAction.payload?.message || 'Đã mở bán lại phòng thành công. Phòng đã sẵn sàng đón khách.',
         'success'
       );
     } else {
@@ -185,11 +193,29 @@ const HostCalendarScreen = ({ navigation, route }) => {
     if (quickApproveBookingThunk.fulfilled.match(resultAction)) {
       dispatch(setActivePopoverBooking(null));
       showToast(
-        resultAction.payload?.message || 'Đã phê duyệt đơn đặt phòng thành công! (BOOK-APPROVE-SUCCESS)',
+        resultAction.payload?.message || 'Đã phê duyệt đơn đặt phòng thành công!',
         'success'
       );
     } else {
       showToast(resultAction.payload?.message || 'Lỗi khi duyệt đơn', 'error');
+    }
+  };
+
+  const handleQuickReject = async () => {
+    if (!rejectReason.trim()) {
+      showToast('Vui lòng nhập lý do từ chối.', 'error');
+      return;
+    }
+    setIsRejecting(true);
+    const result = await dispatch(quickRejectBookingThunk({ bookingId: rejectBookingId, rejectReason: rejectReason.trim() }));
+    setIsRejecting(false);
+    if (quickRejectBookingThunk.fulfilled.match(result)) {
+      setRejectBookingId(null);
+      setRejectReason('');
+      dispatch(setActivePopoverBooking(null));
+      showToast(result.payload?.message || 'Đã từ chối đơn.');
+    } else {
+      showToast(result.payload?.message || 'Không thể từ chối đơn.', 'error');
     }
   };
 
@@ -226,9 +252,7 @@ const HostCalendarScreen = ({ navigation, route }) => {
           <HostSidebar
             activeId="calendar"
             onNavigate={(id) => {
-              if (id !== 'calendar') {
-                showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Quản lý Lịch phòng & Giá.', 'info');
-              }
+              if (id === 'profile') navigation?.navigate?.('Profile', { user: route?.params?.user, token: route?.params?.token });
             }}
           />
 
@@ -388,8 +412,33 @@ const HostCalendarScreen = ({ navigation, route }) => {
         booking={activePopoverBooking}
         onClose={() => dispatch(setActivePopoverBooking(null))}
         onApprove={handleQuickApprove}
+        onReject={(bookingId) => { dispatch(setActivePopoverBooking(null)); setRejectBookingId(bookingId); }}
         loading={loading}
       />
+
+      <Modal visible={!!rejectBookingId} transparent animationType="fade">
+        <View style={styles.rejectOverlay}>
+          <View style={styles.rejectCard}>
+            <Text style={styles.rejectTitle}>Từ chối đơn đặt phòng</Text>
+            <Text style={styles.rejectHint}>Nhập lý do để khách biết vì sao đơn không được duyệt.</Text>
+            <TextInput
+              value={rejectReason}
+              onChangeText={setRejectReason}
+              placeholder="Lý do từ chối"
+              multiline
+              style={styles.rejectInput}
+            />
+            <View style={styles.rejectActions}>
+              <TouchableOpacity onPress={() => { setRejectBookingId(null); setRejectReason(''); }}>
+                <Text>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleQuickReject} disabled={isRejecting}>
+                <Text style={styles.rejectSubmit}>{isRejecting ? 'Đang xử lý...' : 'Xác nhận từ chối'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Drawer Modal hiển thị HostSidebar trên thiết bị di động */}
       {mobileDrawerVisible && (
@@ -418,9 +467,7 @@ const HostCalendarScreen = ({ navigation, route }) => {
                   activeId="calendar"
                   onNavigate={(id) => {
                     setMobileDrawerVisible(false);
-                    if (id !== 'calendar') {
-                      showToast('Chức năng đang hoàn thiện. Hiện tại ưu tiên Lịch phòng & Giá.', 'info');
-                    }
+                    if (id === 'profile') navigation?.navigate?.('Profile', { user: route?.params?.user, token: route?.params?.token });
                   }}
                 />
               </ScrollView>
@@ -433,6 +480,13 @@ const HostCalendarScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  rejectOverlay: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: 'rgba(11, 28, 48, 0.5)' },
+  rejectCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, gap: 12 },
+  rejectTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A' },
+  rejectHint: { color: '#475569' },
+  rejectInput: { minHeight: 88, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, padding: 10, textAlignVertical: 'top' },
+  rejectActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 20, marginTop: 8 },
+  rejectSubmit: { color: '#B91C1C', fontWeight: '700' },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',

@@ -43,7 +43,7 @@ const BlockDateModal = ({
 
   const handleConfirm = () => {
     if (!selectedReason) {
-      setErrorMessage('Vui lòng chọn lý do khóa lịch phòng trước khi tiếp tục. (CAL-BLOCK-REASON-REQ)');
+      setErrorMessage('Vui lòng chọn lý do khóa lịch phòng trước khi tiếp tục.');
       return;
     }
     setErrorMessage('');

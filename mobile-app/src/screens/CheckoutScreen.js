@@ -1,6 +1,6 @@
 import Image from '../components/MediaImage';
 import { resolveMediaUrl } from '../utils/config';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -49,6 +49,10 @@ const CheckoutScreen = ({ navigation, route }) => {
   const [showDateModal, setShowDateModal] = useState(false);
   const [tempCheckIn, setTempCheckIn] = useState(null);
   const [tempCheckOut, setTempCheckOut] = useState(null);
+  const [unavailableDates, setUnavailableDates] = useState({});
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState('');
+  const [availabilityRefresh, setAvailabilityRefresh] = useState(0);
 
   // Modal cảnh báo xung đột phòng thời gian thực (CR_BOOK_07)
   const [conflictModalVisible, setConflictModalVisible] = useState(false);
@@ -140,6 +144,74 @@ const CheckoutScreen = ({ navigation, route }) => {
     return days;
   };
   const calendarDays = generateCalendarDays();
+  const toCalendarDateKey = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const shiftCalendarDate = (date, amount) => {
+    const shifted = new Date(date);
+    shifted.setDate(shifted.getDate() + amount);
+    return shifted;
+  };
+  const selectedRoomId = homestay?._id || homestay?.id || homestay?.roomId;
+  const calendarStartDate = calendarDays.length ? toCalendarDateKey(calendarDays[0]) : '';
+  const calendarEndDateExclusive = calendarDays.length
+    ? toCalendarDateKey(shiftCalendarDate(calendarDays[calendarDays.length - 1], 1))
+    : '';
+
+  useEffect(() => {
+    if (!showDateModal) return undefined;
+
+    let active = true;
+    const loadAvailability = async () => {
+      setAvailabilityLoading(true);
+      setAvailabilityError('');
+      setUnavailableDates({});
+      if (!selectedRoomId) {
+        setAvailabilityError('Không xác định được phòng để tải lịch.');
+        setAvailabilityLoading(false);
+        return;
+      }
+
+      try {
+        const query = `roomId=${encodeURIComponent(String(selectedRoomId))}` +
+          `&startDate=${calendarStartDate}&endDateExclusive=${calendarEndDateExclusive}`;
+        const response = await fetch(`${API_URL}/bookings/room-availability?${query}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success || !Array.isArray(result.data?.unavailableDates)) {
+          throw new Error(result.message || 'Không thể tải lịch phòng.');
+        }
+
+        if (active) {
+          setUnavailableDates(Object.fromEntries(
+            result.data.unavailableDates.map(({ date, status }) => [date, status])
+          ));
+        }
+      } catch (error) {
+        if (active) setAvailabilityError(error.message || 'Không thể tải lịch phòng.');
+      } finally {
+        if (active) setAvailabilityLoading(false);
+      }
+    };
+
+    loadAvailability();
+    return () => { active = false; };
+  }, [showDateModal, selectedRoomId, calendarStartDate, calendarEndDateExclusive, token, availabilityRefresh]);
+
+  const getUnavailableDateInStay = (checkIn, checkOut) => {
+    if (!checkIn || !checkOut) return null;
+    const checkoutNight = new Date(checkOut);
+    checkoutNight.setHours(0, 0, 0, 0);
+    for (let date = new Date(checkIn); date < checkoutNight; date.setDate(date.getDate() + 1)) {
+      const key = toCalendarDateKey(date);
+      if (unavailableDates[key]) return { date: new Date(date), status: unavailableDates[key] };
+    }
+    return null;
+  };
 
   // Mở modal chọn / thay đổi ngày
   const handleOpenDateModal = () => {
@@ -170,12 +242,21 @@ const CheckoutScreen = ({ navigation, route }) => {
   const handleSelectCalendarDate = (date) => {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
+    if (availabilityLoading || availabilityError || unavailableDates[toCalendarDateKey(d)]) return;
 
     if (!tempCheckIn || (tempCheckIn && tempCheckOut)) {
       setTempCheckIn(d);
       setTempCheckOut(null);
     } else if (tempCheckIn && !tempCheckOut) {
       if (d.getTime() > tempCheckIn.getTime()) {
+        const conflict = getUnavailableDateInStay(tempCheckIn, d);
+        if (conflict) {
+          showToast(
+            `Ngày ${formatDateVN(conflict.date)} đã ${conflict.status === 'BLOCKED' ? 'bị khóa' : 'được đặt'}.`,
+            'error'
+          );
+          return;
+        }
         setTempCheckOut(d);
       } else {
         setTempCheckIn(d);
@@ -186,26 +267,35 @@ const CheckoutScreen = ({ navigation, route }) => {
 
   // Chọn nhanh ngày theo các preset phổ biến
   const handleQuickPresetDate = (preset) => {
+    if (availabilityLoading || availabilityError) return;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    let inDate;
+    let outDate;
     if (preset.type === 'weekend') {
       const dayOfWeek = today.getDay();
       const distanceToSat = (6 - dayOfWeek + 7) % 7 || 7;
-      const sat = new Date(today);
-      sat.setDate(today.getDate() + distanceToSat);
-      const sun = new Date(sat);
-      sun.setDate(sat.getDate() + 1);
-      setTempCheckIn(sat);
-      setTempCheckOut(sun);
+      inDate = new Date(today);
+      inDate.setDate(today.getDate() + distanceToSat);
+      outDate = new Date(inDate);
+      outDate.setDate(inDate.getDate() + 1);
     } else {
-      const inDate = new Date(today);
+      inDate = new Date(today);
       inDate.setDate(today.getDate() + (preset.offset || 0));
-      const outDate = new Date(inDate);
+      outDate = new Date(inDate);
       outDate.setDate(inDate.getDate() + (preset.days || 1));
-      setTempCheckIn(inDate);
-      setTempCheckOut(outDate);
     }
+    const conflict = getUnavailableDateInStay(inDate, outDate);
+    if (conflict) {
+      showToast(
+        `Ngày ${formatDateVN(conflict.date)} đã ${conflict.status === 'BLOCKED' ? 'bị khóa' : 'được đặt'}.`,
+        'error'
+      );
+      return;
+    }
+    setTempCheckIn(inDate);
+    setTempCheckOut(outDate);
   };
 
   const handleClearDates = () => {
@@ -226,6 +316,18 @@ const CheckoutScreen = ({ navigation, route }) => {
       finalOut = new Date(finalIn.getTime() + 24 * 60 * 60 * 1000);
     }
     finalOut.setHours(12, 0, 0, 0);
+    const conflict = getUnavailableDateInStay(finalIn, finalOut);
+    if (availabilityLoading || availabilityError) {
+      showToast('Vui lòng tải được lịch phòng trước khi chọn ngày.', 'error');
+      return;
+    }
+    if (conflict) {
+      showToast(
+        `Ngày ${formatDateVN(conflict.date)} đã ${conflict.status === 'BLOCKED' ? 'bị khóa' : 'được đặt'}.`,
+        'error'
+      );
+      return;
+    }
 
     const diffDays = Math.max(
       1,
@@ -356,16 +458,20 @@ const CheckoutScreen = ({ navigation, route }) => {
         navigation.replace('BookingSuccess', {
           homestay,
           bookingCode: data.bookingCode || '',
+          booking: data.data,
           user,
           token,
           bookingDetails: {
             paymentStatus: data.data?.paymentStatus,
+            status: data.data?.status,
             fullName: fullName.trim(),
             phoneNumber: phoneNumber.trim(),
             email: email.trim(),
             totalAmount: formatVND(data.data?.totalPrice ?? totalAmount),
             checkIn: formatDateVN(checkInDate),
             checkOut: formatDateVN(checkOutDate),
+            checkInAt: checkInDate.toISOString(),
+            checkOutAt: checkOutDate.toISOString(),
             nights,
             guests,
             dates: formatDatesSummary(),
@@ -880,30 +986,56 @@ const CheckoutScreen = ({ navigation, route }) => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+              <View style={styles.availabilityMessage}>
+                {availabilityLoading ? (
+                  <>
+                    <ActivityIndicator size="small" color="#00796B" />
+                    <Text style={styles.availabilityMessageText}>Đang tải ngày đã đặt/đã khóa...</Text>
+                  </>
+                ) : availabilityError ? (
+                  <>
+                    <Text style={[styles.availabilityMessageText, styles.availabilityErrorText]}>
+                      {availabilityError}
+                    </Text>
+                    <TouchableOpacity onPress={() => setAvailabilityRefresh((value) => value + 1)}>
+                      <Text style={styles.availabilityRetryText}>Thử lại</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <Text style={styles.availabilityMessageText}>
+                    Ngày màu xám/đỏ là ngày đã đặt hoặc bị khóa.
+                  </Text>
+                )}
+              </View>
+
               {/* Quick Presets */}
               <Text style={styles.presetSectionTitle}>Chọn nhanh</Text>
               <View style={styles.modalPresetsRow}>
                 <TouchableOpacity
                   style={styles.modalPresetChip}
                   onPress={() => handleQuickPresetDate({ offset: 0, days: 1 })}
+                  disabled={availabilityLoading || !!availabilityError}
                 >
                   <Text style={styles.modalPresetChipText}>Hôm nay (1 đêm)</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalPresetChip}
                   onPress={() => handleQuickPresetDate({ offset: 1, days: 1 })}
+                  disabled={availabilityLoading || !!availabilityError}
                 >
                   <Text style={styles.modalPresetChipText}>Ngày mai (1 đêm)</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalPresetChip}
                   onPress={() => handleQuickPresetDate({ type: 'weekend' })}
+                  disabled={availabilityLoading || !!availabilityError}
                 >
                   <Text style={styles.modalPresetChipText}>Cuối tuần này</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.modalPresetChip}
                   onPress={() => handleQuickPresetDate({ offset: 1, days: 2 })}
+                  disabled={availabilityLoading || !!availabilityError}
                 >
                   <Text style={styles.modalPresetChipText}>3 ngày 2 đêm</Text>
                 </TouchableOpacity>
@@ -923,6 +1055,7 @@ const CheckoutScreen = ({ navigation, route }) => {
                 <View style={styles.calDaysGrid}>
                   {calendarDays.map((date, idx) => {
                     const time = date.getTime();
+                    const unavailableStatus = unavailableDates[toCalendarDateKey(date)];
                     const isStart = tempCheckIn && tempCheckIn.getTime() === time;
                     const isEnd = tempCheckOut && tempCheckOut.getTime() === time;
                     const isInRange =
@@ -938,8 +1071,10 @@ const CheckoutScreen = ({ navigation, route }) => {
                           styles.calDayCell,
                           isInRange && styles.calDayInRange,
                           (isStart || isEnd) && styles.calDaySelected,
+                          unavailableStatus && styles.calDayUnavailable,
                         ]}
                         onPress={() => handleSelectCalendarDate(date)}
+                        disabled={availabilityLoading || !!availabilityError || !!unavailableStatus}
                         activeOpacity={0.7}
                       >
                         <Text
@@ -947,6 +1082,7 @@ const CheckoutScreen = ({ navigation, route }) => {
                             styles.calDayNum,
                             isInRange && styles.calDayNumInRange,
                             (isStart || isEnd) && styles.calDayNumSelected,
+                            unavailableStatus && styles.calDayNumUnavailable,
                           ]}
                         >
                           {date.getDate()}
@@ -955,9 +1091,12 @@ const CheckoutScreen = ({ navigation, route }) => {
                           style={[
                             styles.calDayMonth,
                             (isStart || isEnd) && styles.calDayMonthSelected,
+                            unavailableStatus && styles.calDayStatusUnavailable,
                           ]}
                         >
-                          Th{date.getMonth() + 1}
+                          {unavailableStatus
+                            ? unavailableStatus === 'BLOCKED' ? 'Khóa' : 'Đặt'
+                            : `Th${date.getMonth() + 1}`}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -978,9 +1117,10 @@ const CheckoutScreen = ({ navigation, route }) => {
                 style={[
                   styles.dateApplyBtn,
                   !tempCheckIn && { backgroundColor: '#CBD5E0' },
+                  (availabilityLoading || !!availabilityError) && { backgroundColor: '#CBD5E0' },
                 ]}
                 onPress={handleApplyDates}
-                disabled={!tempCheckIn}
+                disabled={!tempCheckIn || availabilityLoading || !!availabilityError}
               >
                 <Text style={styles.dateApplyBtnText}>Áp dụng ngày</Text>
               </TouchableOpacity>
@@ -1764,6 +1904,26 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
+  availabilityMessage: {
+    minHeight: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  availabilityMessageText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#718096',
+  },
+  availabilityErrorText: {
+    color: '#C53030',
+  },
+  availabilityRetryText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#00796B',
+  },
   modalPresetChip: {
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -1813,6 +1973,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 2,
   },
+  calDayUnavailable: {
+    backgroundColor: '#FED7D7',
+  },
   calDayInRange: {
     backgroundColor: '#E6FFFA',
     borderRadius: 0,
@@ -1826,6 +1989,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2D3748',
   },
+  calDayNumUnavailable: {
+    color: '#9B2C2C',
+    textDecorationLine: 'line-through',
+  },
   calDayNumInRange: {
     color: '#00796B',
   },
@@ -1836,6 +2003,10 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#A0AEC0',
     marginTop: 1,
+  },
+  calDayStatusUnavailable: {
+    color: '#9B2C2C',
+    fontWeight: '700',
   },
   calDayMonthSelected: {
     color: 'rgba(255, 255, 255, 0.85)',

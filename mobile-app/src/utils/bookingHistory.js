@@ -37,6 +37,51 @@ export const formatBookingHistory = (bookings) => bookings.map((booking) => {
   };
 });
 
+const parseBookingDate = (value) => {
+  if (!value) return null;
+  const vietnameseDate = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  if (vietnameseDate) {
+    return new Date(Number(vietnameseDate[3]), Number(vietnameseDate[2]) - 1, Number(vietnameseDate[1]), 14);
+  }
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date : null;
+};
+
+const parseFormattedPrice = (value) => {
+  if (typeof value === 'number') return value;
+  if (!value) return 0;
+  const digits = String(value).replace(/\D/g, '');
+  return digits ? Number(digits) : 0;
+};
+
+export const recentBookingRecord = (recentBooking) => {
+  const booking = recentBooking?.booking || {};
+  const details = recentBooking?.bookingDetails || {};
+  const bookingCode = recentBooking?.bookingCode || booking.bookingCode;
+  if (!bookingCode) return null;
+
+  const checkIn = booking.checkIn || details.checkInAt || parseBookingDate(details.checkIn);
+  const checkOut = booking.checkOut || details.checkOutAt || parseBookingDate(details.checkOut);
+  if (!checkIn || !checkOut) return null;
+
+  return {
+    ...booking,
+    _id: booking._id || recentBooking.bookingId || `visitor-${bookingCode}`,
+    bookingCode,
+    roomId: recentBooking.homestay || booking.roomId || {},
+    fullName: booking.fullName || details.fullName || '',
+    phoneNumber: booking.phoneNumber || details.phoneNumber || '',
+    email: booking.email || details.email || '',
+    checkIn,
+    checkOut,
+    nights: booking.nights ?? details.nights ?? 1,
+    guests: booking.guests ?? details.guests ?? 1,
+    totalPrice: booking.totalPrice ?? parseFormattedPrice(details.totalAmount),
+    status: booking.status || recentBooking.bookingStatus || 'PENDING',
+    paymentStatus: booking.paymentStatus || details.paymentStatus || 'UNPAID',
+  };
+};
+
 export const nextUpcomingBooking = (bookings, now = Date.now()) => bookings
   .filter(booking => ['PENDING', 'CONFIRMED', 'CHECKED_IN'].includes(booking.status) && booking.checkOutTime > now)
   .sort((a, b) => a.checkInTime - b.checkInTime)[0] || null;

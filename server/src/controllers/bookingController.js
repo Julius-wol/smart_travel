@@ -2,7 +2,126 @@ import mongoose from 'mongoose';
 import Booking from '../models/Booking.js';
 import Room from '../models/Room.js';
 import RoomAvailability from '../models/RoomAvailability.js';
+import RoomBlock from '../models/RoomBlock.js';
 import { findGuestBookingConflict, GUEST_BOOKING_CONFLICT, validStayDates } from '../services/bookingConflictService.js';
+import { publishCalendarChange } from '../services/calendarEvents.js';
+
+const BOOKING_TIME_ZONE = 'Asia/Ho_Chi_Minh';
+
+const calendarDayKey = (date) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: BOOKING_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+};
+
+const calendarDate = (dayKey) => new Date(`${dayKey}T00:00:00.000Z`);
+
+const shiftCalendarDay = (dayKey, amount) => {
+  const date = calendarDate(dayKey);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+};
+
+const isCalendarDayKey = (value) => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = calendarDate(value);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+};
+
+const stayCalendarRange = (checkIn, checkOut) => {
+  const startKey = calendarDayKey(checkIn);
+  const endKey = calendarDayKey(checkOut);
+  if (startKey >= endKey) return null;
+
+  const dates = [];
+  for (let date = calendarDate(startKey); date < calendarDate(endKey); date.setUTCDate(date.getUTCDate() + 1)) {
+    dates.push(new Date(date));
+  }
+  return {
+    start: calendarDate(startKey),
+    end: calendarDate(endKey),
+    dates,
+  };
+};
+
+export const getRoomAvailability = async (req, res) => {
+  try {
+    const { roomId, startDate, endDateExclusive } = req.query;
+    if (!mongoose.isValidObjectId(roomId) ||
+      !isCalendarDayKey(startDate) ||
+      !isCalendarDayKey(endDateExclusive) ||
+      startDate >= endDateExclusive) {
+      return res.status(400).json({ success: false, message: 'Thông tin phòng hoặc khoảng ngày không hợp lệ.' });
+    }
+
+    const dayCount = (calendarDate(endDateExclusive) - calendarDate(startDate)) / 86400000;
+    if (dayCount > 60) {
+      return res.status(400).json({ success: false, message: 'Khoảng ngày yêu cầu quá dài.' });
+    }
+    const room = await Room.findById(roomId).select('_id');
+    if (!room) return res.status(404).json({ success: false, message: 'Không tìm thấy phòng.' });
+
+    const start = calendarDate(startDate);
+    const end = calendarDate(endDateExclusive);
+    const firstCheckoutBoundary = calendarDate(shiftCalendarDay(startDate, 1));
+    const bookingEnd = new Date(`${endDateExclusive}T00:00:00.000+07:00`);
+    const [bookings, availability, legacyBlocks] = await Promise.all([
+      Booking.find({
+        roomId,
+        status: { $in: ['PENDING', 'CONFIRMED', 'CHECKED_IN', 'COMPLETED'] },
+        checkIn: { $lt: bookingEnd },
+        checkOut: { $gte: firstCheckoutBoundary },
+      }).select('checkIn checkOut status').lean(),
+      RoomAvailability.find({
+        roomId,
+        date: { $gte: start, $lt: end },
+        status: { $in: ['BOOKED', 'BLOCKED', 'PENDING'] },
+      }).select('date status').lean(),
+      RoomBlock.find({
+        roomId,
+        startDate: { $lt: end },
+        endDate: { $gte: start },
+      }).select('startDate endDate').lean(),
+    ]);
+
+    const unavailable = new Map();
+    for (const item of availability) {
+      unavailable.set(calendarDayKey(item.date), item.status === 'BLOCKED' ? 'BLOCKED' : 'BOOKED');
+    }
+    for (const booking of bookings) {
+      const checkIn = calendarDayKey(booking.checkIn);
+      const checkOut = calendarDayKey(booking.checkOut);
+      for (let date = checkIn; date < checkOut; date = shiftCalendarDay(date, 1)) {
+        if (date >= startDate && date < endDateExclusive) unavailable.set(date, 'BOOKED');
+      }
+    }
+    for (const block of legacyBlocks) {
+      const blockStart = calendarDayKey(block.startDate);
+      const blockEnd = calendarDayKey(block.endDate);
+      for (let date = blockStart; date <= blockEnd; date = shiftCalendarDay(date, 1)) {
+        if (date >= startDate && date < endDateExclusive) unavailable.set(date, 'BLOCKED');
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        roomId: String(room._id),
+        unavailableDates: [...unavailable.entries()]
+          .sort(([left], [right]) => left.localeCompare(right))
+          .map(([date, status]) => ({ date, status })),
+      },
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy lịch khả dụng của phòng:', error);
+    return res.status(500).json({ success: false, message: 'Không thể tải lịch khả dụng của phòng.' });
+  }
+};
 
 // Helper chuẩn hóa phương thức thanh toán
 const normalizePaymentMethod = (method) => {
@@ -67,6 +186,10 @@ export const createBooking = async (req, res) => {
     if (!validStayDates(startDate, endDate)) {
       return res.status(400).json({ success: false, message: 'Ngày nhận/trả phòng không hợp lệ.' });
     }
+    const calendarRange = stayCalendarRange(startDate, endDate);
+    if (!calendarRange) {
+      return res.status(400).json({ success: false, message: 'Ngày nhận/trả phòng không hợp lệ.' });
+    }
     const accountId = req.user?._id || userId;
     const guestConflict = await findGuestBookingConflict({
       userId: accountId,
@@ -92,15 +215,32 @@ export const createBooking = async (req, res) => {
     const availabilityConflict = await RoomAvailability.findOne({
       roomId: targetRoomId,
       status: { $in: ['BOOKED', 'BLOCKED'] },
-      date: { $gte: startDate, $lt: endDate }
+      date: { $gte: calendarRange.start, $lt: calendarRange.end }
     });
 
-    if (existingConflict || availabilityConflict) {
+    const legacyBlockConflict = await RoomBlock.findOne({
+      roomId: targetRoomId,
+      startDate: { $lt: calendarRange.end },
+      endDate: { $gte: calendarRange.start }
+    });
+
+    if (availabilityConflict || legacyBlockConflict) {
       return res.status(409).json({
         success: false,
+        available: false,
+        conflict: true,
+        code: 'ROOM_BLOCKED',
+        message: 'Phòng đã bị chủ nhà khóa trong một hoặc nhiều ngày bạn chọn. Vui lòng thay đổi ngày hoặc chọn phòng khác.',
+      });
+    }
+
+    if (existingConflict) {
+      return res.status(409).json({
+        success: false,
+        available: false,
         conflict: true,
         code: 'CR_BOOK_07',
-        message: 'Rất tiếc, phòng này vừa được khách khác đặt hoặc chủ nhà đã khóa lịch trong khoảng thời gian bạn chọn. Vui lòng chọn ngày khác hoặc phòng tương đương.',
+        message: 'Phòng đã có đơn đặt trong một hoặc nhiều ngày bạn chọn. Vui lòng thay đổi ngày hoặc chọn phòng khác.',
       });
     }
 
@@ -119,7 +259,7 @@ export const createBooking = async (req, res) => {
       ? accountId
       : undefined;
 
-    // Tạo bản ghi đặt phòng mới với trạng thái PENDING để Host xét duyệt
+    // Confirm the room reservation immediately; payment remains a separate state.
     const pricePerNight = Number(room.pricePerNight ?? room.regularPrice ?? room.price);
     if (!Number.isFinite(pricePerNight) || pricePerNight <= 0) {
       return res.status(400).json({ success: false, message: 'Phòng chưa có giá hợp lệ.' });
@@ -144,41 +284,42 @@ export const createBooking = async (req, res) => {
       pricePerNight,
       totalPrice: pricePerNight * actualNights,
       paymentStatus: 'UNPAID',
-      status: 'PENDING',
+      status: 'CONFIRMED',
     });
 
     // Tự động khóa lịch phòng trong RoomAvailability cho từng ngày lưu trú
+    const reserved = [];
     try {
-      const currentDate = new Date(startDate);
-      const datesToBlock = [];
-      while (currentDate < endDate) {
-        datesToBlock.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 1);
+      for (const date of calendarRange.dates) {
+        const existing = await RoomAvailability.findOne({ roomId: targetRoomId, date });
+        const result = await RoomAvailability.findOneAndUpdate(
+          { roomId: targetRoomId, date, status: { $nin: ['BOOKED', 'BLOCKED', 'PENDING'] } },
+          { $set: { status: 'BOOKED', bookingId: newBooking._id } },
+          { upsert: true, new: true }
+        );
+        reserved.push({ id: result._id, existed: !!existing });
       }
-
-      await Promise.all(
-        datesToBlock.map((d) =>
-          RoomAvailability.findOneAndUpdate(
-            { roomId: targetRoomId, date: d },
-            {
-              $set: {
-                status: 'BOOKED',
-                bookingId: newBooking._id,
-              },
-            },
-            { upsert: true, returnDocument: 'after' }
-          )
-        )
-      );
     } catch (availErr) {
-      console.warn('⚠️ Lỗi khi cập nhật RoomAvailability:', availErr.message);
+      for (const item of reserved.reverse()) {
+        if (item.existed) await RoomAvailability.updateOne({ _id: item.id, bookingId: newBooking._id }, {
+          $set: { status: 'AVAILABLE' }, $unset: { bookingId: '' },
+        });
+        else await RoomAvailability.deleteOne({ _id: item.id, bookingId: newBooking._id });
+      }
+      await Booking.deleteOne({ _id: newBooking._id });
+      if (availErr.code === 11000) return res.status(409).json({
+        success: false, conflict: true, code: 'CR_BOOK_07',
+        message: 'Lịch phòng vừa thay đổi. Vui lòng chọn ngày khác.',
+      });
+      throw availErr;
     }
 
+    publishCalendarChange(room.ownerId, targetRoomId);
     console.log(`✅ Đã tạo đơn đặt phòng thành công: ${bookingCode} cho khách: ${contactName} (${actualNights} đêm)`);
 
     return res.status(201).json({
       success: true,
-      message: 'Đã gửi yêu cầu đặt phòng.',
+      message: 'Đặt phòng đã được xác nhận.',
       bookingCode,
       data: newBooking,
     });
@@ -207,6 +348,10 @@ export const checkAvailability = async (req, res) => {
     if (!validStayDates(startDate, endDate)) {
       return res.status(400).json({ success: false, message: 'Ngày nhận/trả phòng không hợp lệ.' });
     }
+    const calendarRange = stayCalendarRange(startDate, endDate);
+    if (!calendarRange) {
+      return res.status(400).json({ success: false, message: 'Ngày nhận/trả phòng không hợp lệ.' });
+    }
     const guestConflict = await findGuestBookingConflict({
       userId: req.user?._id || req.query.userId,
       emails: [req.user?.email, req.query.email],
@@ -227,14 +372,30 @@ export const checkAvailability = async (req, res) => {
     const availabilityConflict = await RoomAvailability.findOne({
       roomId,
       status: { $in: ['BOOKED', 'BLOCKED'] },
-      date: { $gte: startDate, $lt: endDate }
+      date: { $gte: calendarRange.start, $lt: calendarRange.end }
     });
 
-    const isAvailable = !conflictingBooking && !availabilityConflict;
+    const legacyBlockConflict = await RoomBlock.findOne({
+      roomId,
+      startDate: { $lt: calendarRange.end },
+      endDate: { $gte: calendarRange.start }
+    });
+
+    const isAvailable = !conflictingBooking && !availabilityConflict && !legacyBlockConflict;
+    const roomIsBlocked = Boolean(availabilityConflict || legacyBlockConflict);
 
     return res.status(200).json({
       success: true,
       available: isAvailable,
+      ...(roomIsBlocked ? {
+        conflict: true,
+        code: 'ROOM_BLOCKED',
+        message: 'Phòng đã bị chủ nhà khóa trong một hoặc nhiều ngày bạn chọn. Vui lòng thay đổi ngày hoặc chọn phòng khác.',
+      } : conflictingBooking ? {
+        conflict: true,
+        code: 'CR_BOOK_07',
+        message: 'Phòng đã có đơn đặt trong một hoặc nhiều ngày bạn chọn. Vui lòng thay đổi ngày hoặc chọn phòng khác.',
+      } : {}),
       conflictBooking: conflictingBooking
         ? {
             bookingCode: conflictingBooking.bookingCode,
@@ -257,8 +418,7 @@ export const getBookingByCode = async (req, res) => {
   try {
     const { code } = req.params;
     const booking = await Booking.findOne({ bookingCode: code.toUpperCase() })
-      .populate('roomId')
-      .populate('hostId', 'fullName name phone email hostProfile');
+      .populate('roomId');
 
     if (!booking) {
       return res.status(404).json({
@@ -294,7 +454,6 @@ export const getMyBookings = async (req, res) => {
 
     const bookings = await Booking.find(query)
       .populate('roomId')
-      .populate('hostId', 'fullName name phone email hostProfile')
       .sort({ createdAt: -1 });
 
     return res.status(200).json({

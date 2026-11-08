@@ -30,7 +30,13 @@ beforeEach(() => {
   ];
   jest.spyOn(User, 'findById').mockReturnValue({ select: async () => ({ _id: accountId, email: 'host@example.com', role: 'HOST' }) });
   jest.spyOn(Booking, 'find').mockImplementation(query => {
-    const chain = { populate: () => chain, sort: async () => records.filter(record => matches(record, query)) };
+    const chain = {
+      populate: jest.fn(path => {
+        if (path === 'hostId') throw new Error(`Cannot populate path ${path}`);
+        return chain;
+      }),
+      sort: async () => records.filter(record => matches(record, query)),
+    };
     return chain;
   });
 });
@@ -48,6 +54,9 @@ test('personal bookings and legacy email bookings are returned for the authentic
   const response = await request(app).get('/bookings/my-bookings').set('Authorization', `Bearer ${token}`);
   expect(response.body.count).toBe(2);
   expect(response.body.data.map(record => record.bookingCode)).toEqual(['OWN-BOOKING', 'LEGACY-BOOKING']);
+  const queryChain = Booking.find.mock.results[0].value;
+  expect(queryChain.populate).toHaveBeenCalledWith('roomId');
+  expect(queryChain.populate).not.toHaveBeenCalledWith('hostId');
 });
 
 test('query parameters cannot switch to another account history', async () => {

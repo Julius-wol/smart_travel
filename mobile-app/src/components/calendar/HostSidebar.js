@@ -4,13 +4,8 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
 
 const MENU_ITEMS = [
-  { id: 'overview', title: 'Tổng quan', icon: 'view-grid-outline' },
-  { id: 'rooms', title: 'Quản lý phòng', icon: 'bed-outline' },
-  { id: 'bookings', title: 'Đơn đặt phòng', icon: 'calendar-check-outline', badge: 2 },
   { id: 'calendar', title: 'Lịch phòng & Giá', icon: 'calendar-month-outline' },
-  { id: 'reviews', title: 'Đánh giá & Phản hồi', icon: 'star-outline' },
-  { id: 'revenue', title: 'Doanh thu & Rút tiền', icon: 'cash-multiple' },
-  { id: 'settings', title: 'Cài đặt cơ sở lưu trú', icon: 'tune-variant' },
+  { id: 'profile', title: 'Tài khoản', icon: 'account-circle-outline' },
 ];
 
 const HostSidebar = ({ activeId = 'calendar', onNavigate }) => {

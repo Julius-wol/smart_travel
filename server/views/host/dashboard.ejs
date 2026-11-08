@@ -797,107 +797,45 @@
       line-height: 1.5;
       margin-top: 4px;
     }
+
+    .dashboard-empty-state {
+      padding: 28px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      border: 1px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      background: #fbfdff;
+    }
+
+    .dashboard-empty-state strong {
+      display: block;
+      color: var(--text-heading);
+      margin-bottom: 5px;
+    }
+
+    .guest-note {
+      color: var(--text-muted);
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .review-box { display: block; color: inherit; text-decoration: none; }
+    .review-box:hover .rev-author { color: var(--primary); }
+    .review-date { color: var(--text-muted); font-size: 11px; }
+  </style>
+  <link rel="stylesheet" href="/host/css/host.css">
+  <style>
+    body { display: block; }
+    .host-layout { width: 100%; }
+    .host-sidebar { padding: 0; }
+    .content-area { padding: 0 36px 40px; }
   </style>
 </head>
 <body>
-
-  <!-- ============================================================
-       1. HOST SIDEBAR (HostSidebar.js)
-       ============================================================ -->
-  <aside class="host-sidebar">
-    <!-- Brand Header -->
-    <div class="brand-container">
-      <div class="logo-icon-box">🏡</div>
-      <div class="brand-text-col">
-        <span class="brand-title">Smart Travel</span>
-        <span class="brand-subtitle">HOST PORTAL</span>
-      </div>
-    </div>
-
-    <!-- Section Header -->
-    <div class="section-title">QUẢN TRỊ CƠ SỞ</div>
-
-    <!-- Menu List -->
-    <div class="menu-list">
-      <a href="/host/dashboard" class="menu-item active">
-        <span class="menu-icon">📊</span>
-        <span>Tổng quan</span>
-      </a>
-      <a href="#roomSection" class="menu-item">
-        <span class="menu-icon">🏨</span>
-        <span>Quản lý phòng</span>
-      </a>
-      <a href="javascript:void(0)" class="menu-item">
-        <span class="menu-icon">📑</span>
-        <span>Đơn đặt phòng</span>
-        <span class="badge-pill">2</span>
-      </a>
-      <a href="/host/calendar" class="menu-item">
-        <span class="menu-icon">📅</span>
-        <span>Lịch phòng & Giá</span>
-      </a>
-      <a href="#reviewsSection" class="menu-item">
-        <span class="menu-icon">⭐</span>
-        <span>Đánh giá & Phản hồi</span>
-      </a>
-      <a href="#" class="menu-item" onclick="alert('Tính năng Doanh thu & Rút tiền đang phát triển')">
-        <span class="menu-icon">💰</span>
-        <span>Doanh thu & Rút tiền</span>
-      </a>
-      <a href="#" class="menu-item" onclick="alert('Tính năng Cài đặt cơ sở lưu trú đang phát triển')">
-        <span class="menu-icon">⚙️</span>
-        <span>Cài đặt cơ sở lưu trú</span>
-      </a>
-    </div>
-
-    <!-- Bottom Help -->
-    <div class="bottom-help-container">
-      <a href="#" class="bottom-help-btn" onclick="alert('Hotline hỗ trợ đối tác Host: 1900 6868')">
-        <span class="menu-icon">❓</span>
-        <span>Trợ giúp & Hỗ trợ</span>
-      </a>
-    </div>
-  </aside>
-
-  <!-- ============================================================
-       2. MAIN CONTENT (HostDashboardScreen.js)
-       ============================================================ */
-  -->
-  <main class="host-main">
-    <!-- Host Top Navigation -->
-    <header class="top-nav">
-      <div class="breadcrumb-text">
-        Tổng quan • Smart Travel Host Portal
-      </div>
-
-      <div class="right-actions">
-        <!-- Language Switcher -->
-        <div class="lang-switch-pill">
-          <span class="lang-active">VN</span>
-          <span class="lang-divider">|</span>
-          <span class="lang-inactive">EN</span>
-        </div>
-
-        <!-- Notification Bell -->
-        <div class="icon-btn" onclick="alert('Bạn có 1 thông báo đơn đặt phòng mới!')">
-          🔔
-          <div class="notif-dot"></div>
-        </div>
-
-        <!-- User Profile Chip -->
-        <div class="user-profile-chip">
-          <div class="user-avatar"><%= (typeof hostUser !== 'undefined' && hostUser?.initials) ? hostUser.initials : 'H' %></div>
-          <div class="user-info-col">
-            <div class="user-name-text">
-              <span><%= (typeof hostUser !== 'undefined' && hostUser?.name) ? hostUser.name : 'Chủ cơ sở Homestay' %></span>
-              <span style="color: var(--primary);">✓</span>
-            </div>
-            <span class="user-email-text"><%= (typeof hostUser !== 'undefined' && hostUser?.email) ? hostUser.email : 'host@smarttravel.vn' %></span>
-          </div>
-        </div>
-      </div>
-    </header>
-
+  <div class="host-layout">
+  <%- include('partials/sidebar', { activeNav: 'dashboard' }) %>
+  <main class="host-main-container">
+    <%- include('partials/header', { user, breadcrumbMain: 'Tổng quan', breadcrumbHref: '/host/dashboard' }) %>
     <!-- Workspace Content Area -->
     <div class="content-area">
       <!-- 1. Header Chào Mừng, Bộ Lọc & Nút Xuất Báo Cáo (HostDashboardHeader.js) -->
@@ -907,8 +845,9 @@
           <p class="greeting-subtext">Đây là tình hình kinh doanh của bạn hôm nay</p>
         </div>
 
-        <div class="header-controls">
-          <select class="period-dropdown" onchange="window.location.href='/host?period=' + this.value">
+        <form class="header-controls" action="/host/dashboard" method="get">
+          <input type="hidden" name="roomId" value="<%= chartRoomId %>">
+          <select class="period-dropdown" name="period" aria-label="Lọc kỳ Dashboard" onchange="this.form.submit()">
             <option value="TODAY" <%= period === 'TODAY' ? 'selected' : '' %>>Hôm nay</option>
             <option value="7_DAYS" <%= period === '7_DAYS' ? 'selected' : '' %>>7 ngày qua</option>
             <option value="30_DAYS" <%= period === '30_DAYS' ? 'selected' : '' %>>30 ngày qua</option>
@@ -916,11 +855,23 @@
             <option value="LAST_MONTH" <%= period === 'LAST_MONTH' ? 'selected' : '' %>>Tháng trước</option>
           </select>
 
-          <button class="btn-export" onclick="alert('Đang kết xuất báo cáo kinh doanh ra file Excel, quá trình tải xuống sẽ bắt đầu ngay. (DASH-EXPORT-SUCCESS)')">
+          <a id="exportDashboard" class="btn-export" href="/host/dashboard/export?period=<%= encodeURIComponent(period) %>">
             📥 Xuất báo cáo
-          </button>
-        </div>
+          </a>
+        </form>
       </div>
+
+      <% if (isNewHost) { %>
+        <div class="dashboard-empty-state" role="status" data-state="DASH-NEW-HOST">
+          <strong>Chào mừng bạn đến với Smart Travel!</strong>
+          Hãy tạo phòng và nhận đặt phòng đầu tiên để bắt đầu theo dõi hoạt động kinh doanh.
+        </div>
+      <% } else if (!hasPeriodActivity) { %>
+        <div class="dashboard-empty-state" role="status" data-state="DASH-EMPTY-DATA">
+          <strong>Kỳ này chưa có giao dịch</strong>
+          Các chỉ số doanh thu và đơn mới đang hiển thị theo đúng kỳ đã chọn.
+        </div>
+      <% } %>
 
       <!-- 2. SLA Alert Banner (HostSlaAlertBanner.js) -->
       <% if (typeof slaAlert !== 'undefined' && slaAlert && slaAlert.hasPending) { %>
@@ -928,11 +879,11 @@
           <div class="sla-left">
             <span class="sla-icon">⚠️</span>
             <div class="sla-msg">
-              <strong>Yêu cầu đặt phòng cần duyệt gấp trong 24h!</strong>
+              <strong><%= slaAlert.urgentExpireHours > 0 ? `Đơn cần duyệt trong ${slaAlert.urgentExpireHours} giờ` : 'Có đơn đặt phòng đã quá hạn duyệt' %></strong>
               <p><%= slaAlert.message %></p>
             </div>
           </div>
-          <a href="javascript:void(0)" class="sla-link">
+          <a href="/host/bookings?tab=pending" class="sla-link">
             Chuyển tới Duyệt đơn →
           </a>
         </div>
@@ -948,7 +899,7 @@
           </div>
           <div class="kpi-big-value"><%= kpis.revenue.formatted %></div>
           <div class="kpi-foot-text">
-            <span class="kpi-badge-pill">✓ Hoàn tất</span>
+            <span class="kpi-badge-pill">✓ Đã xác nhận</span>
             <span><%= kpis.revenue.subtext %></span>
           </div>
         </div>
@@ -993,11 +944,11 @@
       </div>
 
       <!-- 4. Biểu Đồ Doanh Thu & Xu Hướng (HostRevenueTrendChart.js) -->
-      <div class="chart-panel">
+      <div class="chart-panel" id="revenueSection">
         <div class="chart-panel-header">
           <div class="chart-heading-text">
             <h3>Biểu đồ doanh thu & xu hướng<br>đặt phòng</h3>
-            <p>Doanh thu theo ngày trong 30 ngày qua</p>
+            <p>Dữ liệu theo ngày trong kỳ đang chọn</p>
           </div>
 
           <div class="chart-panel-controls">
@@ -1006,31 +957,38 @@
               <button class="mode-btn" id="btnCount" onclick="toggleChartMode('COUNT')">Số đơn</button>
             </div>
 
-            <select class="period-dropdown" style="padding: 5px 10px; font-size: 12px;">
+            <select class="period-dropdown" aria-label="Lọc phòng biểu đồ" style="padding: 5px 10px; font-size: 12px;"
+              onchange="window.location.href='/host/dashboard?period=<%= encodeURIComponent(period) %>&roomId=' + encodeURIComponent(this.value)">
               <option value="ALL">Tất cả <%= (typeof hostRooms !== 'undefined' && hostRooms) ? hostRooms.length : 0 %> phòng</option>
               <% ((typeof hostRooms !== 'undefined' && hostRooms) ? hostRooms : []).forEach(function(r) { %>
-                <option value="<%= r._id %>"><%= r.title %></option>
+                <option value="<%= r._id %>" <%= String(r._id) === chartRoomId ? 'selected' : '' %>><%= r.title %></option>
               <% }); %>
             </select>
           </div>
         </div>
 
         <div class="chart-container-box">
-          <!-- Floating Dark Tooltip Card (Thiết kế đồng bộ 100% với UI Mobile / Figma) -->
-          <div id="chartTooltipCard" class="chart-custom-tooltip">
-            <div class="tooltip-date" id="ttDate">15/10/2026</div>
-            <div class="tooltip-val" id="ttVal">5.000.000 đ</div>
-            <div class="tooltip-details">
-              <span class="tooltip-dot"></span>
-              <span id="ttDesc">2 đơn (Villa Mộng Mơ & Ocean View)</span>
+          <% if (chartTimeline.some(day => day.revenue > 0 || day.bookingsCount > 0)) { %>
+            <div id="chartTooltipCard" class="chart-custom-tooltip">
+              <div class="tooltip-date" id="ttDate"><%= chartTimeline[chartTimeline.length - 1].fullDate %></div>
+              <div class="tooltip-val" id="ttVal"><%= new Intl.NumberFormat('vi-VN').format(chartTimeline[chartTimeline.length - 1].revenue) %> đ</div>
+              <div class="tooltip-details">
+                <span class="tooltip-dot"></span>
+                <span id="ttDesc"><%= chartTimeline[chartTimeline.length - 1].revenueBookingsCount %> đơn check-in trong ngày</span>
+              </div>
             </div>
-          </div>
-          <canvas id="revChart"></canvas>
+            <canvas id="revChart"></canvas>
+          <% } else { %>
+            <div class="dashboard-empty-state" role="status" data-state="DASH-EMPTY-DATA">
+              <strong>Không có dữ liệu biểu đồ trong kỳ này</strong>
+              Chọn kỳ khác hoặc phòng khác để xem hoạt động.
+            </div>
+          <% } %>
         </div>
 
         <div class="chart-stat-footer">
-          <div>🟢 Trung bình ngày: <strong><%= (typeof chartSummary !== 'undefined' && chartSummary?.dailyAverageFormatted) ? chartSummary.dailyAverageFormatted : '1.506.000 đ' %></strong></div>
-          <div>🟣 Đỉnh doanh thu: <strong><%= (typeof chartSummary !== 'undefined' && chartSummary?.peakRevenueFormatted) ? chartSummary.peakRevenueFormatted : '7.500.000 đ' %></strong> (Ngày <%= (typeof chartSummary !== 'undefined' && chartSummary?.peakDate) ? chartSummary.peakDate : '20/10' %>)</div>
+          <div>🟢 Trung bình ngày: <strong><%= chartSummary.dailyAverageFormatted %></strong></div>
+          <div>🟣 Đỉnh doanh thu: <strong><%= chartSummary.peakRevenueFormatted %></strong><%= chartSummary.peakDate ? ` (Ngày ${chartSummary.peakDate})` : '' %></div>
         </div>
       </div>
 
@@ -1051,6 +1009,9 @@
           </div>
 
           <div class="sub-panel-body" id="schedToday">
+            <% if (!schedule.today.checkIns.length && !schedule.today.checkOuts.length) { %>
+              <div class="dashboard-empty-state">Hôm nay chưa có lịch nhận hoặc trả phòng.</div>
+            <% } %>
             <% schedule.today.checkIns.forEach(function(g) { %>
               <div class="guest-item">
                 <div class="guest-left">
@@ -1058,6 +1019,7 @@
                   <div class="guest-info">
                     <strong><%= g.guestName %></strong>
                     <p><%= g.roomTitle %> • <%= g.phoneMasked %></p>
+                    <% if (g.note) { %><p class="guest-note">Ghi chú: <%= g.note %></p><% } %>
                   </div>
                 </div>
                 <span class="time-badge in">Nhận phòng 14:00</span>
@@ -1071,6 +1033,7 @@
                   <div class="guest-info">
                     <strong><%= g.guestName %></strong>
                     <p><%= g.roomTitle %> • <%= g.phoneMasked %></p>
+                    <% if (g.note) { %><p class="guest-note">Ghi chú: <%= g.note %></p><% } %>
                   </div>
                 </div>
                 <span class="time-badge out">Trả phòng 12:00</span>
@@ -1079,6 +1042,9 @@
           </div>
 
           <div class="sub-panel-body" id="schedTomorrow" style="display: none;">
+            <% if (!schedule.tomorrow.checkIns.length && !schedule.tomorrow.checkOuts.length) { %>
+              <div class="dashboard-empty-state">Ngày mai chưa có lịch nhận hoặc trả phòng.</div>
+            <% } %>
             <% schedule.tomorrow.checkIns.forEach(function(g) { %>
               <div class="guest-item">
                 <div class="guest-left">
@@ -1086,6 +1052,7 @@
                   <div class="guest-info">
                     <strong><%= g.guestName %></strong>
                     <p><%= g.roomTitle %> • <%= g.phoneMasked %></p>
+                    <% if (g.note) { %><p class="guest-note">Ghi chú: <%= g.note %></p><% } %>
                   </div>
                 </div>
                 <span class="time-badge in">Nhận phòng 14:00</span>
@@ -1099,6 +1066,7 @@
                   <div class="guest-info">
                     <strong><%= g.guestName %></strong>
                     <p><%= g.roomTitle %> • <%= g.phoneMasked %></p>
+                    <% if (g.note) { %><p class="guest-note">Ghi chú: <%= g.note %></p><% } %>
                   </div>
                 </div>
                 <span class="time-badge out">Trả phòng 12:00</span>
@@ -1110,32 +1078,72 @@
         <!-- Khối 2: Đánh Giá Mới Nhất (HostRecentReviews.js) -->
         <div class="sub-panel" id="reviewsSection">
           <div class="sub-panel-head">
-            <h3>Đánh giá mới nhất</h3>
+            <h3><a href="/host/reviews" style="color:inherit;text-decoration:none;">Đánh giá mới nhất</a></h3>
             <span style="font-size: 12px; color: var(--primary); font-weight: 700;">
-              ★ <%= kpis.avgRating.value %> / 5.0
+              <%= kpis.avgRating.value === '--' ? '--' : `★ ${kpis.avgRating.value} / 5.0` %>
             </span>
           </div>
 
           <div class="sub-panel-body">
             <% recentReviews.forEach(function(r) { %>
-              <div class="review-box">
+              <a class="review-box" id="review-<%= r._id %>" href="/host/reviews#review-<%= r._id %>">
                 <div class="rev-top">
                   <span class="rev-author"><%= r.userId?.fullName || 'Khách du lịch' %></span>
                   <span class="rev-stars">
-                    <% for(let i=0; i<Math.round(r.rating || 5); i++) { %>★<% } %>
+                    <% for(let i=0; i<Math.round(r.rating || 0); i++) { %>★<% } %>
                   </span>
                 </div>
                 <div class="rev-room"><%= r.roomId?.title || 'Cơ sở lưu trú' %></div>
-                <p class="rev-text">"<%= r.comment || 'Không gian rất đẹp và sạch sẽ!' %>"</p>
-              </div>
+                <div class="review-date"><%= r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : '' %></div>
+                <p class="rev-text">"<%= r.comment || 'Không có nội dung đánh giá.' %>"</p>
+              </a>
             <% }); %>
+            <% if (!recentReviews.length) { %>
+              <div class="dashboard-empty-state">Chưa có đánh giá nào.</div>
+            <% } %>
+            <% if (recentReviews.length) { %>
+              <a href="/host/reviews" class="review-date">Xem tất cả đánh giá →</a>
+            <% } %>
           </div>
         </div>
       </div>
     </div>
   </main>
+  </div>
+  <script src="/host/js/host.js"></script>
 
   <script>
+    document.getElementById('exportDashboard')?.addEventListener('click', async event => {
+      event.preventDefault();
+      const link = event.currentTarget;
+      link.setAttribute('aria-busy', 'true');
+      try {
+        const response = await fetch(link.href);
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.message || 'Không thể xuất báo cáo Dashboard.');
+        }
+        const blob = await response.blob();
+        if (!blob.size) throw new Error('Tệp báo cáo tải về đang trống.');
+        const filename = /filename="([^"]+)"/i.exec(response.headers.get('Content-Disposition') || '')?.[1]
+          || 'SmartTravel_Dashboard.xlsx';
+        const downloadUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = downloadUrl;
+        downloadLink.download = filename;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+        window.showToast?.('success', 'DASH-EXPORT-SUCCESS', 'Đã xuất báo cáo theo kỳ đang chọn.');
+      } catch (error) {
+        window.showToast?.('error', 'DASH-EXPORT-FAILED', error.message);
+        if (!window.showToast) window.alert(error.message);
+      } finally {
+        link.removeAttribute('aria-busy');
+      }
+    });
+
     // Tab Lịch nhận/trả phòng
     function setSchedTab(tab) {
       document.getElementById('schedToday').style.display = (tab === 'today') ? 'block' : 'none';
@@ -1148,18 +1156,8 @@
     let myChart = null;
     let currentChartMode = 'REV';
 
-    const TIMELINE_DATA = <%- JSON.stringify(typeof chartTimeline !== 'undefined' ? chartTimeline : [
-      { label: '22/09', fullDate: '22/09/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
-      { label: '26/09', fullDate: '26/09/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
-      { label: '30/09', fullDate: '30/09/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
-      { label: '04/10', fullDate: '04/10/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
-      { label: '08/10', fullDate: '08/10/2026', revenue: 0, bookingsCount: 0, details: '0 đơn đặt phòng' },
-      { label: '12/10', fullDate: '12/10/2026', revenue: 200000, bookingsCount: 1, details: '1 đơn (The Muse Studio)' },
-      { label: '16/10', fullDate: '15/10/2026', revenue: 5000000, bookingsCount: 2, details: '2 đơn (Villa Mộng Mơ & Ocean View)' },
-      { label: '20/10', fullDate: '20/10/2026', revenue: 7500000, bookingsCount: 3, details: '3 đơn (An Nhiên Eco & West Lake)', isPeak: true }
-    ]) %>;
-
-    let activePointIndex = 7; // Mặc định hiển thị mốc ngày 20/10
+    const TIMELINE_DATA = <%- JSON.stringify(chartTimeline).replace(/</g, '\\u003c') %>;
+    let activePointIndex = TIMELINE_DATA.length - 1;
 
     // Plugin vẽ đường kẻ dọc nét đứt (Vertical Dashed Guide Line) tại điểm đang chọn giống hình
     const verticalDashedGuidePlugin = {
@@ -1212,7 +1210,7 @@
               pointBackgroundColor: '#00685f',
               pointBorderColor: '#ffffff',
               pointBorderWidth: 2,
-              pointRadius: (context) => (context.dataIndex === 7 ? 4 : 0),
+              pointRadius: (context) => (context.dataIndex === activePointIndex ? 4 : 0),
               pointHoverRadius: 6,
               pointHoverBackgroundColor: '#00685f',
               pointHoverBorderColor: '#ffffff',
@@ -1244,13 +1242,15 @@
                   if (idx !== undefined && TIMELINE_DATA[idx]) {
                     activePointIndex = idx;
                     const item = TIMELINE_DATA[idx];
-                    document.getElementById('ttDate').innerText = item.fullDate || (item.label + '/2026');
+                    document.getElementById('ttDate').innerText = item.fullDate || item.label;
                     if (currentChartMode === 'REV') {
                       document.getElementById('ttVal').innerText = new Intl.NumberFormat('vi-VN').format(item.revenue) + ' đ';
                     } else {
                       document.getElementById('ttVal').innerText = item.bookingsCount + ' đơn';
                     }
-                    document.getElementById('ttDesc').innerText = item.details || (item.bookingsCount + ' đơn đặt phòng');
+                    document.getElementById('ttDesc').innerText = currentChartMode === 'REV'
+                      ? `${item.revenueBookingsCount || 0} đơn check-in trong ngày`
+                      : item.details;
 
                     const chartRect = context.chart.canvas.getBoundingClientRect();
                     const pointX = tooltipModel.caretX;
@@ -1269,9 +1269,9 @@
             scales: {
               y: {
                 min: 0,
-                max: 8000000,
+                beginAtZero: true,
                 ticks: {
-                  stepSize: 2000000,
+                  precision: currentChartMode === 'COUNT' ? 0 : undefined,
                   font: { family: 'Plus Jakarta Sans', size: 12, weight: '500' },
                   color: '#64748b',
                   callback: function(v) {
@@ -1295,13 +1295,10 @@
                     return {
                       family: 'Plus Jakarta Sans',
                       size: 12,
-                      weight: (lbl === '12/10' || lbl === '20/10') ? '700' : '500'
+                      weight: '500'
                     };
                   },
                   color: function(context) {
-                    const lbl = context.tick.label;
-                    if (lbl === '12/10') return '#00685f';
-                    if (lbl === '20/10') return '#4648d4';
                     return '#64748b';
                   },
                   padding: 8
@@ -1327,17 +1324,19 @@
       if (mode === 'REV') {
         myChart.data.datasets[0].label = 'Doanh thu (VNĐ)';
         myChart.data.datasets[0].data = TIMELINE_DATA.map(d => d.revenue);
-        myChart.options.scales.y.max = 8000000;
-        myChart.options.scales.y.ticks.stepSize = 2000000;
-        const cur = TIMELINE_DATA[activePointIndex] || TIMELINE_DATA[7];
+        myChart.options.scales.y.max = undefined;
+        myChart.options.scales.y.ticks.precision = undefined;
+        const cur = TIMELINE_DATA[activePointIndex] || TIMELINE_DATA[TIMELINE_DATA.length - 1];
         document.getElementById('ttVal').innerText = new Intl.NumberFormat('vi-VN').format(cur.revenue) + ' đ';
+        document.getElementById('ttDesc').innerText = `${cur.revenueBookingsCount || 0} đơn check-in trong ngày`;
       } else {
         myChart.data.datasets[0].label = 'Số lượng đơn';
         myChart.data.datasets[0].data = TIMELINE_DATA.map(d => d.bookingsCount);
-        myChart.options.scales.y.max = 4;
-        myChart.options.scales.y.ticks.stepSize = 1;
-        const cur = TIMELINE_DATA[activePointIndex] || TIMELINE_DATA[7];
+        myChart.options.scales.y.max = undefined;
+        myChart.options.scales.y.ticks.precision = 0;
+        const cur = TIMELINE_DATA[activePointIndex] || TIMELINE_DATA[TIMELINE_DATA.length - 1];
         document.getElementById('ttVal').innerText = cur.bookingsCount + ' đơn';
+        document.getElementById('ttDesc').innerText = cur.details;
       }
       myChart.update();
     }
