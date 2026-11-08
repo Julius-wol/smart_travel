@@ -219,13 +219,22 @@ function initMapAndGeocoding() {
   const lngInput = document.getElementById('inputLongitude');
   const coordDisplay = document.getElementById('displayCoordText');
 
-  let initialLat = parseFloat(latInput?.value) || 16.0678;
-  let initialLng = parseFloat(lngInput?.value) || 108.2208;
+  // Parse coords safely - value may be empty string or null for new rooms
+  const rawLat = latInput?.value;
+  const rawLng = lngInput?.value;
+  let initialLat = (rawLat && rawLat !== 'null' && rawLat !== '') ? parseFloat(rawLat) : null;
+  let initialLng = (rawLng && rawLng !== 'null' && rawLng !== '') ? parseFloat(rawLng) : null;
+
+  // Default view: Vietnam center if no coords
+  const hasCoords = initialLat !== null && initialLng !== null && !isNaN(initialLat) && !isNaN(initialLng);
+  const defaultLat = hasCoords ? initialLat : 16.0678;
+  const defaultLng = hasCoords ? initialLng : 108.2208;
+  const defaultZoom = hasCoords ? 15 : 6; // zoomed out to show Vietnam if no coords
 
   // Initialize Leaflet Map
   roomMap = L.map('hostRoomMap', {
     scrollWheelZoom: false
-  }).setView([initialLat, initialLng], 15);
+  }).setView([defaultLat, defaultLng], defaultZoom);
 
   // OpenStreetMap standard tiles (free, reliable, no API key required)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -238,7 +247,9 @@ function initMapAndGeocoding() {
     if (roomMap) roomMap.invalidateSize();
   }, 250);
 
-  // Custom Red Pin Marker
+  // Custom Red Pin Marker - use default center, marker shows actual pin if coords exist
+  const markerLat = hasCoords ? initialLat : defaultLat;
+  const markerLng = hasCoords ? initialLng : defaultLng;
   const customIcon = L.divIcon({
     className: 'custom-pin-marker',
     html: '<div style="font-size: 32px; line-height: 1; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35)); cursor: grab;">📍</div>',
@@ -246,10 +257,16 @@ function initMapAndGeocoding() {
     iconAnchor: [16, 30]
   });
 
-  roomMarker = L.marker([initialLat, initialLng], {
+  roomMarker = L.marker([markerLat, markerLng], {
     draggable: true,
     icon: customIcon
   }).addTo(roomMap);
+
+  // If no coords yet, hide marker initially and update coord display
+  if (!hasCoords) {
+    roomMarker.setOpacity(0); // Hidden until user sets location
+    if (coordDisplay) coordDisplay.textContent = 'Chưa xác định — Nhập địa chỉ hoặc kéo ghim';
+  }
 
   function updateCoords(lat, lng, fly = false, zoom = 16) {
     if (latInput) latInput.value = lat;
@@ -257,7 +274,11 @@ function initMapAndGeocoding() {
     if (coordDisplay) {
       coordDisplay.textContent = `${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E`;
     }
-    roomMarker.setLatLng([lat, lng]);
+    // Show marker if it was hidden (new room, first time setting coords)
+    if (roomMarker) {
+      roomMarker.setOpacity(1);
+      roomMarker.setLatLng([lat, lng]);
+    }
     if (fly && roomMap) {
       roomMap.flyTo([lat, lng], zoom, { duration: 1.2 });
     }
