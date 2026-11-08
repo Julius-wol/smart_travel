@@ -21,8 +21,16 @@ pointSchema.virtual('lng').get(function() {
 });
 
 const roomSchema = new mongoose.Schema({
+
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   roomCode: { type: String, trim: true },
+  code: {
+    type: String,
+    trim: true,
+    default: function() {
+      return '#P-VL' + Math.floor(100 + Math.random() * 900);
+    }
+  },
   title: { type: String, required: true, trim: true },
   description: { type: String, default: '' },
   address: { type: String, default: '' },
@@ -31,6 +39,15 @@ const roomSchema = new mongoose.Schema({
   distance: { type: String, default: '' },
   pricePerNight: { type: Number, default: 0, min: 0 },
   weekendPrice: { type: Number, min: 0 },
+  weekendPricePerNight: {
+    type: Number,
+    min: 0,
+    default: function() {
+      return Math.round((this.pricePerNight || 2500000) * 1.12);
+    }
+  },
+  originalPrice: { type: Number, min: 0 },
+  discountPercent: { type: Number, default: 0, min: 0, max: 100 },
   maxGuests: { type: Number, default: 2, min: 1 },
   bedrooms: { type: Number, default: 1, min: 1 },
   beds: { type: Number, default: 1, min: 1 },
@@ -39,6 +56,7 @@ const roomSchema = new mongoose.Schema({
   badge: { type: String, default: '' },
   tags: [{ type: String }],
   distanceInfo: { type: String },
+
   specs: {
     type: { type: String, default: '' },
     capacity: { type: String, default: '' },
@@ -62,17 +80,17 @@ const roomSchema = new mongoose.Schema({
     cancellation: { type: String, default: '' },
     freeCancel48h: { type: Boolean, default: false }
   },
-  status: { 
-    type: String, 
-    enum: ['Published', 'Archived', 'Draft', 'ACTIVE', 'HIDDEN', 'PUBLISHED', 'ARCHIVED', 'DRAFT'], 
-    default: 'Draft' 
+  status: {
+    type: String,
+    enum: ['Published', 'Archived', 'Draft', 'ACTIVE', 'HIDDEN', 'PUBLISHED', 'ARCHIVED', 'DRAFT'],
+    default: 'Draft'
   },
   location: {
     type: pointSchema,
     default: undefined
   },
   lastUpdatedBy: { type: String, default: '' }
-}, { 
+}, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }

@@ -14,6 +14,7 @@ import Review from '../models/Review.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { approveHostBooking, rejectHostBooking, calendarErrorResponse } from '../services/hostCalendarService.js';
 
 // ==========================================
 // 1. ROOM INVENTORY (SCR-HOST-01)
@@ -719,6 +720,9 @@ export const getHostBookings = async (req, res) => {
     }
 
     if (roomId && mongoose.isValidObjectId(roomId)) {
+      if (!hostRooms.some(room => String(room._id) === roomId)) {
+        return res.status(403).json({ code: 'AUTH-403', message: 'Không có quyền xem đơn của phòng này.' });
+      }
       query.roomId = roomId;
     }
 
@@ -775,19 +779,12 @@ export const updateBookingStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, rejectReason } = req.body;
-
-    const booking = await Booking.findById(id).populate('roomId');
-    if (!booking) {
-      return res.status(404).json({ message: 'Không tìm thấy đơn đặt phòng' });
+    if (!['CONFIRMED', 'REJECTED'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Trạng thái đơn không hợp lệ.' });
     }
-
-    if (booking.roomId.ownerId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ code: 'AUTH-403', message: 'Không có quyền thao tác trên đơn này' });
-    }
-
-    booking.status = status;
-    if (rejectReason) booking.rejectReason = rejectReason;
-    await booking.save();
+    const booking = status === 'CONFIRMED'
+      ? await approveHostBooking(req.user._id, id)
+      : await rejectHostBooking(req.user._id, id, rejectReason);
 
     return res.status(200).json({
       success: true,
@@ -795,8 +792,7 @@ export const updateBookingStatus = async (req, res) => {
       booking
     });
   } catch (error) {
-    console.error('Lỗi duyệt booking:', error);
-    return res.status(500).json({ message: 'Lỗi server' });
+    return calendarErrorResponse(res, error);
   }
 };
 

@@ -141,7 +141,7 @@ const LoginScreen = ({ navigation }) => {
 
       const accessToken = loginData.data.accessToken;
 
-      // GET PROFILE 
+      // GET PROFILE
       const profileRes = await fetch(`${API_URL}/user/me`, {
         method: 'GET',
         headers: {
@@ -671,4 +671,3 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
-

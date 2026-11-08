@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/host/css/host.css">
+  <link rel="stylesheet" href="/host/css/calendar.css">
+</head>
+<body>
+<div class="host-layout">
+  <%- include('partials/sidebar', { activeNav: 'calendar' }) %>
+  <main class="host-main-container">
+    <%- include('partials/header', { user, breadcrumbSub: 'Lịch phòng & Giá' }) %>
+    <div class="host-page-body">
+      <div class="host-page-header">
+        <div>
+          <h1 class="host-page-title">Lịch phòng & Giá</h1>
+          <p class="host-page-subtext">Xem tình trạng đặt phòng, giá theo ngày và chủ động khóa hoặc mở bán.</p>
+        </div>
+        <a href="/host/bookings?tab=pending" class="btn btn-outline">Đơn chờ duyệt</a>
+      </div>
+
+      <% if (!rooms.length) { %>
+        <div class="host-empty-state">
+          <div class="empty-icon">📅</div>
+          <div class="empty-title">Chưa có phòng để hiển thị lịch</div>
+          <div class="empty-subtext">Hãy tạo phòng trước khi quản lý ngày đón khách.</div>
+          <a href="/host/rooms/create" class="btn btn-primary">Thêm phòng mới</a>
+        </div>
+      <% } else { %>
+        <section class="calendar-controls" aria-label="Điều hướng lịch">
+          <label class="calendar-room-select">
+            <span>Chọn phòng</span>
+            <select id="calendarRoom" aria-label="Chọn phòng">
+              <% rooms.forEach(function(room) { %>
+                <option value="<%= room._id %>" <%= String(room._id) === String(selectedRoom._id) ? 'selected' : '' %>><%= room.title %> · <%= room.roomCode || room.code || '' %> · <%= Number(room.pricePerNight) > 0 && ['Published', 'PUBLISHED', 'ACTIVE'].includes(room.status) ? 'Đang mở bán' : 'Chưa mở bán' %></option>
+              <% }); %>
+            </select>
+          </label>
+          <div class="calendar-month-controls">
+            <a class="calendar-step" aria-label="Tháng trước" href="/host/calendar?roomId=<%= selectedRoom._id %>&month=<%= currentMonth === 1 ? 12 : currentMonth - 1 %>&year=<%= currentMonth === 1 ? currentYear - 1 : currentYear %>">‹</a>
+            <strong>Tháng <%= currentMonth %>, <%= currentYear %></strong>
+            <a class="calendar-step" aria-label="Tháng sau" href="/host/calendar?roomId=<%= selectedRoom._id %>&month=<%= currentMonth === 12 ? 1 : currentMonth + 1 %>&year=<%= currentMonth === 12 ? currentYear + 1 : currentYear %>">›</a>
+            <a class="btn btn-outline" href="/host/calendar?roomId=<%= selectedRoom._id %>">Hôm nay</a>
+          </div>
+          <button type="button" class="btn btn-primary" id="calendarBlockRange" <%= empty ? 'disabled' : '' %>>Khóa dải ngày</button>
+        </section>
+
+        <section class="host-kpi-grid calendar-kpis" aria-label="Thống kê tháng">
+          <div class="host-kpi-card"><div class="host-kpi-label">TỶ LỆ LẤP ĐẦY</div><div class="host-kpi-val"><%= kpi.occupancyRate %>%</div></div>
+          <div class="host-kpi-card"><div class="host-kpi-label">ĐÃ BÁN</div><div class="host-kpi-val"><%= kpi.soldNights %> đêm</div></div>
+          <div class="host-kpi-card"><div class="host-kpi-label">NGÀY TRỐNG</div><div class="host-kpi-val"><%= kpi.availableNights %> đêm</div></div>
+          <div class="host-kpi-card"><div class="host-kpi-label">DOANH THU DỰ TÍNH</div><div class="host-kpi-val"><%= new Intl.NumberFormat('vi-VN').format(kpi.estimatedRevenue) %> đ</div></div>
+        </section>
+
+        <% if (empty) { %>
+          <div class="host-empty-state">
+            <div class="empty-icon">📅</div>
+            <div class="empty-title">Phòng chưa có lịch khả dụng</div>
+            <div class="empty-subtext">Không tìm thấy dữ liệu lịch phòng. Vui lòng chọn một phòng đang hoạt động để xem lịch.</div>
+            <a href="/host/rooms/<%= selectedRoom._id %>/edit" class="btn btn-primary">Cấu hình phòng</a>
+          </div>
+        <% } else { %>
+          <div class="calendar-legend" aria-label="Chú giải trạng thái">
+            <span><i class="calendar-dot available"></i> Trống</span>
+            <span><i class="calendar-dot booked"></i> Đã đặt</span>
+            <span><i class="calendar-dot pending"></i> Chờ duyệt</span>
+            <span><i class="calendar-dot blocked"></i> Đã khóa</span>
+            <small>Giá theo đêm; cuối tuần áp dụng từ Thứ 6 đến Chủ Nhật.</small>
+          </div>
+          <section class="calendar-matrix" aria-label="Lịch phòng theo tháng">
+            <div class="calendar-grid calendar-weekdays">
+              <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span>
+            </div>
+            <div class="calendar-grid calendar-days">
+              <% for (let i = 0; i < offsetDays; i++) { %><div class="calendar-filler" aria-hidden="true"></div><% } %>
+              <% calendarDays.forEach(function(day) { %>
+                <button type="button" class="calendar-day <%= day.status.toLowerCase() %> <%= day.isPast ? 'past' : '' %>" data-date="<%= day.date %>" data-status="<%= day.status %>" aria-label="<%= day.date %>: <%= day.status %>">
+                  <span class="calendar-day-top"><strong><%= day.dayOfMonth %></strong><span><%= new Intl.NumberFormat('vi-VN').format(day.price) %> đ</span></span>
+                  <span class="calendar-day-status"><%= day.status === 'AVAILABLE' ? '● Trống' : day.status === 'BOOKED' ? '● Đã đặt' : day.status === 'PENDING' ? '● Chờ duyệt' : '🔒 Đã khóa' %></span>
+                  <% if (day.booking) { %><span class="calendar-day-detail"><%= day.booking.customerName %><br><%= day.booking.bookingCode %></span><% } %>
+                  <% if (day.block) { %><span class="calendar-day-detail"><%= day.block.reasonLabel %></span><% } %>
+                </button>
+              <% }); %>
+            </div>
+          </section>
+        <% } %>
+      <% } %>
+    </div>
+  </main>
+</div>
+
+<dialog id="calendarBlockDialog" class="calendar-dialog">
+  <form id="calendarBlockForm">
+    <div class="calendar-dialog-head"><h2>Khóa lịch đón khách</h2><button type="button" data-close-dialog aria-label="Đóng">×</button></div>
+    <label>Từ ngày<input type="date" id="calendarBlockStart" required></label>
+    <label>Đến ngày<input type="date" id="calendarBlockEnd" required></label>
+    <label>Lý do khóa
+      <select id="calendarBlockReason">
+        <option value="">Chọn lý do...</option>
+        <option value="MAINTENANCE">Sửa chữa / Bảo trì định kỳ</option>
+        <option value="EXTERNAL_GUEST">Giữ chỗ cho khách ngoài hệ thống</option>
+        <option value="HOLIDAY_PERSONAL">Nghỉ lễ / Gia đình sử dụng</option>
+        <option value="OTHER">Khác</option>
+      </select>
+    </label>
+    <label>Ghi chú nội bộ<input type="text" id="calendarBlockNote" maxlength="100" placeholder="Tùy chọn, tối đa 100 ký tự"></label>
+    <div class="calendar-dialog-actions"><button type="button" class="btn btn-outline" data-close-dialog>Hủy</button><button type="submit" class="btn btn-primary">Xác nhận khóa</button></div>
+  </form>
+</dialog>
+
+<dialog id="calendarUnblockDialog" class="calendar-dialog">
+  <div class="calendar-dialog-head"><h2>Mở lại ngày đón khách</h2><button type="button" data-close-dialog aria-label="Đóng">×</button></div>
+  <p id="calendarUnblockText"></p>
+  <div class="calendar-dialog-actions"><button type="button" class="btn btn-outline" data-close-dialog>Hủy</button><button type="button" class="btn btn-primary" id="calendarConfirmUnblock">Mở bán lại</button></div>
+</dialog>
+
+<dialog id="calendarBookingDialog" class="calendar-dialog">
+  <div class="calendar-dialog-head"><h2 id="calendarBookingTitle">Chi tiết đơn đặt phòng</h2><button type="button" data-close-dialog aria-label="Đóng">×</button></div>
+  <div id="calendarBookingDetails" class="calendar-booking-details"></div>
+  <div class="calendar-dialog-actions"><button type="button" class="btn btn-outline" data-close-dialog>Đóng</button><a id="calendarBookingLink" href="/host/bookings" class="btn btn-outline">Xem trong Đơn đặt phòng</a><button type="button" class="btn btn-outline" id="calendarRejectBooking">Từ chối</button><button type="button" class="btn btn-primary" id="calendarApproveBooking">Duyệt đơn</button></div>
+</dialog>
+
+<dialog id="calendarRejectDialog" class="calendar-dialog">
+  <form id="calendarRejectForm">
+    <div class="calendar-dialog-head"><h2>Từ chối đơn đặt phòng</h2><button type="button" data-close-dialog aria-label="Đóng">×</button></div>
+    <p>Nhập lý do để khách biết vì sao đơn không được duyệt.</p>
+    <label>Lý do từ chối<input type="text" id="calendarRejectReason" maxlength="300" required></label>
+    <div class="calendar-dialog-actions"><button type="button" class="btn btn-outline" data-close-dialog>Hủy</button><button type="submit" class="btn btn-primary">Xác nhận từ chối</button></div>
+  </form>
+</dialog>
+
+<div id="calendarToast" class="calendar-toast" role="status" aria-live="polite" hidden></div>
+<script type="application/json" id="calendarData"><%- JSON.stringify({ roomId: selectedRoom?._id || null, month: currentMonth, year: currentYear, days: calendarDays }).replace(/</g, '\\u003c') %></script>
+<script src="/host/js/host.js"></script>
+<script src="/host/js/calendar.js"></script>
+</body>
+</html>

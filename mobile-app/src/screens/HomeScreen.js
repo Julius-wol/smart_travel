@@ -19,6 +19,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { API_URL } from '../utils/config';
 import ToastNotification from '../components/ToastNotification';
+import { useDispatch, useSelector } from 'react-redux';
+import { setRecentBooking } from '../store/slices/bookingSessionSlice';
 
 /**
  * Màn hình [SMART-84] Booking Discovery & Search (Trang chủ)
@@ -28,6 +30,8 @@ const HomeScreen = ({ navigation, route }) => {
   const hasTabNavigator = navigation?.getState?.()?.type === 'tab';
   const user = route.params?.user;
   const token = route.params?.token;
+  const dispatch = useDispatch();
+  const sessionRecentBooking = useSelector((state) => state.bookingSession?.recentBooking);
 
   // State dữ liệu phòng từ MongoDB
   const [rooms, setRooms] = useState([]);
@@ -95,13 +99,36 @@ const HomeScreen = ({ navigation, route }) => {
 
   // Đồng bộ danh sách đơn đặt phòng thực tế từ MongoDB Atlas vào chuông thông báo
   const fetchRealNotifications = async () => {
-    if (!token) { setNotifications([]); return; }
+    if (!token) return;
     try {
       const response = await fetch(API_URL + '/bookings/my-bookings', { headers: { Authorization: 'Bearer ' + token } });
       const result = await response.json();
       if (!response.ok || !result.success || !Array.isArray(result.data)) throw new Error(result.message);
-      setNotifications(previous => bookingNotifications(result.data, previous));
-    } catch { setNotifications([]); }
+      const recentBooking = sessionRecentBooking || route.params?.recentBooking;
+      const authoritativeBooking = recentBooking
+        ? result.data.find(booking => booking.bookingCode === recentBooking.bookingCode)
+        : null;
+      if (authoritativeBooking && recentBooking &&
+        (recentBooking.bookingStatus !== authoritativeBooking.status ||
+          recentBooking.booking?.status !== authoritativeBooking.status)) {
+        dispatch(setRecentBooking({
+          ...recentBooking,
+          booking: authoritativeBooking,
+          bookingStatus: authoritativeBooking.status,
+          homestay: authoritativeBooking.roomId || recentBooking.homestay,
+        }));
+      }
+      setNotifications(previous => {
+        const recent = previous.filter(item => item.id.startsWith('recent-book-'));
+        const persisted = bookingNotifications(result.data, previous);
+        return [
+          ...recent,
+          ...persisted.filter(item => !recent.some(local => local.bookingCode === item.bookingCode)),
+        ];
+      });
+    } catch (error) {
+      console.warn('Không thể tải thông báo đặt phòng:', error);
+    }
   };
 
   // Tự động tải thông báo thực tế khi vào màn hình Home
@@ -111,19 +138,24 @@ const HomeScreen = ({ navigation, route }) => {
 
   // Lắng nghe đơn đặt phòng vừa hoàn tất từ màn hình BookingSuccess
   useEffect(() => {
-    if (route.params?.recentBooking) {
-      const rb = route.params.recentBooking;
+    const recentBooking = sessionRecentBooking || route.params?.recentBooking;
+    if (recentBooking) {
+      const rb = recentBooking;
       const bCode = rb.bookingCode || '';
       const rName = rb.homestay?.title || rb.homestay?.name || '';
+      const bookingStatus = rb.bookingStatus || rb.booking?.status || 'PENDING';
+      const bookingConfirmed = ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(bookingStatus);
 
       const newBookingNotif = {
         id: `recent-book-${bCode}`,
         type: 'booking',
-        title: `Đặt phòng thành công #${bCode}`,
-        message: `Chuyến nghỉ dưỡng tại ${rName} đã được xác nhận. Quý khách vui lòng xuất trình mã đơn tại quầy lễ tân khi nhận phòng. Bấm để xem vé e-Pass!`,
+        title: `${bookingConfirmed ? 'Đặt phòng đã xác nhận' : 'Đã gửi yêu cầu đặt phòng'} #${bCode}`,
+        message: bookingConfirmed
+          ? `Phòng tại ${rName} đã được xác nhận. Bấm để xem thông tin đặt phòng.`
+          : `Yêu cầu tại ${rName} đang chờ chủ nhà xác nhận. Bấm để xem thông tin đặt phòng.`,
         time: 'Vừa xong',
         read: false,
-        badgeText: 'ĐẶT PHÒNG',
+        badgeText: bookingConfirmed ? 'ĐÃ XÁC NHẬN' : 'CHỜ DUYỆT',
         badgeColor: '#E6FFFA',
         badgeTextColor: '#00796B',
         icon: 'checkmark-circle',
@@ -131,12 +163,14 @@ const HomeScreen = ({ navigation, route }) => {
         actionType: 'view_booking',
         bookingCode: bCode,
         rawBooking: {
+          ...(rb.booking || {}),
+          _id: rb.bookingId || rb.booking?._id,
           bookingCode: bCode,
-          roomId: rb.homestay,
-          fullName: rb.bookingDetails?.fullName,
-          phoneNumber: rb.bookingDetails?.phoneNumber,
-          email: rb.bookingDetails?.email,
-          totalPrice: rb.bookingDetails?.totalAmount,
+          roomId: rb.homestay || rb.booking?.roomId,
+          fullName: rb.bookingDetails?.fullName || rb.booking?.fullName,
+          phoneNumber: rb.bookingDetails?.phoneNumber || rb.booking?.phoneNumber,
+          email: rb.bookingDetails?.email || rb.booking?.email,
+          totalPrice: rb.booking?.totalPrice ?? rb.bookingDetails?.totalAmount,
           nights: rb.bookingDetails?.nights,
           guests: rb.bookingDetails?.guests,
           checkIn: rb.bookingDetails?.checkIn,
@@ -155,7 +189,7 @@ const HomeScreen = ({ navigation, route }) => {
 
       showToast(`Đã nhận thông báo mới cho đơn đặt phòng #${bCode}!`, 'success');
     }
-  }, [route.params?.recentBooking]);
+  }, [route.params?.recentBooking, sessionRecentBooking]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -199,7 +233,10 @@ const HomeScreen = ({ navigation, route }) => {
           guests: b.guests || 2,
           dates: b.dates || `${checkInStr} - ${checkOutStr} (${b.nights || 2} đêm)`,
           bookingTime: b.bookingTime || (b.createdAt ? formatDateVN(b.createdAt) : 'Hôm nay'),
+          status: b.status || 'PENDING',
+          paymentStatus: b.paymentStatus || 'UNPAID',
         },
+        booking: b,
       });
     } else if (notif.actionType === 'write_review') {
       setShowNotificationModal(false);

@@ -1,6 +1,6 @@
 import Image from '../components/MediaImage';
 import { resolveMediaUrl } from '../utils/config';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,32 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ToastNotification from '../components/ToastNotification';
+import { useDispatch } from 'react-redux';
+import { setRecentBooking } from '../store/slices/bookingSessionSlice';
 
 /**
  * Màn hình [SMART-89] Booking Success / e-Pass (Vé điện tử sau khi thanh toán)
  * Tương thích với Screen 4 trong bản thiết kế Figma
  */
 const BookingSuccessScreen = ({ navigation, route }) => {
-  const { homestay, bookingCode = '', user, token, bookingDetails } = route.params || {};
+  const dispatch = useDispatch();
+  const { homestay, bookingCode = '', booking, user, token, bookingDetails } = route.params || {};
+  const bookingStatus = booking?.status || bookingDetails?.status || 'PENDING';
+  const paymentStatus = booking?.paymentStatus || bookingDetails?.paymentStatus || 'UNPAID';
+  const isPaid = paymentStatus === 'PAID';
+  const isConfirmed = ['CONFIRMED', 'CHECKED_IN', 'COMPLETED'].includes(bookingStatus);
+  const recentBooking = {
+    booking,
+    bookingId: booking?._id,
+    bookingStatus,
+    bookingCode,
+    homestay,
+    bookingDetails,
+  };
+
+  useEffect(() => {
+    dispatch(setRecentBooking(recentBooking));
+  }, [dispatch, booking, bookingCode, homestay, bookingDetails]);
 
   // Trạng thái Toast thông báo (CR_BOOK_06, CR_BOOK_08)
   const [toast, setToast] = useState({ visible: false, message: '', type: 'info', duration: 2500 });
@@ -41,7 +60,7 @@ const BookingSuccessScreen = ({ navigation, route }) => {
     showToast('Đang tạo lịch trình du lịch đồng bộ với phòng của bạn...', 'info', 2500);
     // Sau khi thông báo, có thể điều hướng tiếp sang màn hình AI Planner
     setTimeout(() => {
-      navigation.navigate('Home', { user, token });
+      navigation.navigate('Home', { user, token, recentBooking });
     }, 2500);
   };
 
@@ -59,11 +78,7 @@ const BookingSuccessScreen = ({ navigation, route }) => {
     navigation.replace('Home', {
       user,
       token,
-      recentBooking: {
-        bookingCode,
-        homestay,
-        bookingDetails,
-      },
+      recentBooking,
     });
   };
 
@@ -91,12 +106,20 @@ const BookingSuccessScreen = ({ navigation, route }) => {
             <Ionicons name="checkmark" size={30} color="#FFFFFF" />
           </View>
           <View style={styles.napasRow}>
-            <Ionicons name="shield-checkmark" size={12} color="#00796B" />
-            <Text style={styles.napasText}>XÁC THỰC NAPAS 24/7 • VIETQR</Text>
+            <Ionicons name={isPaid ? 'shield-checkmark' : 'time-outline'} size={12} color="#00796B" />
+            <Text style={styles.napasText}>
+              {isPaid ? 'THANH TOÁN ĐÃ XÁC NHẬN' : isConfirmed ? 'ĐẶT PHÒNG ĐÃ XÁC NHẬN' : 'YÊU CẦU ĐẶT PHÒNG • CHỜ CHỦ NHÀ DUYỆT'}
+            </Text>
           </View>
-          <Text style={styles.successTitle}>Thanh toán thành công!</Text>
+          <Text style={styles.successTitle}>
+            {isPaid ? 'Thanh toán thành công!' : isConfirmed ? 'Đặt phòng đã xác nhận' : 'Đã gửi yêu cầu đặt phòng'}
+          </Text>
           <Text style={styles.successSub}>
-            Cảm ơn bạn. Chuyến nghỉ dưỡng của bạn đã được{'\n'}xác nhận tức thì.
+            {isConfirmed
+              ? isPaid
+                ? 'Chuyến nghỉ dưỡng của bạn đã được xác nhận và thanh toán.'
+                : 'Chuyến nghỉ dưỡng đã được xác nhận. Thanh toán chưa được ghi nhận.'
+              : 'Chủ nhà sẽ xác nhận yêu cầu của bạn. Mã đặt phòng đã được tạo.'}
           </Text>
           {/* Mã booking */}
           <View style={styles.codeRow}>
@@ -172,7 +195,6 @@ const BookingSuccessScreen = ({ navigation, route }) => {
           {/* Guest info row */}
           {(() => {
             const guestFullName = bookingDetails?.fullName || user?.fullName || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '') || '';
-            const guestEmail = bookingDetails?.email || user?.email || '';
             const guestInitials = guestFullName.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'LN';
 
             return (
@@ -196,9 +218,15 @@ const BookingSuccessScreen = ({ navigation, route }) => {
                 {/* Chi tiết thanh toán */}
                 <View style={styles.paymentDetailHeader}>
                   <Text style={styles.paymentDetailTitle}>Chi tiết thanh toán</Text>
-                  <View style={styles.paidBadge}>
-                    <Ionicons name="checkmark-circle" size={12} color="#00796B" />
-                    <Text style={styles.paidBadgeText}>Đã thanh toán</Text>
+                  <View style={[styles.paidBadge, !isPaid && styles.pendingBadge]}>
+                    <Ionicons
+                      name={isPaid ? 'checkmark-circle' : 'time-outline'}
+                      size={12}
+                      color={isPaid ? '#00796B' : '#B7791F'}
+                    />
+                    <Text style={[styles.paidBadgeText, !isPaid && styles.pendingBadgeText]}>
+                      {isPaid ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                    </Text>
                   </View>
                 </View>
                 <View style={styles.detailRow}>
@@ -206,13 +234,15 @@ const BookingSuccessScreen = ({ navigation, route }) => {
                   <Text style={styles.detailValue}>{bookingDetails?.totalAmount || ''}</Text>
                 </View>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>✂ Đã thanh toán cọc (100%):</Text>
-                  <Text style={[styles.detailValue, { color: '#00796B' }]}>{bookingDetails?.totalAmount || ''}</Text>
+                  <Text style={styles.detailLabel}>Trạng thái đơn:</Text>
+                  <Text style={styles.detailValue}>
+                    {isConfirmed ? 'Đã xác nhận' : bookingStatus === 'REJECTED' ? 'Đã từ chối' : 'Chờ chủ nhà duyệt'}
+                  </Text>
                 </View>
                 <View style={styles.emailRow}>
-                  <Ionicons name="mail-outline" size={13} color="#718096" />
+                  <Ionicons name="information-circle-outline" size={13} color="#718096" />
                   <Text style={styles.emailText}>
-                    Hóa đơn điện tử với VAT đã được gửi tới{'\n'}{guestEmail}
+                    Lưu mã đặt phòng để tra cứu yêu cầu và vé e-Pass.
                   </Text>
                 </View>
               </>
@@ -521,11 +551,17 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
   },
+  pendingBadge: {
+    backgroundColor: '#FFFAF0',
+  },
   paidBadgeText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#00796B',
     marginLeft: 4,
+  },
+  pendingBadgeText: {
+    color: '#B7791F',
   },
   detailRow: {
     flexDirection: 'row',

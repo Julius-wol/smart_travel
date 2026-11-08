@@ -8,6 +8,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import roomReducer from '../../src/store/slices/roomSlice';
 import wishlistReducer from '../../src/store/slices/wishlistSlice';
+import hostCalendarReducer from '../../src/store/slices/hostCalendarSlice';
 import BookingDiscoveryScreen from '../../src/screens/BookingDiscoveryScreen';
 import RoomDetailScreen from '../../src/screens/RoomDetailScreen';
 
@@ -30,6 +31,18 @@ jest.mock('expo-sqlite', () => ({
   }),
 }));
 
+// Mock @expo/vector-icons để tránh bất đồng bộ tải font trong môi trường Jest
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  const MockIcon = ({ name, testID, ...props }) => (
+    <Text testID={testID || `icon-${name}`} {...props}>{name}</Text>
+  );
+  return new Proxy({}, {
+    get: () => MockIcon,
+  });
+});
+
 const initialMetrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
@@ -43,6 +56,7 @@ export const createTestStore = (preloadedState = {}) => {
     reducer: {
       room: roomReducer,
       wishlist: wishlistReducer,
+      hostCalendar: hostCalendarReducer,
     },
     preloadedState,
     middleware: (getDefaultMiddleware) =>
@@ -96,8 +110,7 @@ export const renderWithProviders = (
     );
   };
 
-  return {
-    store,
-    ...render(ui, { wrapper: Wrapper, ...renderOptions }),
-  };
+  const renderPromise = render(ui, { wrapper: Wrapper, ...renderOptions });
+  renderPromise.store = store;
+  return renderPromise;
 };

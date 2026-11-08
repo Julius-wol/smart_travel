@@ -19,6 +19,66 @@ import ToastNotification from '../components/ToastNotification';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+const getAmenityIcon = (name = '') => {
+  const lower = String(name).toLowerCase();
+  if (lower.includes('wifi')) return 'wifi';
+  if (lower.includes('bếp') || lower.includes('nướng') || lower.includes('bbq')) return 'restaurant';
+  if (lower.includes('tắm') || lower.includes('nước') || lower.includes('bồn')) return 'water';
+  if (lower.includes('bể bơi') || lower.includes('hồ bơi')) return 'water';
+  if (lower.includes('chiếu') || lower.includes('tv')) return 'tv';
+  if (lower.includes('giặt') || lower.includes('sấy')) return 'shirt';
+  if (lower.includes('điều hòa') || lower.includes('lạnh')) return 'snow';
+  if (lower.includes('sưởi')) return 'flame';
+  if (lower.includes('ban công') || lower.includes('view') || lower.includes('biển')) return 'sunny';
+  if (lower.includes('xe') || lower.includes('đỗ')) return 'car';
+  if (lower.includes('gym')) return 'barbell';
+  return 'checkmark-circle-outline';
+};
+
+const normalizeAmenities = (amenitiesList) => {
+  if (!Array.isArray(amenitiesList) || amenitiesList.length === 0) {
+    return [
+      { id: '1', name: 'Wifi tốc độ cao', icon: 'wifi' },
+      { id: '2', name: 'Bếp riêng cao cấp', icon: 'restaurant' },
+      { id: '3', name: 'Bồn tắm gỗ pơ-mu', icon: 'water' },
+      { id: '4', name: 'Máy chiếu phim 4K', icon: 'videocam' },
+      { id: '5', name: 'Giặt & sấy khô', icon: 'shirt' },
+      { id: '6', name: 'Điều hòa 2 chiều', icon: 'snow' },
+      { id: '7', name: 'Ban công view biển', icon: 'sunny' },
+      { id: '8', name: 'Chỗ đỗ xe ô tô', icon: 'car' },
+    ];
+  }
+  return amenitiesList.map((am, idx) => {
+    if (typeof am === 'string') {
+      return {
+        id: `amenity-${idx}-${am}`,
+        name: am,
+        icon: getAmenityIcon(am),
+      };
+    }
+    return {
+      id: am.id || am._id || `amenity-${idx}-${am.name || ''}`,
+      name: am.name || am.title || String(am),
+      icon: am.icon || getAmenityIcon(am.name),
+    };
+  });
+};
+
+const formatReviewDate = (createdAt, fallbackDate) => {
+  if (!createdAt) return fallbackDate || 'Gần đây';
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Vừa xong';
+  if (mins < 60) return `${mins} phút trước`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Hôm qua';
+  if (days < 30) return `${days} ngày trước`;
+  const date = new Date(createdAt);
+  return `Tháng ${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+};
+
 /**
  * Màn hình [SMART-85] Home Details Screen (Chi tiết nơi lưu trú)
  * Đáp ứng đầy đủ 17 mục theo bảng đặc tả và Figma Screen 2
@@ -27,40 +87,162 @@ const HomeDetailsScreen = ({ navigation, route }) => {
   const { homestay, user, token, selectedDates, guestConfig } = route.params || {};
 
   // Dữ liệu nơi lưu trú (ưu tiên dữ liệu thực từ MongoDB)
-  const data = {
-    ...homestay,
-    id: homestay?._id || homestay?.id,
-    _id: homestay?._id || homestay?.id,
-    name: homestay?.title || homestay?.name || '',
-    badge: homestay?.badge || '', tags: homestay?.tags || [],
-    rating: homestay?.rating ?? 0, reviewCount: homestay?.reviewCount ?? 0,
-    address: homestay?.address || '', distance: homestay?.distance || '',
-    price: homestay?.pricePerNight ?? homestay?.price ?? 0,
-    priceFormatted: new Intl.NumberFormat('vi-VN').format(homestay?.pricePerNight ?? homestay?.price ?? 0) + ' VND',
-    images: (homestay?.images || []).filter(Boolean),
-    specs: homestay?.specs || {},
-    amenities: (homestay?.amenities || []).map((value,index) => typeof value === 'string' ? { id: String(index), name: value, icon: 'checkmark-circle-outline' } : value),
-    policy: homestay?.policy || {},
-  };
+  const data = homestay
+    ? {
+        ...homestay,
+        id: homestay._id || homestay.id || 'hs-01',
+        _id: homestay._id || homestay.id,
+        name: homestay.title || homestay.name || 'An Nhiên Eco Retreat Đà Nẵng',
+        badge: homestay.badge || (homestay.tags && homestay.tags[0]) || 'TOP 1% SƠN TRÀ',
+        tags:
+          homestay.tags && homestay.tags.length > 0
+            ? homestay.tags
+            : ['TOP 1% SƠN TRÀ', 'Eco Living', 'Gần biển'],
+        rating: homestay.rating || 4.9,
+        reviewCount: homestay.reviewCount || 128,
+        address: homestay.address || 'Đường Hoàng Sa, Bán đảo Sơn Trà, TP. Đà Nẵng',
+        distance: homestay.distance || 'Cách bãi biển Mỹ Khê 150m • Gần chùa Linh Ứng',
+        price: homestay.pricePerNight || homestay.price || 1450000,
+        priceFormatted: homestay.pricePerNight
+          ? new Intl.NumberFormat('vi-VN').format(homestay.pricePerNight) + 'đ'
+          : homestay.priceFormatted || '1.450.000đ',
+        images:
+          homestay.images && homestay.images.length > 0
+            ? homestay.images
+            : [
+                'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
+                'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=80',
+                'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80',
+              ],
+        specs: homestay.specs || {
+          type: 'Nhà nguyên căn',
+          capacity: 'Tối đa 4 khách',
+          bedroom: '2 PN • 2 Giường King',
+          bathroom: '2 Phòng tắm riêng',
+        },
+        amenities: normalizeAmenities(homestay.amenities),
+        ratingBreakdown: homestay.ratingBreakdown || {
+          overall: homestay.rating || 4.9,
+          cleanliness: 5.0,
+          location: 4.9,
+          service: 4.9,
+          amenities: 4.8,
+          value: 4.9,
+        },
+        reviews:
+          Array.isArray(homestay.reviews) && homestay.reviews.length > 0
+            ? homestay.reviews.map((r, rIdx) => ({
+                ...r,
+                id: String(r._id || r.id || `rev-${rIdx}`),
+                author: r.author || r.fullName || 'Khách du lịch',
+                avatar:
+                  r.avatar ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(r.author || r.fullName || 'User')}&background=00796B&color=fff`,
+                date: r.date || (r.createdAt ? formatReviewDate(r.createdAt) : 'Lưu trú gần đây'),
+                rating: r.rating || 5.0,
+                comment: r.comment || '',
+                images: Array.isArray(r.images) ? r.images : [],
+              }))
+            : [
+                {
+                  id: 'rev-01',
+                  author: 'Trần Hoàng Nam',
+                  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&q=80',
+                  date: 'Lưu trú tháng 04/2026',
+                  rating: 5.0,
+                  comment:
+                    'Phòng thực tế y hệt như ảnh! Ban công ngắm trọn bình minh biển Sơn Trà cực kỳ chill. Chủ nhà nhiệt tình hỗ trợ check-in sớm mà không phụ thu.',
+                  images: [
+                    'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300&q=80',
+                    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=300&q=80',
+                  ],
+                },
+                {
+                  id: 'rev-02',
+                  author: 'Nguyễn Mai Anh',
+                  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80',
+                  date: 'Lưu trú tháng 03/2026',
+                  rating: 5.0,
+                  comment:
+                    'Tiện nghi rất đầy đủ, máy chiếu xem phim buổi tối cực thích. Không gian sạch sẽ, thơm mùi tinh dầu thiên nhiên.',
+                  images: [],
+                },
+              ],
+        policy: homestay.policy || {
+          checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
+          checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
+          cancellation:
+            'Miễn phí hủy phòng trước 48h trước giờ nhận phòng. Hoàn tiền 100% nếu hủy kịp thời. Sau thời gian này áp dụng chính sách hoàn trả của chủ nhà.',
+        },
+      }
+    : {
+        id: 'hs-01',
+        name: 'An Nhiên Eco Retreat Đà Nẵng',
+        badge: 'TOP 1% SƠN TRÀ',
+        tags: ['TOP 1% SƠN TRÀ', 'Eco Living', 'Gần biển'],
+        rating: 4.9,
+        reviewCount: 128,
+        address: 'Đường Hoàng Sa, Bán đảo Sơn Trà, TP. Đà Nẵng',
+        distance: 'Cách bãi biển Mỹ Khê 150m • Gần chùa Linh Ứng',
+        price: 1450000,
+        priceFormatted: '1.450.000đ',
+        images: [
+          'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&q=80',
+          'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&q=80',
+          'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&q=80',
+          'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800&q=80',
+          'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&q=80',
+        ],
+        specs: {
+          type: 'Nhà nguyên căn',
+          capacity: 'Tối đa 4 khách',
+          bedroom: '2 PN • 2 Giường King',
+          bathroom: '2 Phòng tắm riêng',
+        },
+        amenities: normalizeAmenities([]),
+        ratingBreakdown: {
+          overall: 4.9,
+          cleanliness: 5.0,
+          location: 4.9,
+          service: 4.9,
+          amenities: 4.8,
+          value: 4.9,
+        },
+        reviews: [
+          {
+            id: 'rev-01',
+            author: 'Trần Hoàng Nam',
+            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&q=80',
+            date: 'Lưu trú tháng 04/2026',
+            rating: 5.0,
+            comment:
+              'Phòng thực tế y hệt như ảnh! Ban công ngắm trọn bình minh biển Sơn Trà cực kỳ chill. Chủ nhà nhiệt tình hỗ trợ check-in sớm mà không phụ thu.',
+            images: [
+              'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=300&q=80',
+              'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=300&q=80',
+            ],
+          },
+          {
+            id: 'rev-02',
+            author: 'Nguyễn Mai Anh',
+            avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80',
+            date: 'Lưu trú tháng 03/2026',
+            rating: 5.0,
+            comment:
+              'Tiện nghi rất đầy đủ, máy chiếu xem phim buổi tối cực thích. Không gian sạch sẽ, thơm mùi tinh dầu thiên nhiên.',
+            images: [],
+          },
+        ],
+        policy: {
+          checkIn: '14:00 (Tự nhận phòng bằng khóa thông minh Smart Lock)',
+          checkOut: '12:00 (Hỗ trợ trả phòng muộn nếu còn phòng trống)',
+          cancellation:
+            'Miễn phí hủy phòng trước 48h. Hoàn tiền 100% nếu hủy trước 14:00 ngày 10 Th05. Sau thời gian này áp dụng chính sách hoàn trả của chủ nhà.',
+        },
+      };
 
   const scrollViewRef = useRef(null);
   const reviewsPositionRef = useRef(0);
-
-  // Helper định dạng ngày đánh giá kiểu Google (thời gian thực)
-  const formatReviewDate = (createdAt, fallbackDate) => {
-    if (!createdAt) return fallbackDate || 'Gần đây';
-    const diff = Date.now() - new Date(createdAt).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Vừa xong';
-    if (mins < 60) return `${mins} phút trước`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} giờ trước`;
-    const days = Math.floor(hours / 24);
-    if (days === 1) return 'Hôm qua';
-    if (days < 30) return `${days} ngày trước`;
-    const date = new Date(createdAt);
-    return `Tháng ${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-  };
 
   // States
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -87,17 +269,17 @@ const HomeDetailsScreen = ({ navigation, route }) => {
       const revJson = await revRes.json();
       const sumJson = await sumRes.json();
 
-      if (revRes.ok && revJson.success && Array.isArray(revJson.data)) {
-        const mapped = revJson.data.map((r) => ({
-          id: r._id,
-          author: r.fullName,
+      if (revRes.ok && revJson.success && Array.isArray(revJson.data) && revJson.data.length > 0) {
+        const mapped = revJson.data.map((r, rIdx) => ({
+          id: String(r._id || r.id || `api-rev-${rIdx}`),
+          author: r.fullName || r.author || 'Khách du lịch',
           avatar:
             r.avatar ||
-            `https://ui-avatars.com/api/?name=${encodeURIComponent(r.fullName)}&background=00796B&color=fff`,
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(r.fullName || 'Khách')}&background=00796B&color=fff`,
           date: formatReviewDate(r.createdAt),
-          rating: r.rating,
-          comment: r.comment,
-          images: r.images || [],
+          rating: r.rating || 5,
+          comment: r.comment || '',
+          images: Array.isArray(r.images) ? r.images : [],
           bookingCode: r.bookingCode,
           isReal: true,
         }));
@@ -357,7 +539,7 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           {/* Section 5: Badges nhãn chứng nhận */}
           <View style={styles.badgesRow}>
             {data.tags.map((tag, idx) => (
-              <View key={idx} style={[styles.badgeChip, idx === 0 && styles.badgeChipHighlight]}>
+              <View key={`tag-${tag}-${idx}`} style={[styles.badgeChip, idx === 0 && styles.badgeChipHighlight]}>
                 <Text style={[styles.badgeChipText, idx === 0 && styles.badgeChipTextHighlight]}>
                   {tag}
                 </Text>
@@ -469,17 +651,15 @@ const HomeDetailsScreen = ({ navigation, route }) => {
           </View>
 
           <View style={styles.amenitiesGrid}>
-            {data.amenities.map((amenity, index) => {
-              const name = typeof amenity === 'string' ? amenity : (amenity?.name || 'Tiện nghi');
-              const icon = (typeof amenity === 'object' && amenity?.icon) ? amenity.icon : 'checkmark-circle-outline';
-              const itemKey = (typeof amenity === 'object' && amenity?.id) ? amenity.id : `amenity-${index}`;
-              return (
-                <View key={itemKey} style={styles.amenityItem}>
-                  <Ionicons name={icon} size={18} color="#00796B" style={{ marginRight: 8 }} />
-                  <Text style={styles.amenityText}>{name}</Text>
-                </View>
-              );
-            })}
+            {data.amenities.map((amenity, idx) => (
+              <View
+                key={amenity.id ? `amenity-${amenity.id}-${idx}` : `amenity-grid-${idx}`}
+                style={styles.amenityItem}
+              >
+                <Ionicons name={amenity.icon} size={18} color="#00796B" style={{ marginRight: 8 }} />
+                <Text style={styles.amenityText}>{amenity.name}</Text>
+              </View>
+            ))}
           </View>
 
           {/* Section 11: Review Summary (Score & 5 bars) */}
@@ -627,9 +807,9 @@ const HomeDetailsScreen = ({ navigation, route }) => {
 
           {/* Section 12: Review Filter Tags (Chips) */}
           <View style={styles.reviewChipsRow}>
-            {['Tất cả', '5 sao', '4 sao', 'Có hình ảnh'].map((filterName) => (
+            {['Tất cả', '5 sao', '4 sao', 'Có hình ảnh'].map((filterName, fIdx) => (
               <TouchableOpacity
-                key={filterName}
+                key={`filter-${filterName}-${fIdx}`}
                 style={[
                   styles.reviewFilterChip,
                   selectedReviewFilter === filterName && styles.reviewFilterChipActive,
@@ -756,17 +936,15 @@ const HomeDetailsScreen = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
             <ScrollView style={{ maxHeight: 400 }}>
-              {data.amenities.map((am, index) => {
-                const name = typeof am === 'string' ? am : (am?.name || 'Tiện nghi');
-                const icon = (typeof am === 'object' && am?.icon) ? am.icon : 'checkmark-circle-outline';
-                const itemKey = (typeof am === 'object' && am?.id) ? am.id : `modal-am-${index}`;
-                return (
-                  <View key={itemKey} style={styles.modalAmenityRow}>
-                    <Ionicons name={icon} size={20} color="#00796B" style={{ marginRight: 12 }} />
-                    <Text style={styles.modalAmenityText}>{name}</Text>
-                  </View>
-                );
-              })}
+              {data.amenities.map((am, idx) => (
+                <View
+                  key={am.id ? `modal-amenity-${am.id}-${idx}` : `modal-am-${idx}`}
+                  style={styles.modalAmenityRow}
+                >
+                  <Ionicons name={am.icon} size={20} color="#00796B" style={{ marginRight: 12 }} />
+                  <Text style={styles.modalAmenityText}>{am.name}</Text>
+                </View>
+              ))}
             </ScrollView>
           </View>
         </View>

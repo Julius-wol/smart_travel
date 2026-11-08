@@ -4,12 +4,8 @@ import { refreshSession, revokeSession } from '../services/authService.js';
 
 export const hostAuth = async (req, res, next) => {
   try {
-    let token = req.cookies?.hostToken || req.cookies?.token;
-    
-    // Check Authorization header as fallback
-    if (!token && req.headers['authorization']) {
-      token = req.headers['authorization'].split(' ')[1];
-    }
+    const bearer = /^Bearer\s+(.+)$/i.exec(req.headers.authorization || '');
+    let token = bearer?.[1] || req.cookies?.hostToken || req.cookies?.token;
 
     const handleExpired = async () => {
       // Thử tự động gia hạn phiên thông qua Refresh Token trong DB nếu có
@@ -65,12 +61,18 @@ export const hostAuth = async (req, res, next) => {
       const user = await User.findById(decoded.userId).select('-password');
       if (!user) {
         await revokeSession(req, res);
+        if (req.xhr || req.headers.accept?.includes('json')) {
+          return res.status(401).json({ code: 'AUTH-401', message: 'Tài khoản Host không còn tồn tại.' });
+        }
         return res.redirect('/host/login?error=notfound');
       }
 
       // Check Host role strictly
       if (user.role !== 'HOST') {
         await revokeSession(req, res);
+        if (req.xhr || req.headers.accept?.includes('json')) {
+          return res.status(403).json({ code: 'AUTH-403', message: 'Chỉ tài khoản Host được truy cập lịch phòng.' });
+        }
         return res.redirect('/host/login?error=not_host');
       }
 
