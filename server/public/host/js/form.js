@@ -657,12 +657,16 @@ async function handleFilesUpload(fileList) {
       body: formData
     });
 
-    if (!res.ok) {
-      throw new Error('Upload failed');
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data || !data.success) {
+      const errMsg = (data && data.message) ? data.message : 'Tải ảnh thất bại do lỗi kết nối mạng. Vui lòng bấm thử lại.';
+      const errCode = (data && data.code) ? data.code : 'ROOM-IMG-NETERR';
+      showToast('error', errCode, errMsg);
+      return;
     }
 
-    const data = await res.json();
-    if (data.success && data.urls) {
+    if (data.urls) {
       currentImages.push(...data.urls);
       renderGallery();
       calcHealthScore();

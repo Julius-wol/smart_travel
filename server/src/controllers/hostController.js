@@ -18,15 +18,32 @@ import fs from 'fs';
 import { v2 as cloudinary } from 'cloudinary';
 import { approveHostBooking, rejectHostBooking, calendarErrorResponse } from '../services/hostCalendarService.js';
 
-if (process.env.CLOUDINARY_URL) {
-  cloudinary.config();
-} else if (process.env.CLOUDINARY_CLOUD_NAME) {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
+export function initCloudinary() {
+  const cUrl = process.env.CLOUDINARY_URL;
+  if (cUrl) {
+    const match = cUrl.match(/cloudinary:\/\/([^:]+):([^@]+)@(.+)/);
+    if (match) {
+      cloudinary.config({
+        api_key: match[1],
+        api_secret: match[2],
+        cloud_name: match[3],
+        secure: true
+      });
+      return true;
+    }
+  }
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure: true
+    });
+    return true;
+  }
+  return false;
 }
+initCloudinary();
 
 // ==========================================
 // 1. ROOM INVENTORY (SCR-HOST-01)
@@ -696,7 +713,7 @@ export const uploadImages = async (req, res) => {
       });
     }
 
-    const hasCloudinary = Boolean(process.env.CLOUDINARY_URL || process.env.CLOUDINARY_CLOUD_NAME);
+    const hasCloudinary = initCloudinary();
 
     if (hasCloudinary) {
       const uploadPromises = req.files.map(async (file) => {
