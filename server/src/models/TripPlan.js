@@ -35,6 +35,18 @@ const TripPlanSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Booking' 
   }],
+  radiusKm: {
+    type: Number,
+    default: 5,
+    min: 1
+  },
+  homestay: {
+    id: { type: mongoose.Schema.Types.ObjectId, ref: 'Room' },
+    name: { type: String, default: '' },
+    address: { type: String, default: '' },
+    lat: { type: Number },
+    lng: { type: Number }
+  },
   preferences: [{ 
     type: String 
   }]

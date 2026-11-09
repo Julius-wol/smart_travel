@@ -55,13 +55,18 @@ const BookingSuccessScreen = ({ navigation, route }) => {
     showToast('Đã sao chép mã đặt phòng vào bộ nhớ tạm', 'success', 2000);
   };
 
-  // CR_BOOK_08: Bấm nút Tạo Lịch trình Chuyến đi
+  // CR_BOOK_08: Bấm nút Tạo Lịch trình Chuyến đi (SMART-104 AI Maps)
   const handleCreateAITrip = () => {
-    showToast('Đang tạo lịch trình du lịch đồng bộ với phòng của bạn...', 'info', 2500);
-    // Sau khi thông báo, có thể điều hướng tiếp sang màn hình AI Planner
+    showToast('Đang mở bộ lập lộ trình AI quanh chỗ ở...', 'info', 1000);
     setTimeout(() => {
-      navigation.navigate('Home', { user, token, recentBooking });
-    }, 2500);
+      navigation.navigate('ItineraryPlanner', {
+        homestay,
+        booking,
+        user,
+        token,
+        bookingDetails
+      });
+    }, 800);
   };
 
   // Nút Back trên header quay về màn hình trước đó (Profile, Checkout, v.v.)
