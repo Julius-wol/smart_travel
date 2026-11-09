@@ -207,8 +207,8 @@
                   }
                 }
               %>
-              <input type="hidden" id="inputLatitude" name="lat" value="<%= curLat %>">
-              <input type="hidden" id="inputLongitude" name="lng" value="<%= curLng %>">
+              <input type="hidden" id="inputLatitude" name="lat" value="<%= curLat !== null ? curLat : '' %>">
+              <input type="hidden" id="inputLongitude" name="lng" value="<%= curLng !== null ? curLng : '' %>">
 
               <div class="gps-real-map-wrapper" style="border: 1px solid var(--border-color); border-radius: var(--radius-lg); overflow: hidden; background: white; margin-top: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
                 <div id="hostRoomMap" style="height: 340px; width: 100%; z-index: 1;"></div>
@@ -216,7 +216,7 @@
                   <div class="gps-coord-display" style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--text-main);">
                     <span style="color: var(--primary); font-size: 16px;">📍</span>
                     <span data-i18n="gps_coord_label">TỌA ĐỘ GPS:</span>
-                    <span id="displayCoordText" style="color: var(--primary); font-family: monospace; font-size: 13.5px;"><%= `${Number(curLat).toFixed(4)}° N, ${Number(curLng).toFixed(4)}° E` %></span>
+                    <span id="displayCoordText" style="color: var(--primary); font-family: monospace; font-size: 13.5px;"><%= (curLat !== null && curLng !== null) ? `${Number(curLat).toFixed(4)}° N, ${Number(curLng).toFixed(4)}° E` : 'Chưa xác định — Nhập địa chỉ hoặc kéo ghim' %></span>
                     <span class="gps-geocoding-spinner" id="gpsGeoSpinner" style="display: none; font-size: 12px; color: #D97706; margin-left: 8px;">⏳ Đang định vị...</span>
                   </div>
                   <button type="button" class="btn btn-outline btn-sm" onclick="openFullscreenMapModal()" style="font-size: 12.5px;">

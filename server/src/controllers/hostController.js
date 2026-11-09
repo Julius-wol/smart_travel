@@ -14,7 +14,36 @@ import Review from '../models/Review.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
 import { approveHostBooking, rejectHostBooking, calendarErrorResponse } from '../services/hostCalendarService.js';
+
+export function initCloudinary() {
+  const cUrl = process.env.CLOUDINARY_URL;
+  if (cUrl) {
+    const match = cUrl.match(/cloudinary:\/\/([^:]+):([^@]+)@(.+)/);
+    if (match) {
+      cloudinary.config({
+        api_key: match[1],
+        api_secret: match[2],
+        cloud_name: match[3],
+        secure: true
+      });
+      return true;
+    }
+  }
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure: true
+    });
+    return true;
+  }
+  return false;
+}
+initCloudinary();
 
 // ==========================================
 // 1. ROOM INVENTORY (SCR-HOST-01)
@@ -675,12 +704,35 @@ export const deleteRoom = async (req, res) => {
 // ==========================================
 // 9. MULTI-IMAGE UPLOAD API
 // ==========================================
-export const uploadImages = (req, res) => {
+export const uploadImages = async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         code: 'ROOM-IMG-002',
         message: 'Không tìm thấy tệp tải lên'
+      });
+    }
+
+    const hasCloudinary = initCloudinary();
+
+    if (hasCloudinary) {
+      const uploadPromises = req.files.map(async (file) => {
+        const uploadResult = await cloudinary.uploader.upload(file.path, {
+          folder: 'smart_travel/rooms',
+          resource_type: 'image'
+        });
+        try {
+          fs.unlinkSync(file.path);
+        } catch (unlinkErr) {
+          // ignore local cleanup error
+        }
+        return uploadResult.secure_url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      return res.status(200).json({
+        success: true,
+        urls
       });
     }
 

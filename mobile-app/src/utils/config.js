@@ -47,7 +47,9 @@ const getServerIP = () => {
 
 export const SERVER_PORT = 5000;
 export const SERVER_IP = getServerIP();
-export const BASE_URL = `http://${SERVER_IP}:${SERVER_PORT}`;
+
+// Trỏ thẳng về Render Production để app điện thoại dùng được ở mọi nơi qua 4G/WiFi
+export const BASE_URL = 'https://smart-travel-1cj5.onrender.com';
 export const API_URL = `${BASE_URL}/api`;
 
 // Host uploads are stored as paths; native Image needs the backend's full URL.

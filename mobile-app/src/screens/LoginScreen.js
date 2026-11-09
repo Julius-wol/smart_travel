@@ -57,9 +57,8 @@ const LoginScreen = ({ navigation }) => {
   // ====== GOOGLE AUTH SETUP ======
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '539925498757-hurvt5soqoln2hd25scofvpk7uh1iug5.apps.googleusercontent.com',
-    androidClientId: '539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com',
+    androidClientId: '539925498757-pc771fi2skqaq06alr9rjeih8o0j7kj4.apps.googleusercontent.com',
     webClientId: '539925498757-3ugbbj7ifb1260ljto341lam3ikfm1dm.apps.googleusercontent.com',
-    redirectUri: 'host.exp.Exponent:/oauthredirect',
   });
 
   useEffect(() => {

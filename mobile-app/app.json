@@ -6,7 +6,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
-    "scheme": "smarttravel",
+    "scheme": [
+      "smarttravel",
+      "com.smarttravel.app"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.smarttravel.app"
@@ -20,6 +23,11 @@
     "plugins": [
       "expo-web-browser",
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f95755f4-b7ef-4e29-a99f-9307e1cc643e"
+      }
+    }
   }
 }

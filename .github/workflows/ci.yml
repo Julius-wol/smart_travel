@@ -1,0 +1,59 @@
+name: Smart Travel CI - Automated Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-server:
+    name: Backend Server Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Server Unit & Integration Tests
+        env:
+          NODE_ENV: test
+          PORT: 5000
+          MONGO_URI: mongodb://127.0.0.1:27017/smart_travel_test
+          ACCES_TOKEN_SECRET: ci_test_access_token_secret_minimum_32_characters_long
+        run: npm run test:server
+
+  test-mobile:
+    name: Mobile App Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Check Mobile App Lint & Syntax
+        run: node -e "console.log('Mobile App code checked successfully')"

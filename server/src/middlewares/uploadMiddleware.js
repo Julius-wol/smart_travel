@@ -13,6 +13,9 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
@@ -23,11 +26,11 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  const allowedExtensions = /\.(jpeg|jpg|png|webp)$/i;
+  const isExtValid = allowedExtensions.test(file.originalname);
+  const isMimeValid = !file.mimetype || file.mimetype.startsWith('image/') || allowedExtensions.test(file.mimetype);
 
-  if (extname && mimetype) {
+  if (isExtValid && isMimeValid) {
     return cb(null, true);
   } else {
     cb(new Error('ROOM-IMG-002: Tệp tin vượt quá kích thước 5MB hoặc sai định dạng cho phép (chỉ nhận JPG, PNG, WEBP).'));
