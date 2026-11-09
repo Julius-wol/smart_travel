@@ -125,9 +125,39 @@ export const getAllWishlistRooms = async () => {
   }
 };
 
-// [SMART-104] Lưu lộ trình du lịch ngoại tuyến (Offline Trip Plan)
+// [SMART-104] Lưu lộ trình du lịch ngoại tuyến (Offline Trip Plan - Hỗ trợ cả Mobile SQLite và Web localStorage)
 export const saveTripPlanOffline = async (plan, userId = 'default_user') => {
-  if (Platform.OS === 'web' || !db) return true;
+  if (Platform.OS === 'web') {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const planId = plan._id || plan.planId || `offline_${Date.now()}`;
+        const key = `offline_trip_plans_${userId}`;
+        const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
+        const updated = [
+          {
+            _id: planId,
+            planId,
+            title: plan.title || 'Lịch trình du lịch thông minh',
+            destinationCity: plan.destinationCity || '',
+            homestay: plan.homestay || {},
+            radiusKm: plan.radiusKm || 5,
+            days: plan.days || 2,
+            totalBudget: plan.totalBudget || 0,
+            schedule: plan.schedule || [],
+            savedAt: new Date().toISOString(),
+            isOffline: true
+          },
+          ...existing.filter((p) => (p._id || p.planId) !== planId)
+        ];
+        window.localStorage.setItem(key, JSON.stringify(updated));
+      }
+      return true;
+    } catch (e) {
+      console.warn('Lỗi lưu offline trên Web:', e);
+      return false;
+    }
+  }
+  if (!db) return true;
   try {
     const planId = plan._id || plan.planId || `offline_${Date.now()}`;
     const scheduleJson = JSON.stringify(plan.schedule || []);
@@ -156,7 +186,18 @@ export const saveTripPlanOffline = async (plan, userId = 'default_user') => {
 
 // [SMART-104] Lấy danh sách lộ trình du lịch ngoại tuyến
 export const getOfflineTripPlans = async (userId = 'default_user') => {
-  if (Platform.OS === 'web' || !db) return [];
+  if (Platform.OS === 'web') {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const key = `offline_trip_plans_${userId}`;
+        return JSON.parse(window.localStorage.getItem(key) || '[]');
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+  if (!db) return [];
   try {
     const rows = await db.getAllAsync(
       `SELECT * FROM offline_trip_plans WHERE userId = ? ORDER BY savedAt DESC`,
@@ -194,8 +235,21 @@ export const getOfflineTripPlans = async (userId = 'default_user') => {
 };
 
 // [SMART-104] Xóa lộ trình ngoại tuyến
-export const deleteOfflineTripPlan = async (planId) => {
-  if (Platform.OS === 'web' || !db) return true;
+export const deleteOfflineTripPlan = async (planId, userId = 'default_user') => {
+  if (Platform.OS === 'web') {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const key = `offline_trip_plans_${userId}`;
+        const existing = JSON.parse(window.localStorage.getItem(key) || '[]');
+        const filtered = existing.filter((p) => (p._id || p.planId) !== planId);
+        window.localStorage.setItem(key, JSON.stringify(filtered));
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  if (!db) return true;
   try {
     await db.runAsync(`DELETE FROM offline_trip_plans WHERE planId = ?`, [planId]);
     return true;

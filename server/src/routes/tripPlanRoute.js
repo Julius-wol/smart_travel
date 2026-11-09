@@ -25,3 +25,4 @@ router.get('/:id', getTripPlanById);
 router.delete('/:id', deleteTripPlan);
 
 export default router;
+
