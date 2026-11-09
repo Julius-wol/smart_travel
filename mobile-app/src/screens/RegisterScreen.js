@@ -160,7 +160,7 @@ const RegisterScreen = ({ navigation }) => {
 
             <TouchableOpacity 
               style={[styles.submitBtn, loading && { opacity: 0.7 }]} 
-              onPress={registered ? () => navigation.navigate('Login') : handleRegister}
+              onPress={registered ? () => navigation.navigate('Login', { prefillEmail: email.trim().toLowerCase() }) : handleRegister}
               disabled={loading}
             >
               {loading ? (

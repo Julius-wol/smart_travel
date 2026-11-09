@@ -15,7 +15,7 @@ WebBrowser.maybeCompleteAuthSession();
 // Hỗ trợ môi trường test hoặc thiết bị thiếu thành phần Modal
 const SafeModal = Modal || View;
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ navigation, route }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -23,6 +23,13 @@ const LoginScreen = ({ navigation }) => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Tự động điền email nếu vừa đăng ký thành công
+  useEffect(() => {
+    if (route?.params?.prefillEmail) {
+      setEmail(route.params.prefillEmail);
+    }
+  }, [route?.params?.prefillEmail]);
 
   // State quản lý Pop-up thông báo lỗi tùy chỉnh (thay thế cửa sổ mặc định của OS)
   const [errorModal, setErrorModal] = useState({
@@ -81,32 +88,35 @@ const LoginScreen = ({ navigation }) => {
     }
   }, [response]);
 
-  // Hàm Validate form và test API JWT - CHỈ DÙNG GMAIL (bỏ username và số điện thoại)
+  // Hàm Validate form và đăng nhập - Hỗ trợ cả Gmail và Tên đăng nhập (Username)
   const handleLogin = async () => {
     setFormError('');
-    const trimmedEmail = email.trim();
+    const trimmedAccount = (email || '').trim();
 
-    if (!trimmedEmail) {
-      const msg = 'Vui lòng nhập địa chỉ Gmail của bạn!';
+    if (!trimmedAccount) {
+      const msg = 'Vui lòng nhập Email hoặc Tên đăng nhập của bạn!';
       setFormError(msg);
-      showErrorPopup(msg, 'Chưa nhập Gmail');
+      showErrorPopup(msg, 'Chưa nhập tài khoản');
       return;
     }
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      const msg = 'Định dạng Gmail không hợp lệ. Vui lòng nhập đúng định dạng (ví dụ: example@gmail.com)!';
-      setFormError(msg);
-      showErrorPopup(msg, 'Gmail không hợp lệ');
-      return;
-    }
+    // Nếu người dùng nhập dạng Email thì kiểm tra định dạng
+    if (trimmedAccount.includes('@')) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(trimmedAccount)) {
+        const msg = 'Định dạng Email không hợp lệ. Vui lòng nhập đúng định dạng (ví dụ: example@gmail.com)!';
+        setFormError(msg);
+        showErrorPopup(msg, 'Email không hợp lệ');
+        return;
+      }
 
-    const commonTypos = /\.(con|cpm|vom|cim|ocm|coml|comm)$/i;
-    if (commonTypos.test(trimmedEmail)) {
-      const msg = 'Địa chỉ Gmail có vẻ gõ nhầm đuôi tên miền (ví dụ: .com). Vui lòng kiểm tra lại!';
-      setFormError(msg);
-      showErrorPopup(msg, 'Sai đuôi tên miền');
-      return;
+      const commonTypos = /\.(con|cpm|vom|cim|ocm|coml|comm)$/i;
+      if (commonTypos.test(trimmedAccount)) {
+        const msg = 'Địa chỉ Email có vẻ gõ nhầm đuôi tên miền (ví dụ: .com). Vui lòng kiểm tra lại!';
+        setFormError(msg);
+        showErrorPopup(msg, 'Sai đuôi tên miền');
+        return;
+      }
     }
 
     if (!password.trim()) {
@@ -125,16 +135,25 @@ const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
+      const accountPayload = trimmedAccount.includes('@')
+        ? trimmedAccount.toLowerCase()
+        : trimmedAccount;
+
       const loginRes = await fetch(`${API_URL}/auth/signin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: trimmedEmail.toLowerCase(), password, platform: 'mobile', role: 'USER' })
+        body: JSON.stringify({
+          username: accountPayload,
+          password: password.trim(),
+          platform: 'mobile',
+          role: 'USER'
+        })
       });
 
       const loginData = await loginRes.json();
 
       if (!loginRes.ok) {
-        Alert.alert('Không thể đăng nhập', loginData.message || 'Sai thông tin');
+        Alert.alert('Không thể đăng nhập', loginData.message || 'Tài khoản hoặc mật khẩu không đúng');
         return;
       }
 
@@ -234,19 +253,18 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Input Form */}
           <View style={styles.formContainer}>
-            <Text style={styles.inputLabel}>Địa chỉ Gmail</Text>
+            <Text style={styles.inputLabel}>Email hoặc Tên đăng nhập</Text>
             <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={20} color="#888" style={styles.inputIcon} />
+              <Ionicons name="person-outline" size={20} color="#888" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="Nhập địa chỉ Gmail (ví dụ: ten@gmail.com)"
+                placeholder="Nhập email hoặc tên đăng nhập"
                 placeholderTextColor="#A0AEC0"
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
                   setFormError('');
                 }}
-                keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
               />
@@ -265,6 +283,8 @@ const LoginScreen = ({ navigation }) => {
                   setFormError('');
                 }}
                 secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
                 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color="#888" />
