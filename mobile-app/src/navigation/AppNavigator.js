@@ -18,6 +18,7 @@ import CheckoutScreen from '../screens/CheckoutScreen';
 import BookingSuccessScreen from '../screens/BookingSuccessScreen';
 import WriteReviewScreen from '../screens/WriteReviewScreen';
 import HostCalendarScreen from '../screens/HostCalendarScreen';
+import ItineraryPlannerScreen from '../screens/ItineraryPlannerScreen';
 import { COLORS, TYPOGRAPHY } from '../constants/theme';
 
 const Tab = createBottomTabNavigator();
@@ -92,7 +93,8 @@ const MainTabNavigator = ({ route, initialTab = 'Booking' }) => {
       />
       <Tab.Screen
         name="Itinerary"
-        component={ItineraryPlaceholder}
+        component={ItineraryPlannerScreen}
+        initialParams={sessionParams}
         options={{ tabBarLabel: 'Lịch trình' }}
       />
       <Tab.Screen
@@ -135,6 +137,13 @@ export const AppNavigator = ({ initialRouteName = 'Login' }) => {
         <Stack.Screen
           name="HostCalendar"
           component={HostCalendarScreen}
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="ItineraryPlanner"
+          component={ItineraryPlannerScreen}
           options={{
             animation: 'slide_from_right',
           }}

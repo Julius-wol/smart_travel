@@ -30,6 +30,20 @@ export const initDatabase = async () => {
           savedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
           isSynced INTEGER DEFAULT 1
         );
+
+        CREATE TABLE IF NOT EXISTS offline_trip_plans (
+          planId TEXT PRIMARY KEY,
+          userId TEXT,
+          title TEXT,
+          destinationCity TEXT,
+          homestayName TEXT,
+          homestayAddress TEXT,
+          radiusKm REAL,
+          days INTEGER,
+          totalBudget REAL,
+          scheduleJson TEXT,
+          savedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
       `);
     }
     return db;
@@ -111,6 +125,86 @@ export const getAllWishlistRooms = async () => {
   }
 };
 
+// [SMART-104] Lưu lộ trình du lịch ngoại tuyến (Offline Trip Plan)
+export const saveTripPlanOffline = async (plan, userId = 'default_user') => {
+  if (Platform.OS === 'web' || !db) return true;
+  try {
+    const planId = plan._id || plan.planId || `offline_${Date.now()}`;
+    const scheduleJson = JSON.stringify(plan.schedule || []);
+    await db.runAsync(
+      `INSERT OR REPLACE INTO offline_trip_plans (planId, userId, title, destinationCity, homestayName, homestayAddress, radiusKm, days, totalBudget, scheduleJson)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        planId,
+        userId,
+        plan.title || 'Lịch trình du lịch thông minh',
+        plan.destinationCity || '',
+        plan.homestay?.name || '',
+        plan.homestay?.address || '',
+        plan.radiusKm || 5,
+        plan.days || 2,
+        plan.totalBudget || 0,
+        scheduleJson
+      ]
+    );
+    return true;
+  } catch (error) {
+    console.error('Lỗi lưu lộ trình offline vào SQLite:', error);
+    return false;
+  }
+};
+
+// [SMART-104] Lấy danh sách lộ trình du lịch ngoại tuyến
+export const getOfflineTripPlans = async (userId = 'default_user') => {
+  if (Platform.OS === 'web' || !db) return [];
+  try {
+    const rows = await db.getAllAsync(
+      `SELECT * FROM offline_trip_plans WHERE userId = ? ORDER BY savedAt DESC`,
+      [userId]
+    );
+    if (!rows) return [];
+    return rows.map((r) => {
+      let parsedSchedule = [];
+      try {
+        parsedSchedule = JSON.parse(r.scheduleJson);
+      } catch (e) {
+        parsedSchedule = [];
+      }
+      return {
+        _id: r.planId,
+        planId: r.planId,
+        title: r.title,
+        destinationCity: r.destinationCity,
+        homestay: {
+          name: r.homestayName,
+          address: r.homestayAddress
+        },
+        radiusKm: r.radiusKm,
+        days: r.days,
+        totalBudget: r.totalBudget,
+        schedule: parsedSchedule,
+        savedAt: r.savedAt,
+        isOffline: true
+      };
+    });
+  } catch (error) {
+    console.error('Lỗi lấy danh sách lộ trình offline từ SQLite:', error);
+    return [];
+  }
+};
+
+// [SMART-104] Xóa lộ trình ngoại tuyến
+export const deleteOfflineTripPlan = async (planId) => {
+  if (Platform.OS === 'web' || !db) return true;
+  try {
+    await db.runAsync(`DELETE FROM offline_trip_plans WHERE planId = ?`, [planId]);
+    return true;
+  } catch (error) {
+    console.error('Lỗi xóa lộ trình offline từ SQLite:', error);
+    return false;
+  }
+};
+
 export default {
   initDatabase,
   saveWishlistRoom,
@@ -118,4 +212,7 @@ export default {
   isRoomWishlisted,
   getAllWishlistIds,
   getAllWishlistRooms,
+  saveTripPlanOffline,
+  getOfflineTripPlans,
+  deleteOfflineTripPlan
 };

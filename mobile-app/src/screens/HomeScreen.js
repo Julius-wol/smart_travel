@@ -901,7 +901,12 @@ const HomeScreen = ({ navigation, route }) => {
           style={styles.navItem}
           onPress={() => {
             setActiveTab('itinerary');
-            showToast('Tính năng Lịch trình du lịch AI đang được phát triển', 'info');
+            navigation.navigate(hasTabNavigator ? 'Itinerary' : 'ItineraryPlanner', {
+              user,
+              token,
+              homestay: sessionRecentBooking?.homestay,
+              booking: sessionRecentBooking?.booking
+            });
           }}
           activeOpacity={0.7}
         >

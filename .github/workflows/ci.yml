@@ -57,3 +57,4 @@ jobs:
 
       - name: Check Mobile App Lint & Syntax
         run: node -e "console.log('Mobile App code checked successfully')"
+

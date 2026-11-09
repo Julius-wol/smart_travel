@@ -14,6 +14,7 @@ import reviewRoute from './src/routes/reviewRoute.js';
 import hostWebRoute from './src/routes/hostWebRoute.js';
 import wishlistRoute from './src/routes/wishlistRoute.js';
 import hostCalendarRoutes from './src/routes/hostCalendarRoutes.js';
+import tripPlanRoute from './src/routes/tripPlanRoute.js';
 import { toggleWishlist } from './src/controllers/wishlistController.js';
 import hostRoute from './src/routes/hostRoute.js';
 
@@ -66,6 +67,7 @@ app.use('/api/bookings', bookingRoute);  // Booking & Checkout
 app.use('/api/reviews', reviewRoute);    // Reviews & Rating
 app.use('/api/wishlist', wishlistRoute); // Wishlist
 app.use('/api/host', hostCalendarRoutes); // Host Calendar & Availability (SMART-105)
+app.use('/api/tripplan', tripPlanRoute);  // Smart AI Trip Planner & Maps (SMART-104)
 app.post('/api/wishlist/toggle', toggleWishlist); // Direct endpoint alias
 
 // Hỗ trợ alias /api/v1
@@ -76,6 +78,7 @@ app.use('/api/v1/bookings', bookingRoute);
 app.use('/api/v1/reviews', reviewRoute);
 app.use('/api/v1/wishlist', wishlistRoute);
 app.use('/api/v1/host', hostCalendarRoutes);
+app.use('/api/v1/tripplan', tripPlanRoute);
 
 // Host Partner Portal
 app.use('/host', hostRoute);
