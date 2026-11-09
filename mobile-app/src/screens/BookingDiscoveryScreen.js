@@ -151,11 +151,11 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
     return dateStr;
   };
 
-  const checkInDate = filters.checkIn || defaultStayDates().checkIn;
-  const checkOutDate = filters.checkOut || defaultStayDates().checkOut;
-  const nightsCount = filters.nights || 1;
-  const dateRangeDisplay = `${formatDateDisplay(checkInDate, '15/05')} – ${formatDateDisplay(checkOutDate, '18/05')}`;
-  const nightsDisplay = `${nightsCount} đêm`;
+  const hasSelectedDates = !!(filters.checkIn && filters.checkOut);
+  const dateRangeDisplay = hasSelectedDates
+    ? `${formatDateDisplay(filters.checkIn)} – ${formatDateDisplay(filters.checkOut)}`
+    : 'Chọn ngày';
+  const nightsDisplay = hasSelectedDates ? `${filters.nights} đêm` : '';
 
   // Header của danh sách bao gồm TopBar, Search Box, Quick Chips và Result Summary
   const renderListHeader = () => (
@@ -217,7 +217,7 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
     </View>
   );
 
-  // Footer danh sách: Nút "Xem thêm" hoặc trạng thái đã hết
+  // Footer danh sách: Nút "Xem thêm" khi còn kết quả
   const renderListFooter = () => {
     if (isLoadingMore) {
       return (
@@ -247,15 +247,7 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
       );
     }
 
-    if (rooms.length > 0 && !hasMore) {
-      return (
-        <View style={styles.endListContainer}>
-          <Text style={styles.endListText}>✨ Bạn đã xem hết tất cả homestay phù hợp</Text>
-        </View>
-      );
-    }
-
-    return <View style={{ height: 24 }} />;
+    return null;
   };
 
   return (
@@ -299,7 +291,12 @@ const BookingDiscoveryScreen = ({ navigation, route }) => {
                     ? navigation.navigate('RoomDetail', {
                         roomId: item._id, user, token,
                         selectedDates: { checkIn: filters.checkIn, checkOut: filters.checkOut, nights: filters.nights },
-                        guestConfig: { adults: filters.guests, children: 0, rooms: filters.roomsCount, isCustomized: true },
+                        guestConfig: {
+                          adults: filters.guests,
+                          children: 0,
+                          rooms: filters.roomsCount,
+                          isCustomized: filters.guests !== 2 || filters.roomsCount !== 1,
+                        },
                       })
                     : null
                 }
@@ -460,14 +457,6 @@ const styles = StyleSheet.create({
     color: COLORS.secondary,
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  endListContainer: {
-    paddingVertical: 24,
-    alignItems: 'center',
-  },
-  endListText: {
-    color: COLORS.textMuted,
-    fontSize: TYPOGRAPHY.sizes.bodySmall,
   },
   errorBanner: {
     backgroundColor: '#FEF2F2',

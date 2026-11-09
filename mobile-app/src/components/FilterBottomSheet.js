@@ -1,4 +1,3 @@
-import { defaultStayDates } from '../utils/stayDates';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -30,9 +29,8 @@ export const FilterBottomSheet = ({
   const [minRating, setMinRating] = useState(initialFilters.minRating || null);
   const [guests, setGuests] = useState(initialFilters.guests || 2);
   const [roomsCount, setRoomsCount] = useState(initialFilters.roomsCount || 1);
-  const [checkIn, setCheckIn] = useState(initialFilters.checkIn || defaultStayDates().checkIn);
-  const [checkOut, setCheckOut] = useState(initialFilters.checkOut || defaultStayDates().checkOut);
-  const [nights, setNights] = useState(initialFilters.nights || 1);
+  const [checkIn, setCheckIn] = useState(initialFilters.checkIn || '');
+  const [checkOut, setCheckOut] = useState(initialFilters.checkOut || '');
 
   // Đồng bộ khi mở modal với bộ lọc hiện tại
   useEffect(() => {
@@ -49,9 +47,8 @@ export const FilterBottomSheet = ({
       setMinRating(initialFilters.minRating || null);
       setGuests(initialFilters.guests || 2);
       setRoomsCount(initialFilters.roomsCount || 1);
-      setCheckIn(initialFilters.checkIn || defaultStayDates().checkIn);
-      setCheckOut(initialFilters.checkOut || defaultStayDates().checkOut);
-      setNights(initialFilters.nights || 1);
+      setCheckIn(initialFilters.checkIn || '');
+      setCheckOut(initialFilters.checkOut || '');
     }
   }, [visible, initialFilters]);
 
@@ -84,15 +81,20 @@ export const FilterBottomSheet = ({
       maxPrice = null;
     }
 
+    const dateNights = checkIn && checkOut
+      ? Math.round((new Date(checkOut) - new Date(checkIn)) / (24 * 60 * 60 * 1000))
+      : 0;
+    const hasSelectedDates = Number.isFinite(dateNights) && dateNights > 0;
+
     onApply({
       minPrice,
       maxPrice,
       minRating,
       guests: Number(guests) || 1,
       roomsCount: Number(roomsCount) || 1,
-      checkIn,
-      checkOut,
-      nights: Number(nights) || 3,
+      checkIn: hasSelectedDates ? checkIn : null,
+      checkOut: hasSelectedDates ? checkOut : null,
+      nights: hasSelectedDates ? dateNights : 0,
     });
     onClose();
   };
@@ -102,18 +104,17 @@ export const FilterBottomSheet = ({
     setMinRating(null);
     setGuests(2);
     setRoomsCount(1);
-    setCheckIn(defaultStayDates().checkIn);
-    setCheckOut(defaultStayDates().checkOut);
-    setNights(1);
+    setCheckIn('');
+    setCheckOut('');
     onApply({
       minPrice: null,
       maxPrice: null,
       minRating: null,
       guests: 2,
       roomsCount: 1,
-      checkIn: defaultStayDates().checkIn,
-      checkOut: defaultStayDates().checkOut,
-      nights: 1,
+      checkIn: null,
+      checkOut: null,
+      nights: 0,
     });
     onClose();
   };
@@ -188,7 +189,7 @@ export const FilterBottomSheet = ({
             {/* 3. Số khách */}
             <Text style={styles.sectionTitle}>Số lượng khách</Text>
             <View style={styles.guestCounter}>
-              <View>
+              <View style={styles.counterInfo}>
                 <Text style={styles.counterLabel}>Số khách tối thiểu:</Text>
                 <Text style={styles.counterHint}>Bao gồm người lớn & trẻ em</Text>
               </View>
@@ -226,7 +227,7 @@ export const FilterBottomSheet = ({
             {/* 4. Số phòng */}
             <Text style={styles.sectionTitle}>Số lượng phòng</Text>
             <View style={styles.guestCounter}>
-              <View>
+              <View style={styles.counterInfo}>
                 <Text style={styles.counterLabel}>Số phòng tối thiểu:</Text>
                 <Text style={styles.counterHint}>Số phòng ngủ cần đặt</Text>
               </View>
@@ -397,6 +398,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
   },
+  counterInfo: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 12,
+  },
   counterLabel: {
     fontFamily: TYPOGRAPHY.fontFamily,
     fontSize: TYPOGRAPHY.sizes.body,
@@ -413,6 +419,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexShrink: 0,
   },
   stepBtn: {
     width: 36,
@@ -431,7 +438,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: COLORS.textHeading,
-    minWidth: 36,
+    width: 48,
+    flexGrow: 0,
+    flexShrink: 0,
     textAlign: 'center',
     paddingVertical: 4,
     paddingHorizontal: 6,

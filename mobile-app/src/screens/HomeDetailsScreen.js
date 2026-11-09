@@ -358,30 +358,15 @@ const HomeDetailsScreen = ({ navigation, route }) => {
     });
   };
 
-  // Helper định dạng ngày dd/MM
-  const formatDateShort = (d) => {
-    if (!d) return '';
-    const date = new Date(d);
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    return `${day < 10 ? '0' + day : day}/${month < 10 ? '0' + month : month}`;
-  };
-
-  // Tính toán thông tin lưu trú (đồng bộ 100% với ngày & khách chọn từ HomeScreen)
+  // Chỉ hiển thị ngày lưu trú khi khách đã chọn ngày từ màn hình tìm kiếm.
   const hasCustomDates = !!(selectedDates?.checkIn && selectedDates?.checkOut);
-  const checkInDate = hasCustomDates
-    ? new Date(selectedDates.checkIn)
-    : (() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 1);
-        d.setHours(14, 0, 0, 0);
-        return d;
-      })();
-  const nightsCount =
-    hasCustomDates && Number(selectedDates.nights) > 0 ? Number(selectedDates.nights) : 2;
-  const checkOutDate = hasCustomDates
-    ? new Date(selectedDates.checkOut)
-    : new Date(checkInDate.getTime() + nightsCount * 24 * 60 * 60 * 1000);
+  const checkInDate = hasCustomDates ? new Date(selectedDates.checkIn) : null;
+  const checkOutDate = hasCustomDates ? new Date(selectedDates.checkOut) : null;
+  const nightsCount = hasCustomDates
+    ? Number(selectedDates.nights) > 0
+      ? Number(selectedDates.nights)
+      : Math.max(1, Math.round((checkOutDate - checkInDate) / (24 * 60 * 60 * 1000)))
+    : 0;
 
   const hasCustomGuests = !!guestConfig?.isCustomized;
   const totalGuests = hasCustomGuests
@@ -390,9 +375,9 @@ const HomeDetailsScreen = ({ navigation, route }) => {
   const roomsCount =
     hasCustomGuests && Number(guestConfig.rooms) > 0 ? Number(guestConfig.rooms) : 1;
 
-  // Tính tổng giá theo số đêm đã chọn
+  // Khi chưa chọn ngày, thanh dưới chỉ hiển thị giá mỗi đêm.
   const basePricePerNight = Number(data.price) || 0;
-  const totalPrice = basePricePerNight * nightsCount;
+  const totalPrice = basePricePerNight * (hasCustomDates ? nightsCount : 1);
   const totalPriceFormatted = new Intl.NumberFormat('vi-VN').format(totalPrice) + 'đ';
 
   // Section 17: Bấm Đặt phòng ngay (truyền chuẩn xác ngày & số khách sang Checkout)
@@ -570,52 +555,6 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             </View>
             <Ionicons name="open-outline" size={16} color="#718096" />
           </TouchableOpacity>
-
-          {/* Card Thông tin kỳ nghỉ bạn đã chọn (đồng bộ từ thanh tìm kiếm trang chủ) */}
-          <View style={styles.staySelectionCard}>
-            <View style={styles.stayCardHeader}>
-              <View style={styles.stayCardTitleRow}>
-                <Ionicons name="sparkles" size={16} color="#00796B" style={{ marginRight: 6 }} />
-                <Text style={styles.stayCardTitle}>Kỳ nghỉ bạn đã chọn</Text>
-              </View>
-              <View style={styles.stayBadge}>
-                <Ionicons name="checkmark-circle" size={12} color="#00796B" style={{ marginRight: 3 }} />
-                <Text style={styles.stayBadgeText}>Khớp tìm kiếm</Text>
-              </View>
-            </View>
-
-            <View style={styles.stayDetailsRow}>
-              {/* Cột 1: Ngày nhận & trả phòng */}
-              <View style={styles.stayItemCol}>
-                <View style={styles.stayIconRow}>
-                  <Ionicons name="calendar-outline" size={14} color="#00796B" style={{ marginRight: 4 }} />
-                  <Text style={styles.stayItemLabel}>Thời gian ({nightsCount} đêm)</Text>
-                </View>
-                <Text style={styles.stayItemValue}>
-                  {formatDateShort(checkInDate)} – {formatDateShort(checkOutDate)}
-                </Text>
-                <Text style={styles.stayItemSub}>14:00 Nhận • 12:00 Trả</Text>
-              </View>
-
-              <View style={styles.stayDividerVertical} />
-
-              {/* Cột 2: Số khách & Số phòng */}
-              <View style={styles.stayItemCol}>
-                <View style={styles.stayIconRow}>
-                  <Ionicons name="people-outline" size={14} color="#00796B" style={{ marginRight: 4 }} />
-                  <Text style={styles.stayItemLabel}>Khách & Phòng</Text>
-                </View>
-                <Text style={styles.stayItemValue}>
-                  {totalGuests} khách, {roomsCount} phòng
-                </Text>
-                <Text style={styles.stayItemSub}>
-                  {hasCustomGuests
-                    ? `${guestConfig.adults} lớn${guestConfig.children ? `, ${guestConfig.children} trẻ` : ''}`
-                    : '2 người lớn'}
-                </Text>
-              </View>
-            </View>
-          </View>
 
           {/* Section 9: Key Specs Grid (4 ô thông số phòng trọng yếu) */}
           <View style={styles.specsGrid}>
@@ -908,10 +847,14 @@ const HomeDetailsScreen = ({ navigation, route }) => {
             <Text style={styles.bottomPriceValue}>
               {totalPriceFormatted}
             </Text>
-            <Text style={styles.bottomPerNight}> / {nightsCount} đêm</Text>
+            <Text style={styles.bottomPerNight}>
+              {hasCustomDates ? ` / ${nightsCount} đêm` : ' / đêm'}
+            </Text>
           </View>
           <Text style={styles.bottomPriceTax}>
-            {data.priceFormatted}/đêm • {totalGuests} khách ({roomsCount} phòng)
+            {data.priceFormatted}/đêm • {hasCustomGuests
+              ? `${totalGuests} khách (${roomsCount} phòng)`
+              : data.specs.capacity}
           </Text>
         </View>
 
@@ -1433,80 +1376,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#234E52',
     lineHeight: 18,
-  },
-  // Card thông tin kỳ nghỉ đã chọn
-  staySelectionCard: {
-    backgroundColor: '#F0FDF9',
-    borderRadius: 14,
-    padding: 14,
-    marginVertical: 12,
-    borderWidth: 1.5,
-    borderColor: '#B2F5EA',
-  },
-  stayCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#CCFBF1',
-  },
-  stayCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stayCardTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#00796B',
-  },
-  stayBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#CCFBF1',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  stayBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#00796B',
-  },
-  stayDetailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stayItemCol: {
-    flex: 1,
-  },
-  stayIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  stayItemLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#00796B',
-  },
-  stayItemValue: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#1A202C',
-    marginTop: 2,
-  },
-  stayItemSub: {
-    fontSize: 11,
-    color: '#718096',
-    marginTop: 2,
-  },
-  stayDividerVertical: {
-    width: 1,
-    height: 38,
-    backgroundColor: '#CCFBF1',
-    marginHorizontal: 12,
   },
   bottomBar: {
     position: 'absolute',

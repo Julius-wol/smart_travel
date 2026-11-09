@@ -839,24 +839,6 @@ const ProfileScreen = ({ route, navigation }) => {
           <Text style={styles.logoutBtnText}>Đăng xuất tài khoản</Text>
         </TouchableOpacity>
 
-        {/* Phân hệ Host Portal: Lịch phòng & Trạng thái trống (SMART-105) */}
-        <View style={[styles.formContainer, { marginBottom: 40 }]}>
-          <Text style={styles.sectionTitle}>Quản lý Đối tác cho thuê (Host)</Text>
-          <TouchableOpacity
-            style={[styles.updateBtn, { backgroundColor: '#00685F', marginTop: 10 }]}
-            onPress={() => navigation.navigate('HostCalendar', { user, token })}
-          >
-            <Ionicons name="calendar-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.updateBtnText}>Lịch phòng & Trạng thái trống</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* 8. FOOTER NOTE */}
-        <View style={styles.footerNoteWrap}>
-          <Text style={styles.footerNoteText}>
-            Smart Travel
-          </Text>
-        </View>
       </ScrollView>
 
       {/* 9. BOTTOM NAVIGATION BAR (4 Tabs) */}
@@ -1627,7 +1609,7 @@ const styles = StyleSheet.create({
   // SCROLL CONTENT
   scrollContent: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: 8,
   },
 
   // 2. PROFILE HEADER
@@ -1945,23 +1927,11 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
     borderRadius: 14,
     paddingVertical: 14,
-    marginBottom: 16,
   },
   logoutBtnText: {
     fontSize: 15,
     fontWeight: '700',
     color: '#DC2626',
-  },
-
-  // 8. FOOTER NOTE
-  footerNoteWrap: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  footerNoteText: {
-    fontSize: 12,
-    color: '#94A3B8',
-    textAlign: 'center',
   },
 
   // 9. BOTTOM NAVIGATION
